@@ -204,7 +204,7 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
       ${getLogoHTML(settings)}
       <div class="doc-header">
         <div class="doc-title-block">
-          <div class="doc-title">ใบส่งคืนสินค้าซ่อมเสร็จ</div>
+          <div class="doc-title">ใบส่งคืนสินค้าเคลม</div>
           <div class="doc-subtitle">Product Return Note</div>
         </div>
         <div style="text-align: right;">
@@ -224,8 +224,8 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
         <div class="box">
           <div class="label">Service Status (สถานะ)</div>
           <div class="value" style="font-size: 15px; font-weight: bold;">
-            ${claim.status === 'REPAIRED' ? 'ซ่อมเสร็จสิ้น (Repaired)' :
-      claim.status === 'REJECTED' ? 'คืนคืนไม่ซ่อม (Returned/Rejected)' :
+            ${claim.status === 'REPAIRED' ? 'ดำเนินการเสร็จสิ้น (Completed)' :
+      claim.status === 'REJECTED' ? 'ส่งคืน (Returned/Rejected)' :
         claim.status.replace('_', ' ')}
           </div>
         </div>
@@ -258,7 +258,7 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
       <div class="box" style="margin-bottom: 20px;">
         <div class="label">Resolution (ผลการดำเนินการ)</div>
         <div class="value" style="margin-top: 5px; font-weight: 500;">
-          ${claim.resolution?.actionTaken ? formatAction(claim.resolution.actionTaken) : (claim.status === 'REPAIRED' ? 'Repaired / Replaced' : 'Checked')}
+          ${claim.resolution?.actionTaken ? formatAction(claim.resolution.actionTaken) : (claim.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
         </div>
         <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
            <div class="label">Original Issue (อาการที่แจ้ง)</div>
