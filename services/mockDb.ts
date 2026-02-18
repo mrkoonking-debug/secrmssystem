@@ -1,5 +1,5 @@
 
-import { Claim, ClaimStatus, DashboardStats, Team, TimelineEvent } from '../types';
+import { RMA, RMAStatus, DashboardStats, Team, TimelineEvent } from '../types';
 import { db, auth, isConfigured, firebaseConfig } from './firebaseConfig';
 import { initializeApp, deleteApp } from 'firebase/app';
 import {
@@ -15,7 +15,7 @@ import { BRAND_OPTIONS, DISTRIBUTOR_OPTIONS } from '../constants/options';
 import { SEED_CLAIMS } from './seedData';
 
 let currentUser: any = null;
-let OFFLINE_STORAGE: Claim[] = SEED_CLAIMS;
+let OFFLINE_STORAGE: RMA[] = SEED_CLAIMS as any; // Cast for now, should update seedData too
 let OFFLINE_USERS: any[] = [
   {
     uid: 'offline-admin',
@@ -39,7 +39,8 @@ let OFFLINE_SETTINGS = {
   website: 'www.sec-technology.com'
 };
 
-// Try to restore session from localStorage for persistence
+// ... (Auth/LocalStorage logic remains the same)
+
 try {
   const savedUser = localStorage.getItem('mock_user');
   if (savedUser) {
@@ -70,7 +71,7 @@ if (isConfigured && auth) {
   });
 }
 
-const mapDocToClaim = (d: any): Claim => {
+const mapDocToRMA = (d: any): RMA => {
   const data = d.data();
   return {
     ...data,
@@ -81,7 +82,7 @@ const mapDocToClaim = (d: any): Claim => {
       ...h,
       date: h.date?.toDate ? h.date.toDate().toISOString() : h.date
     }))
-  } as Claim;
+  } as RMA;
 };
 
 export const MockDb = {
@@ -225,24 +226,15 @@ export const MockDb = {
         await setDoc(doc(db, 'users', u.uid), { name: u.name, email: u.email, role: u.role, team: u.team, createdAt: serverTimestamp() });
       }
 
-      // Seed Claims
+      // Seed RMAs
       for (const c of OFFLINE_STORAGE) {
-        // Check if exists first to avoid overwrite? Or just upsert.
-        // Using setDoc with merge: true is safer but we want to establish initial state.
-        await setDoc(doc(db, 'claims', c.id), {
+        // Updated to use rmas collection
+        await setDoc(doc(db, 'rmas', c.id), {
           ...c,
           createdAt: c.createdAt ? Timestamp.fromDate(new Date(c.createdAt)) : serverTimestamp(),
           updatedAt: serverTimestamp()
         });
       }
-
-      // Seed Brands? (Assuming OFFLINE_BRANDS exists in scope)
-      // OFFLINE_BRANDS and OFFLINE_DISTRIBUTORS are usually imported or defined in mockDb.
-      // I will check if they are available in scope. If not, I'll update only claims/users/settings.
-      // Based on previous file reads, OFFLINE_BRANDS and OFFLINE_DISTRIBUTORS are likely available.
-      // Assuming they are imported from constants or defined locally.
-      // Wait, looking at lines 164... 
-      // getDistributors returns OFFLINE_DISTRIBUTORS. Yes, they are available.
 
       for (const b of OFFLINE_BRANDS) {
         await setDoc(doc(db, 'brands', b.id), b);
@@ -293,43 +285,43 @@ export const MockDb = {
     await deleteDoc(doc(db, 'users', uid));
   },
 
-  // --- Claim Management ---
-  getAllClaims: async (): Promise<Claim[]> => {
+  // --- RMA Management ---
+  getRMAs: async (): Promise<RMA[]> => {
     if (!isConfigured || !db) return OFFLINE_STORAGE;
     try {
-      const q = query(collection(db, 'claims'), orderBy('createdAt', 'desc'), limit(500));
+      const q = query(collection(db, 'rmas'), orderBy('createdAt', 'desc'), limit(500));
       const snap: any = await Promise.race([
         getDocs(q),
         new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000))
       ]);
-      return snap.docs.map(mapDocToClaim);
+      return snap.docs.map(mapDocToRMA);
     } catch (e) {
-      console.warn("getAllClaims failed/timedout, using offline:", e);
+      console.warn("getRMAs failed/timedout, using offline:", e);
       return OFFLINE_STORAGE;
     }
   },
 
-  // NEW: Get Unassigned Claims (Self-registered)
-  getUnassignedClaims: async (): Promise<Claim[]> => {
-    const all = await MockDb.getAllClaims(); // This is safe now
+  // NEW: Get Unassigned RMAs (Self-registered)
+  getUnassignedRMAs: async (): Promise<RMA[]> => {
+    const all = await MockDb.getRMAs();
     return all.filter(c => !c.team || (c.team as any) === 'UNASSIGNED');
   },
 
-  // NEW: Get All Logs from all claims for Admin
+  // NEW: Get All Logs from all RMAs for Admin
   getAllLogs: async (): Promise<any[]> => {
-    const claims = await MockDb.getAllClaims(); // Safe now
+    const rmas = await MockDb.getRMAs();
     const allLogs: any[] = [];
 
-    claims.forEach(claim => {
-      if (claim.history) {
-        claim.history.forEach(evt => {
+    rmas.forEach(rma => {
+      if (rma.history) {
+        rma.history.forEach(evt => {
           allLogs.push({
             ...evt,
-            claimId: claim.id,
-            claimRef: claim.quotationNumber || claim.id,
-            productModel: claim.productModel,
-            serialNumber: claim.serialNumber,
-            brand: claim.brand
+            claimId: rma.id, // Keep this key for UI consistency if needed, or rename to rmaId later
+            claimRef: rma.quotationNumber || rma.id,
+            productModel: rma.productModel,
+            serialNumber: rma.serialNumber,
+            brand: rma.brand
           });
         });
       }
@@ -339,78 +331,76 @@ export const MockDb = {
     return allLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
 
-  getClaimById: async (id: string): Promise<Claim | undefined> => {
+  getRMAById: async (id: string): Promise<RMA | undefined> => {
     if (!isConfigured || !db) return OFFLINE_STORAGE.find(c => c.id === id || c.quotationNumber === id);
     try {
-      const snap = await getDoc(doc(db, 'claims', id));
-      if (snap.exists()) return mapDocToClaim(snap);
-      const q = query(collection(db, 'claims'), where('quotationNumber', '==', id));
+      const snap = await getDoc(doc(db, 'rmas', id));
+      if (snap.exists()) return mapDocToRMA(snap);
+      const q = query(collection(db, 'rmas'), where('quotationNumber', '==', id));
       const qSnap = await getDocs(q);
-      return !qSnap.empty ? mapDocToClaim(qSnap.docs[0]) : undefined;
+      return !qSnap.empty ? mapDocToRMA(qSnap.docs[0]) : undefined;
     } catch (e) {
-      console.warn("getClaimById failed, using offline:", e);
+      console.warn("getRMAById failed, using offline:", e);
       return OFFLINE_STORAGE.find(c => c.id === id || c.quotationNumber === id);
     }
   },
-  searchClaimsPublic: async (text: string): Promise<Claim[]> => {
-    const all = await MockDb.getAllClaims();
+  searchRMAsPublic: async (text: string): Promise<RMA[]> => {
+    const all = await MockDb.getRMAs();
     const lower = text.toLowerCase().trim();
     return all.filter(c => c.serialNumber.toLowerCase().includes(lower) || c.id.toLowerCase().includes(lower) || (c.quotationNumber && c.quotationNumber.toLowerCase().includes(lower)) || (c.groupRequestId && c.groupRequestId.toLowerCase().includes(lower)));
   },
-  addClaim: async (c: Partial<Claim>): Promise<Claim> => {
+  addRMA: async (c: Partial<RMA>): Promise<RMA> => {
     const year = new Date().getFullYear().toString().slice(-2);
-    let id = `CLM-${year}${Math.floor(1000 + Math.random() * 9000)}`;
+    // [NEW] ID Format: RMA-26XXXX
+    let id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Ensure Unique ID
     if (isConfigured && db) {
-      // Try to check uniqueness, but if it hangs, just proceed with the random ID (Collision risk low)
       try {
         const checkExists = async () => {
-          const snap = await getDoc(doc(db, 'claims', id));
+          const snap = await getDoc(doc(db, 'rmas', id));
           return snap.exists();
         };
 
         let exists = await Promise.race([
           checkExists(),
-          new Promise((_, r) => setTimeout(() => r(false), 2000)) // 2s timeout, assume false (not exists) if timeout
+          new Promise((_, r) => setTimeout(() => r(false), 2000))
         ]);
 
-        // If collision found, try one more time
         if (exists) {
-          id = `CLM-${year}${Math.floor(1000 + Math.random() * 9000)}`;
+          id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
         }
       } catch (e) { console.warn("ID Check timeout/fail", e); }
     } else {
       while (OFFLINE_STORAGE.some(x => x.id === id)) {
-        id = `CLM-${year}${Math.floor(1000 + Math.random() * 9000)}`;
+        id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
 
     const now = new Date().toISOString();
-    const newClaimData = {
+    const newRMAData = {
       ...c,
-      status: ClaimStatus.PENDING,
+      status: RMAStatus.PENDING,
       history: [{ id: `evt-${Date.now()}`, date: now, type: 'SYSTEM', description: c.createdBy?.includes('Web') ? 'ลูกค้าลงทะเบียนล่วงหน้าผ่านหน้าเว็บ' : 'รับสินค้าเข้าเข้าระบบ', user: currentUser?.name || 'System' }],
       createdAt: isConfigured ? serverTimestamp() : now,
       updatedAt: isConfigured ? serverTimestamp() : now
     };
     if (isConfigured && db) {
       try {
-        await setDoc(doc(db, 'claims', id), newClaimData);
-        return { ...newClaimData, id, createdAt: now, updatedAt: now } as any;
+        await setDoc(doc(db, 'rmas', id), newRMAData);
+        return { ...newRMAData, id, createdAt: now, updatedAt: now } as any;
       } catch (e) {
-        console.warn("Write claim failed, fallback offline", e);
-        // Fallthrough to offline
+        console.warn("Write RMA failed, fallback offline", e);
       }
     }
-    const offlineClaim = { ...newClaimData, id, createdAt: now, updatedAt: now } as Claim;
-    OFFLINE_STORAGE.unshift(offlineClaim);
-    return offlineClaim;
+    const offlineRMA = { ...newRMAData, id, createdAt: now, updatedAt: now } as RMA;
+    OFFLINE_STORAGE.unshift(offlineRMA);
+    return offlineRMA;
   },
-  updateClaim: async (id: string, updates: Partial<Claim>) => {
+  updateRMA: async (id: string, updates: Partial<RMA>) => {
     if (isConfigured && db) {
-      try { await updateDoc(doc(db, 'claims', id), { ...updates, updatedAt: serverTimestamp() }); }
-      catch (e) { console.error("updateClaim failed", e); }
+      try { await updateDoc(doc(db, 'rmas', id), { ...updates, updatedAt: serverTimestamp() }); }
+      catch (e) { console.error("updateRMA failed", e); }
     }
     else { const idx = OFFLINE_STORAGE.findIndex(c => c.id === id); if (idx !== -1) OFFLINE_STORAGE[idx] = { ...OFFLINE_STORAGE[idx], ...updates, updatedAt: new Date().toISOString() }; }
   },
@@ -418,10 +408,10 @@ export const MockDb = {
     if (isConfigured && db) {
       try {
         const snap: any = await Promise.race([
-          getDoc(doc(db, 'claims', id)),
+          getDoc(doc(db, 'rmas', id)),
           new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000))
         ]);
-        if (snap.exists()) await updateDoc(doc(db, 'claims', id), { history: [...snap.data().history, { id: `evt-${Date.now()}`, date: Timestamp.now(), ...evt }], updatedAt: serverTimestamp() });
+        if (snap.exists()) await updateDoc(doc(db, 'rmas', id), { history: [...snap.data().history, { id: `evt-${Date.now()}`, date: Timestamp.now(), ...evt }], updatedAt: serverTimestamp() });
       } catch (e) {
         console.warn("addTimelineEvent failed/timedout", e);
       }
@@ -429,10 +419,10 @@ export const MockDb = {
   },
 
   // --- Delete Functions ---
-  deleteClaim: async (id: string) => {
+  deleteRMA: async (id: string) => {
     if (isConfigured && db) {
-      try { await deleteDoc(doc(db, 'claims', id)); }
-      catch (e) { console.error("deleteClaim failed", e); }
+      try { await deleteDoc(doc(db, 'rmas', id)); }
+      catch (e) { console.error("deleteRMA failed", e); }
     } else {
       OFFLINE_STORAGE = OFFLINE_STORAGE.filter(c => c.id !== id);
     }
@@ -441,7 +431,7 @@ export const MockDb = {
   clearDatabase: async () => {
     if (!isConfigured || !db) return;
     try {
-      const snap = await getDocs(collection(db, 'claims'));
+      const snap = await getDocs(collection(db, 'rmas'));
       const promises = snap.docs.map(d => deleteDoc(d.ref));
       await Promise.all(promises);
       console.log("Database Cleared");
@@ -449,25 +439,25 @@ export const MockDb = {
   },
 
   getStats: async (teamFilter?: Team | 'GROUP_C'): Promise<DashboardStats> => {
-    const all = await MockDb.getAllClaims();
+    const all = await MockDb.getRMAs();
     let filtered = all.filter(c => !!c.team); // Filter out unassigned from main stats
     if (teamFilter) filtered = teamFilter === 'GROUP_C' ? all.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team)) : all.filter(c => c.team === teamFilter);
     const now = new Date();
     const aging = { bucket0_3: 0, bucket4_7: 0, bucket7plus: 0 };
     filtered.forEach(c => {
-      if (![ClaimStatus.CLOSED, ClaimStatus.SHIPPED].includes(c.status)) {
+      if (![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) {
         const diff = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
         if (diff <= 3) aging.bucket0_3++; else if (diff <= 7) aging.bucket4_7++; else aging.bucket7plus++;
       }
     });
     return {
       totalClaims: filtered.length,
-      pendingClaims: filtered.filter(c => ![ClaimStatus.CLOSED, ClaimStatus.SHIPPED].includes(c.status)).length,
-      resolvedThisMonth: filtered.filter(c => c.status === ClaimStatus.CLOSED).length,
+      pendingClaims: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).length,
+      resolvedThisMonth: filtered.filter(c => c.status === RMAStatus.CLOSED).length,
       criticalIssues: aging.bucket7plus,
-      revenuePipeline: filtered.filter(c => c.status === ClaimStatus.WAITING_PARTS).length,
+      revenuePipeline: filtered.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
       avgTurnaroundHours: 48, overdueCount: aging.bucket7plus, agingBuckets: aging,
-      urgentClaims: filtered.filter(c => ![ClaimStatus.CLOSED, ClaimStatus.SHIPPED].includes(c.status)).slice(0, 5)
+      urgentClaims: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).slice(0, 5)
     };
   }
 };

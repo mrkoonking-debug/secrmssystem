@@ -5,7 +5,7 @@
 // ==========================================
 
 // 1. สถานะของงานเคลม (Enum) - ใช้กำหนดค่าคงที่เพื่อป้องกันการพิมพ์ผิด
-export enum ClaimStatus {
+export enum RMAStatus {
   PENDING = 'PENDING',             // รอดำเนินการ (เพิ่งรับของมา)
   DIAGNOSING = 'DIAGNOSING',       // กำลังตรวจเช็ค/วิเคราะห์อาการ
   WAITING_PARTS = 'WAITING_PARTS', // รออะไหล่มาส่ง
@@ -63,10 +63,10 @@ export interface ResolutionDetails {
 // 7. สาเหตุความล่าช้า (Enum)
 export type DelayReason = 'NONE' | 'WAITING_PARTS' | 'WAITING_DISTRIBUTOR' | 'WAITING_CUSTOMER' | 'INTERNAL_QUEUE';
 
-// *** 9. โครงสร้างหลักของใบเคลม (Main Claim Interface) ***
+// *** 9. โครงสร้างหลักของใบเคลม (Main RMA Interface) ***
 // นี่คือ Object ที่ใช้เก็บข้อมูลงานเคลม 1 งาน
-export interface Claim {
-  id: string;               // รหัสอ้างอิงงานเคลม (Primary Key) เช่น CLM-12345
+export interface RMA {
+  id: string;               // รหัสอ้างอิงงานเคลม (Primary Key) เช่น RMA-12345
   groupRequestId?: string;  // รหัสกลุ่มงาน (กรณีลูกค้าส่งมา 10 ตัวในบิลเดียว จะใช้เลขนี้เชื่อมกัน)
   quotationNumber?: string; // เลขที่ใบเสนอราคา (SEC...) *สำคัญมาก*
 
@@ -93,7 +93,7 @@ export interface Claim {
   issueDescription: string; // อาการเสียที่ลูกค้าแจ้งมา
   deviceUsername?: string;   // Username อุปกรณ์ (ถ้ามี)
   devicePassword?: string;   // Password อุปกรณ์ (ถ้ามี)
-  status: ClaimStatus;      // สถานะปัจจุบันของงาน
+  status: RMAStatus;      // สถานะปัจจุบันของงาน
   team: Team;               // ทีมไหนรับผิดชอบ
   lineAccount?: string;     // LINE@ ที่ลูกค้าซื้อจาก (e.g. 'hikcctv', 'dahuacctv')
 
@@ -132,5 +132,5 @@ export interface DashboardStats {
     bucket4_7: number;        // 4-7 วัน
     bucket7plus: number;      // มากกว่า 7 วัน
   };
-  urgentClaims: Claim[];      // รายการงานด่วนที่ต้องรีบดู
+  urgentClaims: RMA[];      // รายการงานด่วนที่ต้องรีบดู
 }

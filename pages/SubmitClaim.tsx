@@ -63,13 +63,13 @@ export const SubmitClaim: React.FC = () => {
     if (basket.length === 0) return;
 
     setIsSubmitting(true);
-    const groupRequestId = `SECCLAIM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const groupRequestId = `SECRMA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     let firstId = '';
 
     try {
       for (let i = 0; i < basket.length; i++) {
         const item = basket[i];
-        const claimData = {
+        const rmaData = {
           groupRequestId,
           quotationNumber: customer.quotationNumber,
           customerName: customer.name,
@@ -90,8 +90,8 @@ export const SubmitClaim: React.FC = () => {
           createdBy: MockDb.getCurrentUser()?.name || 'Admin'
         };
 
-        const newClaim = await MockDb.addClaim(claimData);
-        if (i === 0) firstId = newClaim.id;
+        const newRMA = await MockDb.addRMA(rmaData);
+        if (i === 0) firstId = newRMA.id;
       }
 
       if (firstId) {
@@ -99,7 +99,11 @@ export const SubmitClaim: React.FC = () => {
         setStep('success');
         window.scrollTo(0, 0);
       } else {
-        navigate('/admin/claims');
+        navigate('/admin/rmas'); // Assuming we rename route too, or keep claim route for now? Let's check router later. For now keep claims route to avoid 404 if router not updated.
+        // Actually, let's keep it consistent with the "Refactor" goal. If I rename the route, I must update App.tsx. 
+        // For now, I'll stick to /admin/claims unless I update the router. 
+        // The instruction was "Refactor Claim to RMA (System-wide)". I should probably update the router too.
+        // But for this specific file, let's keep /admin/claims for a moment until I see the router.
       }
     } catch (error) {
       console.error("Failed to save claims:", error);

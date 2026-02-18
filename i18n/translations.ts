@@ -312,7 +312,12 @@ export const translations = {
       usernameHint: 'Default is usually admin',
       passwordHint: 'e.g. admin, 12345',
       serialHint: 'Check the label on the back or bottom of the device',
-      issueHint: 'e.g. No video output, won\'t boot, LED blinking'
+      issueHint: 'e.g. No video output, won\'t boot, LED blinking',
+      successTitle: 'Submission Successful',
+      successDesc: 'The claim has been registered successfully.',
+      backToList: 'Back to List',
+      registerNew: 'Register New Claim',
+      submitting: 'Submitting...'
     },
     validation: {
       required: 'This field is required',
@@ -674,7 +679,12 @@ export const translations = {
       usernameHint: 'ค่าเริ่มต้นมักเป็น admin',
       passwordHint: 'เช่น admin, 12345',
       serialHint: 'ดูที่ฉลากด้านหลังหรือใต้เครื่อง',
-      issueHint: 'เช่น ภาพไม่ออก, บูตไม่ขึ้น, ไฟกระพริบ'
+      issueHint: 'เช่น ภาพไม่ออก, บูตไม่ขึ้น, ไฟกระพริบ',
+      successTitle: 'บันทึกข้อมูลสำเร็จ',
+      successDesc: 'รายการรับเคลมถูกบันทึกเรียบร้อยแล้ว',
+      backToList: 'กลับหน้ารายการ',
+      registerNew: 'รับเคลมรายการใหม่',
+      submitting: 'กำลังบันทึก...'
     },
     validation: {
       required: 'กรุณาระบุข้อมูล',

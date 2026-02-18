@@ -1,4 +1,4 @@
-import { Claim, ClaimStatus, Team, ProductType } from '../types';
+import { RMA, RMAStatus, Team, ProductType } from '../types';
 
 const now = new Date();
 const daysAgo = (days: number) => {
@@ -7,4 +7,4 @@ const daysAgo = (days: number) => {
     return d.toISOString();
 };
 
-export const SEED_CLAIMS: Claim[] = [];
+export const SEED_CLAIMS: RMA[] = [];
