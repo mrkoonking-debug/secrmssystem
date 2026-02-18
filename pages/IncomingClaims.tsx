@@ -1,14 +1,14 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { MockDb } from '../services/mockDb';
-import { Claim, Team } from '../types';
+import { RMA, Team } from '../types';
 import { Package, User, Clock, ArrowRight, CheckCircle2, Loader2, Info, ChevronRight, ChevronDown, Check, Box, Layers, Wifi, Zap, ShoppingBag, Truck } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { GlassSelect } from '../components/GlassSelect';
 
 interface GroupedJob {
     groupId: string;
-    claims: Claim[];
+    rmas: RMA[];
     customerName: string;
     customerEmail: string;
     createdAt: string;
@@ -16,7 +16,7 @@ interface GroupedJob {
 }
 
 export const IncomingClaims: React.FC = () => {
-    const [incoming, setIncoming] = useState<Claim[]>([]);
+    const [incoming, setIncoming] = useState<RMA[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -42,28 +42,28 @@ export const IncomingClaims: React.FC = () => {
 
     const fetchIncoming = async () => {
         setLoading(true);
-        const data = await MockDb.getUnassignedClaims();
+        const data = await MockDb.getUnassignedRMAs();
         setIncoming(data);
         setLoading(false);
     };
 
     useEffect(() => { fetchIncoming(); }, []);
 
-    // Group claims by groupRequestId
+    // Group rmas by groupRequestId
     const groupedJobs: GroupedJob[] = useMemo(() => {
-        const map = new Map<string, Claim[]>();
-        incoming.forEach(claim => {
-            const key = claim.groupRequestId || claim.id;
+        const map = new Map<string, RMA[]>();
+        incoming.forEach(rma => {
+            const key = rma.groupRequestId || rma.id;
             if (!map.has(key)) map.set(key, []);
-            map.get(key)!.push(claim);
+            map.get(key)!.push(rma);
         });
-        return Array.from(map.entries()).map(([groupId, claims]) => ({
+        return Array.from(map.entries()).map(([groupId, rmas]) => ({
             groupId,
-            claims,
-            customerName: claims[0].customerName,
-            customerEmail: claims[0].customerEmail,
-            createdAt: claims[0].createdAt,
-            quotationNumber: claims[0].quotationNumber || 'N/A',
+            rmas,
+            customerName: rmas[0].customerName,
+            customerEmail: rmas[0].customerEmail,
+            createdAt: rmas[0].createdAt,
+            quotationNumber: rmas[0].quotationNumber || 'N/A',
         }));
     }, [incoming]);
 
@@ -86,14 +86,14 @@ export const IncomingClaims: React.FC = () => {
         if (!finalTeam) return;
         setIsAssigning(true);
 
-        // Assign ALL claims in the group
-        for (const claim of job.claims) {
-            await MockDb.updateClaim(claim.id, {
+        // Assign ALL rmas in the group
+        for (const rma of job.rmas) {
+            await MockDb.updateRMA(rma.id, {
                 team: finalTeam as Team,
                 updatedAt: new Date().toISOString()
             });
 
-            await MockDb.addTimelineEvent(claim.id, {
+            await MockDb.addTimelineEvent(rma.id, {
                 type: 'SYSTEM',
                 description: `พนักงานรับเรื่องเข้าทีม: ${t(`teams.${finalTeam.toLowerCase()}`)}`,
                 user: MockDb.getCurrentUser()?.name || 'Staff'
@@ -148,7 +148,7 @@ export const IncomingClaims: React.FC = () => {
                                                         {job.customerName}
                                                         <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0071e3]/10 text-[#0071e3] rounded-full text-sm font-bold">
                                                             <Package className="w-4 h-4" />
-                                                            {job.claims.length} {job.claims.length === 1 ? 'item' : 'items'}
+                                                            {job.rmas.length} {job.rmas.length === 1 ? 'item' : 'items'}
                                                         </span>
                                                     </h3>
                                                     <div className="text-sm text-gray-500 mt-1">{job.customerEmail}</div>
@@ -168,7 +168,7 @@ export const IncomingClaims: React.FC = () => {
                                             {/* Expand/Collapse hint */}
                                             <button className="flex items-center gap-2 text-sm text-[#0071e3] font-semibold hover:underline transition-colors">
                                                 {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                                {isExpanded ? 'ซ่อนรายละเอียด' : `ดูรายละเอียด ${job.claims.length} รายการ`}
+                                                {isExpanded ? 'ซ่อนรายละเอียด' : `ดูรายละเอียด ${job.rmas.length} รายการ`}
                                             </button>
                                         </div>
 
@@ -189,23 +189,23 @@ export const IncomingClaims: React.FC = () => {
                                     {isExpanded && (
                                         <div className="border-t border-gray-100 dark:border-white/5 pt-6 animate-slide-up">
                                             <div className="space-y-3">
-                                                {job.claims.map((claim, idx) => (
-                                                    <div key={claim.id} className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl flex flex-col md:flex-row md:items-center gap-4">
+                                                {job.rmas.map((rma, idx) => (
+                                                    <div key={rma.id} className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl flex flex-col md:flex-row md:items-center gap-4">
                                                         <div className="w-8 h-8 rounded-full bg-[#0071e3]/10 text-[#0071e3] flex items-center justify-center text-sm font-bold flex-shrink-0">
                                                             {idx + 1}
                                                         </div>
                                                         <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
                                                             <div>
                                                                 <div className="text-[10px] font-bold text-gray-400 uppercase">Brand / Model</div>
-                                                                <div className="text-sm font-bold text-[#1d1d1f] dark:text-white">{claim.brand} {claim.productModel}</div>
+                                                                <div className="text-sm font-bold text-[#1d1d1f] dark:text-white">{rma.brand} {rma.productModel}</div>
                                                             </div>
                                                             <div>
                                                                 <div className="text-[10px] font-bold text-gray-400 uppercase">S/N</div>
-                                                                <div className="text-sm font-mono text-[#1d1d1f] dark:text-gray-300">{claim.serialNumber}</div>
+                                                                <div className="text-sm font-mono text-[#1d1d1f] dark:text-gray-300">{rma.serialNumber}</div>
                                                             </div>
                                                             <div className="md:col-span-2">
                                                                 <div className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1"><Info className="w-3 h-3" /> Issue</div>
-                                                                <div className="text-sm text-[#1d1d1f] dark:text-gray-300 line-clamp-2">{claim.issueDescription}</div>
+                                                                <div className="text-sm text-[#1d1d1f] dark:text-gray-300 line-clamp-2">{rma.issueDescription}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -283,7 +283,7 @@ export const IncomingClaims: React.FC = () => {
                                                     onClick={() => handleAssignGroup(job)}
                                                     className="px-10 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95"
                                                 >
-                                                    {isAssigning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> {t('incoming.assignBtn')} ({job.claims.length} items)</>}
+                                                    {isAssigning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> {t('incoming.assignBtn')} ({job.rmas.length} items)</>}
                                                 </button>
                                             </div>
                                         </div>

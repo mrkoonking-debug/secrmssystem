@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Claim, ClaimStatus } from '../types';
+import { RMA, RMAStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { ArrowLeft, Search, RefreshCw, Package, CheckCircle2, Settings, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,7 +12,7 @@ import { LanguageToggle } from '../components/LanguageToggle';
 export const CustomerStatus: React.FC = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q');
-  const [claims, setClaims] = useState<Claim[]>([]);
+  const [rmas, setRMAs] = useState<RMA[]>([]);
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
@@ -20,42 +20,42 @@ export const CustomerStatus: React.FC = () => {
     if (query) {
       setLoading(true);
       const search = async () => {
-        const results = await MockDb.searchClaimsPublic(query);
-        setClaims(results);
+        const results = await MockDb.searchRMAsPublic(query);
+        setRMAs(results);
         setLoading(false);
       };
       search();
     }
   }, [query]);
 
-  const getStepStatus = (status: ClaimStatus) => {
-    switch(status) {
-        case ClaimStatus.PENDING: return 0;
-        case ClaimStatus.DIAGNOSING: return 1;
-        case ClaimStatus.WAITING_PARTS: return 2;
-        case ClaimStatus.REPAIRED: return 3;
-        case ClaimStatus.SHIPPED: return 3;
-        case ClaimStatus.CLOSED: return 3;
-        case ClaimStatus.REJECTED: return 3;
-        default: return 0;
+  const getStepStatus = (status: RMAStatus) => {
+    switch (status) {
+      case RMAStatus.PENDING: return 0;
+      case RMAStatus.DIAGNOSING: return 1;
+      case RMAStatus.WAITING_PARTS: return 2;
+      case RMAStatus.REPAIRED: return 3;
+      case RMAStatus.SHIPPED: return 3;
+      case RMAStatus.CLOSED: return 3;
+      case RMAStatus.REJECTED: return 3;
+      default: return 0;
     }
   };
 
   if (loading) {
-      return (
-          <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] dark:bg-black">
-              <div className="w-8 h-8 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-      );
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7] dark:bg-black">
+        <div className="w-8 h-8 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
-  if (!query || claims.length === 0) {
+  if (!query || rmas.length === 0) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] dark:bg-black pt-20 px-4 flex flex-col items-center">
         <h2 className="text-4xl font-bold mb-4">{t('public.notFound')}</h2>
         <p className="text-[#86868b] mb-8">{t('public.notFoundDesc')}</p>
         <Link to="/" className="px-8 py-3 bg-[#0071e3] text-white rounded-full font-bold shadow-lg shadow-blue-500/20">
-           {t('public.tryAgain')}
+          {t('public.tryAgain')}
         </Link>
       </div>
     );
@@ -64,73 +64,73 @@ export const CustomerStatus: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-black pb-20 px-4 md:px-6">
       <div className="max-w-2xl mx-auto py-8 flex items-center justify-between">
-         <Link to="/" className="flex items-center text-sm font-semibold text-[#0071e3]">
-            <ArrowLeft className="h-4 w-4 mr-2"/> {t('public.searchBtn')}
-         </Link>
-         <div className="flex gap-2">
-             <ThemeToggle />
-             <LanguageToggle />
-         </div>
+        <Link to="/" className="flex items-center text-sm font-semibold text-[#0071e3]">
+          <ArrowLeft className="h-4 w-4 mr-2" /> {t('public.searchBtn')}
+        </Link>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
       </div>
 
       <div className="max-w-2xl mx-auto">
         <div className="mb-12 animate-slide-up">
-             <div className="text-[11px] font-bold text-[#0071e3] uppercase tracking-wider mb-1">{t('track.reference')}</div>
-             <h1 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">{claims[0].quotationNumber || claims[0].id}</h1>
-             <p className="text-[#86868b] text-lg mt-1">{claims[0].customerName}</p>
+          <div className="text-[11px] font-bold text-[#0071e3] uppercase tracking-wider mb-1">{t('track.reference')}</div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">{rmas[0].quotationNumber || rmas[0].id}</h1>
+          <p className="text-[#86868b] text-lg mt-1">{rmas[0].customerName}</p>
         </div>
 
-        <div className="space-y-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
-            {claims.map((claim) => {
-                const currentStep = getStepStatus(claim.status);
-                const steps = [
-                    { label: t('statusSteps.received'), icon: Package },
-                    { label: t('statusSteps.checking'), icon: Search },
-                    { label: t('statusSteps.processing'), icon: Settings },
-                    { label: t('statusSteps.ready'), icon: CheckCircle2 }
-                ];
+        <div className="space-y-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          {rmas.map((rma) => {
+            const currentStep = getStepStatus(rma.status);
+            const steps = [
+              { label: t('statusSteps.received'), icon: Package },
+              { label: t('statusSteps.checking'), icon: Search },
+              { label: t('statusSteps.processing'), icon: Settings },
+              { label: t('statusSteps.ready'), icon: CheckCircle2 }
+            ];
 
-                return (
-                    <div key={claim.id} className="glass-panel p-8">
-                        <div className="flex justify-between items-start mb-10">
-                            <div>
-                                <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-1">{claim.productModel}</h3>
-                                <div className="text-xs font-mono text-[#86868b]">S/N: {claim.serialNumber}</div>
-                            </div>
-                            <StatusBadge status={claim.status} />
-                        </div>
+            return (
+              <div key={rma.id} className="glass-panel p-8">
+                <div className="flex justify-between items-start mb-10">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-1">{rma.productModel}</h3>
+                    <div className="text-xs font-mono text-[#86868b]">S/N: {rma.serialNumber}</div>
+                  </div>
+                  <StatusBadge status={rma.status} />
+                </div>
 
-                        {/* Visual Colored Stepper */}
-                        <div className="relative flex justify-between items-center w-full px-2">
-                             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 dark:bg-[#2c2c2e] z-0 rounded-full"></div>
-                             <div 
-                                className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#0071e3] transition-all duration-1000 ease-out z-0 rounded-full"
-                                style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-                             ></div>
+                {/* Visual Colored Stepper */}
+                <div className="relative flex justify-between items-center w-full px-2">
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 dark:bg-[#2c2c2e] z-0 rounded-full"></div>
+                  <div
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#0071e3] transition-all duration-1000 ease-out z-0 rounded-full"
+                    style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+                  ></div>
 
-                             {steps.map((step, idx) => {
-                                 const isCompleted = idx <= currentStep;
-                                 const isActive = idx === currentStep;
-                                 
-                                 return (
-                                     <div key={idx} className="relative z-10 flex flex-col items-center">
-                                         <div className={`
+                  {steps.map((step, idx) => {
+                    const isCompleted = idx <= currentStep;
+                    const isActive = idx === currentStep;
+
+                    return (
+                      <div key={idx} className="relative z-10 flex flex-col items-center">
+                        <div className={`
                                             w-6 h-6 rounded-full border-4 transition-all duration-500 flex items-center justify-center
                                             ${isCompleted ? 'bg-[#0071e3] border-white dark:border-[#1c1c1e] text-white' : 'bg-gray-100 dark:bg-[#2c2c2e] border-white dark:border-[#1c1c1e] text-gray-400'}
                                             ${isActive ? 'ring-4 ring-blue-500/20 scale-125' : ''}
                                          `}>
-                                            {isCompleted && <CheckCircle2 className="w-3 h-3"/>}
-                                         </div>
-                                         <span className={`text-[10px] font-bold uppercase tracking-wider mt-4 ${isActive ? 'text-[#1d1d1f] dark:text-white' : 'text-[#86868b]'}`}>
-                                            {step.label}
-                                         </span>
-                                     </div>
-                                 );
-                             })}
+                          {isCompleted && <CheckCircle2 className="w-3 h-3" />}
                         </div>
-                    </div>
-                );
-            })}
+                        <span className={`text-[10px] font-bold uppercase tracking-wider mt-4 ${isActive ? 'text-[#1d1d1f] dark:text-white' : 'text-[#86868b]'}`}>
+                          {step.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

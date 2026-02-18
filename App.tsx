@@ -48,7 +48,7 @@ const AppContent: React.FC = () => {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/admin/claims" element={<ProtectedRoute><ClaimsList /></ProtectedRoute>} />
+                  <Route path="/admin/rmas" element={<ProtectedRoute><ClaimsList /></ProtectedRoute>} />
                   <Route path="/admin/incoming" element={<ProtectedRoute><IncomingClaims /></ProtectedRoute>} />
                   <Route path="/admin/job/:jobId" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
                   <Route path="/admin/submit" element={<ProtectedRoute><SubmitClaim /></ProtectedRoute>} />

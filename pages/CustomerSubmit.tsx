@@ -77,7 +77,7 @@ export const CustomerSubmit: React.FC = () => {
 
     const processSubmission = async (items: any[]) => {
         setIsSubmitting(true);
-        const groupRequestId = `SECCLAIM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const groupRequestId = `SECRMA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
         try {
             // Create a promise that rejects after 15 seconds
@@ -87,7 +87,7 @@ export const CustomerSubmit: React.FC = () => {
 
             const submissionPromise = async () => {
                 for (const item of items) {
-                    await MockDb.addClaim({
+                    await MockDb.addRMA({
                         groupRequestId,
                         customerName: `${customer.companyName} - ${customer.contactName}`,
                         customerEmail: customer.email,

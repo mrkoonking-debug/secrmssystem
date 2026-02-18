@@ -4,7 +4,7 @@ import { MockDb } from '../services/mockDb';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileDown, Filter, Calendar, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ClaimStatus } from '../types';
+
 
 export const ReportsPage: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -13,11 +13,11 @@ export const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const claims = await MockDb.getAllClaims();
+      const rmas = await MockDb.getRMAs();
 
       // Group by Brand
       const brandStats: Record<string, number> = {};
-      claims.forEach(c => {
+      rmas.forEach(c => {
         brandStats[c.brand] = (brandStats[c.brand] || 0) + 1;
       });
 

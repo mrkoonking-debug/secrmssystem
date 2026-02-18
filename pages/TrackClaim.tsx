@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Claim, ClaimStatus, ResolutionDetails, DelayReason, Team } from '../types';
+import { RMA, RMAStatus, ResolutionDetails, DelayReason, Team } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { ArrowLeft, Save, Truck, CheckCircle2, AlertOctagon, Timer, PackageCheck, FileText, Clock, RefreshCw, Loader2, Box, Layers, Wifi, Zap, ShoppingBag, ChevronDown, ShieldCheck, Pencil, X, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,7 +20,7 @@ export const TrackClaim: React.FC = () => {
     const [searchParams] = useSearchParams();
     const id = searchParams.get('id');
     const navigate = useNavigate();
-    const [claim, setClaim] = useState<Claim | null>(null);
+    const [rma, setRMA] = useState<RMA | null>(null);
     const [loading, setLoading] = useState(true);
     const [retryCount, setRetryCount] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -29,7 +29,7 @@ export const TrackClaim: React.FC = () => {
     const { t } = useLanguage();
 
     const [note, setNote] = useState('');
-    const [status, setStatus] = useState<ClaimStatus>(ClaimStatus.PENDING);
+    const [status, setStatus] = useState<RMAStatus>(RMAStatus.PENDING);
     const [shipmentConfig, setShipmentConfig] = useState<string[]>([]);
     const [resolution, setResolution] = useState<ResolutionDetails>({ actionTaken: '', rootCause: '', vendorTicketRef: '', technicalNotes: '', replacedSerialNumber: '' });
     const [delayReason, setDelayReason] = useState<DelayReason>('NONE');
@@ -56,15 +56,15 @@ export const TrackClaim: React.FC = () => {
     }, [t]);
 
     useEffect(() => {
-        const fetchClaim = async () => {
+        const fetchRMA = async () => {
             if (!id) {
                 setLoading(false);
                 return;
             }
 
-            const c = await MockDb.getClaimById(id);
+            const c = await MockDb.getRMAById(id);
             if (c) {
-                setClaim(c);
+                setRMA(c);
                 setStatus(c.status);
                 if (c.resolution) setResolution(c.resolution);
                 if (c.delayReason) setDelayReason(c.delayReason);
@@ -85,46 +85,46 @@ export const TrackClaim: React.FC = () => {
                 setLoading(false);
             }
         };
-        fetchClaim();
+        fetchRMA();
     }, [id, retryCount]);
 
     const handleSave = async () => {
-        if (!claim || isSaving) return;
+        if (!rma || isSaving) return;
         setIsSaving(true);
 
         try {
-            const updates: Partial<Claim> = {
+            const updates: Partial<RMA> = {
                 status,
                 resolution,
                 delayReason,
                 distributorSentItems: shipmentConfig,
-                repairCosts: { ...claim.repairCosts, labor: claim.repairCosts?.labor || 0, parts: claim.repairCosts?.parts || 0, warrantyStatus }
+                repairCosts: { ...rma.repairCosts, labor: rma.repairCosts?.labor || 0, parts: rma.repairCosts?.parts || 0, warrantyStatus }
             };
 
             // Handle Team Change
             const currentUser = MockDb.getCurrentUser();
             const userName = currentUser?.name || 'Admin';
 
-            if (tempTeam && tempTeam !== claim.team) {
+            if (tempTeam && tempTeam !== rma.team) {
                 updates.team = tempTeam as Team;
-                await MockDb.addTimelineEvent(claim.id, {
+                await MockDb.addTimelineEvent(rma.id, {
                     type: 'SYSTEM',
-                    description: `แก้ไขทีมผู้ดูแล: ${t(`teams.${teamKey(claim.team)}`)} -> ${t(`teams.${teamKey(tempTeam)}`)}`,
+                    description: `แก้ไขทีมผู้ดูแล: ${t(`teams.${teamKey(rma.team)}`)} -> ${t(`teams.${teamKey(tempTeam)}`)}`,
                     user: userName
                 });
             }
 
-            if (status !== claim.status) {
-                await MockDb.addTimelineEvent(claim.id, { type: 'STATUS_CHANGE', description: `Status updated to ${status}`, user: userName });
+            if (status !== rma.status) {
+                await MockDb.addTimelineEvent(rma.id, { type: 'STATUS_CHANGE', description: `Status updated to ${status}`, user: userName });
             }
 
-            await MockDb.updateClaim(claim.id, updates);
+            await MockDb.updateRMA(rma.id, updates);
 
-            if (note.trim()) { await MockDb.addTimelineEvent(claim.id, { type: 'NOTE', description: note, user: userName }); setNote(''); }
+            if (note.trim()) { await MockDb.addTimelineEvent(rma.id, { type: 'NOTE', description: note, user: userName }); setNote(''); }
 
-            const updated = await MockDb.getClaimById(claim.id);
+            const updated = await MockDb.getRMAById(rma.id);
             if (updated) {
-                setClaim(updated);
+                setRMA(updated);
                 setIsChangingTeam(false);
                 // Extract the latest timeline event for the popup
                 const latestEvent = updated.history && updated.history.length > 0
@@ -135,7 +135,7 @@ export const TrackClaim: React.FC = () => {
                 setTimeout(() => setShowSuccess(false), 2500);
             }
         } catch (error) {
-            console.error("Failed to save claim", error);
+            console.error("Failed to save RMA", error);
         } finally {
             setIsSaving(false);
         }
@@ -163,26 +163,26 @@ export const TrackClaim: React.FC = () => {
         </div>
     );
 
-    if (!claim) return (
+    if (!rma) return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center p-10 text-center animate-fade-in">
             <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6">
                 <AlertOctagon className="w-10 h-10 text-red-500" />
             </div>
-            <h2 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-2">Claim not found</h2>
+            <h2 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-2">RMA not found</h2>
             <div className="flex gap-3">
                 <button onClick={() => { setRetryCount(0); setLoading(true); }} className="px-8 py-3 bg-gray-100 dark:bg-white/10 rounded-full text-sm font-bold flex items-center gap-2">
                     <RefreshCw className="w-4 h-4" /> ลองใหม่
                 </button>
-                <Link to="/admin/claims" className="px-8 py-3 bg-[#0071e3] text-white rounded-full text-sm font-bold">ไปหน้ารายการทั้งหมด</Link>
+                <Link to="/admin/rmas" className="px-8 py-3 bg-[#0071e3] text-white rounded-full text-sm font-bold">ไปหน้ารายการทั้งหมด</Link>
             </div>
         </div>
     );
 
-    const availableItems = [`Main Unit (${claim.productModel})`, ...claim.accessories];
-    const daysOpen = Math.floor((Date.now() - new Date(claim.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-    const isOverdue = daysOpen > 7 && ![ClaimStatus.CLOSED, ClaimStatus.REPAIRED, ClaimStatus.SHIPPED].includes(claim.status);
+    const availableItems = [`Main Unit (${rma.productModel})`, ...rma.accessories];
+    const daysOpen = Math.floor((Date.now() - new Date(rma.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+    const isOverdue = daysOpen > 7 && ![RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.SHIPPED].includes(rma.status);
 
-    const statusOptions = Object.values(ClaimStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
+    const statusOptions = Object.values(RMAStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
     const delayOptions = ['NONE', 'WAITING_PARTS', 'WAITING_DISTRIBUTOR', 'WAITING_CUSTOMER', 'INTERNAL_QUEUE'].map(d => ({ value: d, label: t(`delays.${d}`) }));
     const actionOptions = [
         { value: "Replaced Component", label: t('actions.replaced_component') },
@@ -196,15 +196,15 @@ export const TrackClaim: React.FC = () => {
     const showNewSerialInput = resolution.actionTaken === "Swapped Unit" || resolution.actionTaken === "Replaced Component";
 
     // เรียงลำดับประวัติให้ล่าสุดอยู่บนสุด
-    const sortedHistory = claim.history ? [...claim.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [];
+    const sortedHistory = rma.history ? [...rma.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [];
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between mb-8 px-2">
-                <Link to="/admin/claims" className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> {t('track.backToList')}</Link>
+                <Link to="/admin/rmas" className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> {t('track.backToList')}</Link>
                 <div className="flex items-center gap-3">
                     <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${isOverdue ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-white dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#424245]'}`}><Timer className="w-4 h-4" />{daysOpen} {t('track.days')} {t('track.timeOpen')}</div>
-                    <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white dark:bg-[#2c2c2e] rounded-full border border-gray-200 dark:border-[#424245]">ID: {claim.id}</div>
+                    <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white dark:bg-[#2c2c2e] rounded-full border border-gray-200 dark:border-[#424245]">ID: {rma.id}</div>
                 </div>
             </div>
 
@@ -213,17 +213,17 @@ export const TrackClaim: React.FC = () => {
                 <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 border border-gray-100 dark:border-[#333]">
                     <div className="flex justify-between items-start mb-6">
                         <div>
-                            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">{t(`teams.${teamKey(claim.team)}`)}</div>
-                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{claim.productModel}</h1>
-                            <p className="text-gray-500 font-medium">{claim.brand} • {claim.serialNumber}</p>
+                            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">{t(`teams.${teamKey(rma.team)}`)}</div>
+                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{rma.productModel}</h1>
+                            <p className="text-gray-500 font-medium">{rma.brand} • {rma.serialNumber}</p>
                         </div>
-                        <StatusBadge status={claim.status} isOverdue={isOverdue} />
+                        <StatusBadge status={rma.status} isOverdue={isOverdue} />
                     </div>
                     <div className="p-6 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/10 rounded-2xl">
                         <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2 flex items-center gap-2">
                             {t('track.issueReported')}
                             {!isEditingIssue && (
-                                <button onClick={() => { setIsEditingIssue(true); setEditIssueText(claim.issueDescription); }} className="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-400 hover:text-blue-600 transition-colors" title="Edit Issue"><Pencil className="w-3 h-3" /></button>
+                                <button onClick={() => { setIsEditingIssue(true); setEditIssueText(rma.issueDescription); }} className="p-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-400 hover:text-blue-600 transition-colors" title="Edit Issue"><Pencil className="w-3 h-3" /></button>
                             )}
                         </span>
                         {isEditingIssue ? (
@@ -239,10 +239,10 @@ export const TrackClaim: React.FC = () => {
                                         onClick={async () => {
                                             const newIssue = editIssueText.trim();
                                             if (!newIssue) return;
-                                            await MockDb.updateClaim(claim.id, { issueDescription: newIssue, updatedAt: new Date().toISOString() });
-                                            await MockDb.addTimelineEvent(claim.id, { type: 'SYSTEM', description: `แก้ไขอาการที่แจ้ง`, user: MockDb.getCurrentUser()?.name || 'Staff' });
-                                            const updated = await MockDb.getClaimById(claim.id);
-                                            if (updated) setClaim(updated);
+                                            await MockDb.updateRMA(rma.id, { issueDescription: newIssue, updatedAt: new Date().toISOString() });
+                                            await MockDb.addTimelineEvent(rma.id, { type: 'SYSTEM', description: `แก้ไขอาการที่แจ้ง`, user: MockDb.getCurrentUser()?.name || 'Staff' });
+                                            const updated = await MockDb.getRMAById(rma.id);
+                                            if (updated) setRMA(updated);
                                             setIsEditingIssue(false);
                                         }}
                                         disabled={!editIssueText.trim()}
@@ -252,7 +252,7 @@ export const TrackClaim: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-[#1d1d1f] dark:text-gray-200 leading-relaxed">{claim.issueDescription}</p>
+                            <p className="text-[#1d1d1f] dark:text-gray-200 leading-relaxed">{rma.issueDescription}</p>
                         )}
                     </div>
                     {/* Distributor */}
@@ -260,7 +260,7 @@ export const TrackClaim: React.FC = () => {
                         <div className="text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
                             <Truck className="w-3 h-3" /> {t('submit.distributor')}
                             {!isEditingDist && (
-                                <button onClick={() => { setIsEditingDist(true); setEditDistValue(claim.distributor || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Distributor"><Pencil className="w-3 h-3" /></button>
+                                <button onClick={() => { setIsEditingDist(true); setEditDistValue(rma.distributor || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Distributor"><Pencil className="w-3 h-3" /></button>
                             )}
                         </div>
                         {isEditingDist ? (
@@ -286,10 +286,10 @@ export const TrackClaim: React.FC = () => {
                                     onClick={async () => {
                                         const newDist = editDistValue === 'Other' ? customDistValue.trim() : editDistValue;
                                         if (!newDist) return;
-                                        await MockDb.updateClaim(claim.id, { distributor: newDist, updatedAt: new Date().toISOString() });
-                                        await MockDb.addTimelineEvent(claim.id, { type: 'SYSTEM', description: `เปลี่ยน Distributor เป็น: ${newDist}`, user: MockDb.getCurrentUser()?.name || 'Staff' });
-                                        const updated = await MockDb.getClaimById(claim.id);
-                                        if (updated) setClaim(updated);
+                                        await MockDb.updateRMA(rma.id, { distributor: newDist, updatedAt: new Date().toISOString() });
+                                        await MockDb.addTimelineEvent(rma.id, { type: 'SYSTEM', description: `เปลี่ยน Distributor เป็น: ${newDist}`, user: MockDb.getCurrentUser()?.name || 'Staff' });
+                                        const updated = await MockDb.getRMAById(rma.id);
+                                        if (updated) setRMA(updated);
                                         setIsEditingDist(false); setEditDistValue(''); setCustomDistValue('');
                                     }}
                                     disabled={!editDistValue || (editDistValue === 'Other' && !customDistValue.trim())}
@@ -298,7 +298,7 @@ export const TrackClaim: React.FC = () => {
                                 <button onClick={() => { setIsEditingDist(false); setEditDistValue(''); setCustomDistValue(''); }} className="p-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-300 transition-colors"><X className="w-4 h-4" /></button>
                             </div>
                         ) : (
-                            <p className="text-sm font-medium text-[#1d1d1f] dark:text-white">{claim.distributor || '-'}</p>
+                            <p className="text-sm font-medium text-[#1d1d1f] dark:text-white">{rma.distributor || '-'}</p>
                         )}
                     </div>
                 </div>
@@ -309,7 +309,7 @@ export const TrackClaim: React.FC = () => {
 
                     {/* Row 1: Status + Team + Warranty */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div><GlassSelect label={t('track.statusLabel')} value={status} onChange={val => setStatus(val as ClaimStatus)} options={statusOptions} /></div>
+                        <div><GlassSelect label={t('track.statusLabel')} value={status} onChange={val => setStatus(val as RMAStatus)} options={statusOptions} /></div>
                         <div>
                             <div className="flex justify-between items-center mb-2 ml-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('track.assignedTeam')}</label>
@@ -335,7 +335,7 @@ export const TrackClaim: React.FC = () => {
                                             ))}
                                         </div>
                                     )}
-                                    <button onClick={() => { setIsChangingTeam(false); setTempTeam(claim.team); }} className="w-full py-1 text-[10px] text-gray-400 hover:text-red-500">Cancel</button>
+                                    <button onClick={() => { setIsChangingTeam(false); setTempTeam(rma.team); }} className="w-full py-1 text-[10px] text-gray-400 hover:text-red-500">Cancel</button>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-sm font-bold text-[#1d1d1f] dark:text-white">
@@ -398,8 +398,8 @@ export const TrackClaim: React.FC = () => {
 
                     {/* Print Forms */}
                     <div className="pt-6 mt-6 border-t border-gray-200/50 dark:border-white/10 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <Link to={`/admin/document/importer/${claim.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-colors border border-gray-100 dark:border-[#333]"><div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg"><FileText className="w-4 h-4" /></div><span className="text-sm font-medium text-[#1d1d1f] dark:text-white">{t('track.distributorForm')}</span></Link>
-                        <Link to={`/admin/document/customer/${claim.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-colors border border-gray-100 dark:border-[#333]"><div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg"><FileText className="w-4 h-4" /></div><span className="text-sm font-medium text-[#1d1d1f] dark:text-white">{t('track.customerForm')}</span></Link>
+                        <Link to={`/admin/document/importer/${rma.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-colors border border-gray-100 dark:border-[#333]"><div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg"><FileText className="w-4 h-4" /></div><span className="text-sm font-medium text-[#1d1d1f] dark:text-white">{t('track.distributorForm')}</span></Link>
+                        <Link to={`/admin/document/customer/${rma.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-colors border border-gray-100 dark:border-[#333]"><div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg"><FileText className="w-4 h-4" /></div><span className="text-sm font-medium text-[#1d1d1f] dark:text-white">{t('track.customerForm')}</span></Link>
                     </div>
                 </div>
 

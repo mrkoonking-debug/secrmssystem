@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Claim } from '../types';
+import { RMA } from '../types';
 import { getImporterFormHTML, getCustomerFormHTML } from '../services/printService';
 import { ArrowLeft, Printer, Download, Loader2, Image as ImageIcon, X, Check, Copy } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -10,7 +10,7 @@ import html2canvas from 'html2canvas';
 export const DocumentPreview: React.FC = () => {
     const { type, id } = useParams<{ type: string; id: string }>();
     const navigate = useNavigate();
-    const [claim, setClaim] = useState<Claim | null>(null);
+    const [rma, setRMA] = useState<RMA | null>(null);
     const [htmlContent, setHtmlContent] = useState('');
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -21,15 +21,15 @@ export const DocumentPreview: React.FC = () => {
     useEffect(() => {
         const fetchDoc = async () => {
             if (id) {
-                const found = await MockDb.getClaimById(id);
+                const found = await MockDb.getRMAById(id);
                 if (found) {
-                    setClaim(found);
+                    setRMA(found);
                     let content = '';
                     if (type === 'importer') content = await getImporterFormHTML(found);
                     else if (type === 'customer') content = await getCustomerFormHTML(found);
                     setHtmlContent(content);
                 } else {
-                    navigate('/admin/claims');
+                    navigate('/admin/rmas');
                 }
             }
         };
@@ -74,7 +74,7 @@ export const DocumentPreview: React.FC = () => {
         if (imageUrl) {
             const link = document.createElement('a');
             link.href = imageUrl;
-            link.download = `claim-${id}-${type}.jpg`;
+            link.download = `rma-${id}-${type}.jpg`;
             link.click();
         }
     };
@@ -117,12 +117,12 @@ export const DocumentPreview: React.FC = () => {
         }
     };
 
-    if (!claim) return <div className="flex items-center justify-center min-h-[60vh] text-gray-500"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading Document...</div>;
+    if (!rma) return <div className="flex items-center justify-center min-h-[60vh] text-gray-500"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading Document...</div>;
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8 px-2">
-                <Link to={`/admin/track?id=${id}`} className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Claim</Link>
+                <Link to={`/admin/track?id=${id}`} className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> Back to RMA</Link>
                 <div className="flex items-center gap-3"><h1 className="text-xl font-bold text-[#1d1d1f] dark:text-white capitalize">{type === 'importer' ? 'Distributor RMA' : 'Customer Return'} Form</h1><div className="text-xs font-mono text-gray-400 px-2 py-1 bg-white/50 dark:bg-white/10 rounded-lg border border-gray-200 dark:border-white/10">{id}</div></div>
             </div>
 

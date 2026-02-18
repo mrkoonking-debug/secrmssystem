@@ -22,10 +22,10 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
   useEffect(() => {
     setUser(MockDb.getCurrentUser());
 
-    // Function to update the count of unassigned claims
+    // Function to update the count of unassigned rmas
     const checkIncoming = async () => {
       try {
-        const incoming = await MockDb.getUnassignedClaims();
+        const incoming = await MockDb.getUnassignedRMAs();
         setUnassignedCount(incoming.length);
       } catch (err) {
         console.error("Failed to fetch unassigned count", err);
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
           <div className="text-[10px] font-bold text-[#86868b] uppercase tracking-widest mb-2 mt-2 pl-4">Management</div>
           <NavLink to="/admin/dashboard" label={t('nav.overview')} icon={LayoutGrid} />
           <NavLink to="/admin/incoming" label={t('nav.incoming')} icon={Bell} badgeCount={unassignedCount} />
-          <NavLink to="/admin/claims" label={t('nav.claims')} icon={List} />
+          <NavLink to="/admin/rmas" label={t('nav.claims')} icon={List} />
           <NavLink to="/admin/submit" label={t('nav.newRequest')} icon={PlusCircle} />
           <NavLink to="/admin/reports" label={t('nav.reports')} icon={BarChart3} />
 

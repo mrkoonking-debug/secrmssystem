@@ -1,5 +1,5 @@
 
-import { Claim } from '../types';
+import { RMA } from '../types';
 import { translations } from '../i18n/translations';
 import { MockDb } from './mockDb';
 
@@ -47,9 +47,9 @@ const getLogoHTML = (settings: any) => `
   </div>
 `;
 
-const getImagesHTML = (claim: Claim) => {
-  if (!claim.attachments || claim.attachments.length === 0) return '';
-  const images = claim.attachments.map(att => `
+const getImagesHTML = (rma: RMA) => {
+  if (!rma.attachments || rma.attachments.length === 0) return '';
+  const images = rma.attachments.map(att => `
         <div style="text-align: center;">
             <img src="${att.previewUrl || ''}" style="max-width: 100%; max-height: 150px; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" />
             <div style="font-size: 10px; color: #666; margin-top: 4px;">${att.fileName}</div>
@@ -108,7 +108,7 @@ const getCommonStyles = () => `
   </style>
 `;
 
-export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
+export const getImporterFormHTML = async (rma: RMA): Promise<string> => {
   const settings = await MockDb.getSettings();
   return `
     ${getCommonStyles()}
@@ -121,14 +121,14 @@ export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div class="label">Reference ID</div>
-          <div class="value" style="font-size: 18px; font-weight: bold;">${claim.id}</div>
+          <div class="value" style="font-size: 18px; font-weight: bold;">${rma.id}</div>
           <div class="value" style="font-size: 12px;">Date: ${new Date().toLocaleDateString('th-TH')}</div>
         </div>
       </div>
       <div class="meta-grid">
         <div class="box">
           <div class="label">To Distributor (เรียน ผู้นำเข้า)</div>
-          <div class="value" style="font-size: 15px; font-weight: bold;">${claim.distributor}</div>
+          <div class="value" style="font-size: 15px; font-weight: bold;">${rma.distributor}</div>
           <div class="value" style="font-size: 12px;">RMA / Service Department</div>
         </div>
         <div class="box">
@@ -137,7 +137,7 @@ export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
           <div class="value" style="font-size: 12px;">Attn: Technical Support Dept.</div>
           <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;">
              <div class="label">End User Reference</div>
-             <div class="value" style="font-size: 12px;">${claim.customerName}</div>
+             <div class="value" style="font-size: 12px;">${rma.customerName}</div>
           </div>
         </div>
       </div>
@@ -153,27 +153,27 @@ export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
         <tbody>
           <tr>
             <td>
-              <strong>${claim.brand}</strong><br/>
-              ${claim.productModel}
+              <strong>${rma.brand}</strong><br/>
+              ${rma.productModel}
             </td>
-            <td>${claim.productType.replace('_', ' ')}</td>
-            <td><span style="font-family: monospace; font-size: 14px; font-weight: 600;">${claim.serialNumber}</span></td>
+            <td>${rma.productType.replace('_', ' ')}</td>
+            <td><span style="font-family: monospace; font-size: 14px; font-weight: 600;">${rma.serialNumber}</span></td>
           </tr>
         </tbody>
       </table>
       <div class="box" style="margin-bottom: 20px; border: 1px solid #000;">
         <div class="label" style="color: #000;">Reported Fault / Symptom (อาการเสีย)</div>
-        <div class="value" style="margin-top: 8px; font-size: 14px;">${claim.issueDescription}</div>
+        <div class="value" style="margin-top: 8px; font-size: 14px;">${rma.issueDescription}</div>
       </div>
       <div class="box">
         <div class="label">Included Accessories (อุปกรณ์ที่ส่งไปด้วย)</div>
         <div class="value">
-          ${claim.distributorSentItems && claim.distributorSentItems.length > 0
-      ? claim.distributorSentItems.map(formatAccessory).join(', ')
-      : (claim.accessories.length > 0 ? claim.accessories.map(formatAccessory).join(', ') : 'Unit Only (เฉพาะตัวเครื่อง)')}
+          ${rma.distributorSentItems && rma.distributorSentItems.length > 0
+      ? rma.distributorSentItems.map(formatAccessory).join(', ')
+      : (rma.accessories.length > 0 ? rma.accessories.map(formatAccessory).join(', ') : 'Unit Only (เฉพาะตัวเครื่อง)')}
         </div>
       </div>
-      ${getImagesHTML(claim)}
+      ${getImagesHTML(rma)}
       <div class="footer-grid">
         <div class="signature-box">
           <div class="label">Sent By (ผู้ส่ง)</div>
@@ -184,7 +184,7 @@ export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
           </div>
         </div>
         <div class="signature-box">
-          <div class="label">Received By (ผู้รับ - ${claim.distributor})</div>
+          <div class="label">Received By (ผู้รับ - ${rma.distributor})</div>
           <div class="signature-line"></div>
           <div style="display: flex; justify-content: space-between;">
              <div class="value" style="font-size: 12px;">RMA No: ..............................................</div>
@@ -196,7 +196,7 @@ export const getImporterFormHTML = async (claim: Claim): Promise<string> => {
   `;
 };
 
-export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
+export const getCustomerFormHTML = async (rma: RMA): Promise<string> => {
   const settings = await MockDb.getSettings();
   return `
     ${getCommonStyles()}
@@ -209,24 +209,24 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div class="label">Job Reference</div>
-          <div class="value" style="font-size: 16px;">${claim.quotationNumber || 'N/A'}</div>
-          <div class="value" style="font-size: 12px; margin-top: 2px;">Claim ID: ${claim.id}</div>
+          <div class="value" style="font-size: 16px;">${rma.quotationNumber || 'N/A'}</div>
+          <div class="value" style="font-size: 12px; margin-top: 2px;">RMA ID: ${rma.id}</div>
         </div>
       </div>
       <div class="meta-grid">
         <div class="box">
           <div class="label">Customer Details (ลูกค้า)</div>
-          <div class="value" style="font-size: 15px; font-weight: bold;">${claim.customerName}</div>
-          <div class="value" style="font-size: 12px;">Tel: ${claim.customerPhone || '-'}</div>
-          <div class="value" style="font-size: 12px;">Email: ${claim.customerEmail}</div>
-          ${claim.customerLineId ? `<div class="value" style="font-size: 12px;">Line ID: ${claim.customerLineId}</div>` : ''}
+          <div class="value" style="font-size: 15px; font-weight: bold;">${rma.customerName}</div>
+          <div class="value" style="font-size: 12px;">Tel: ${rma.customerPhone || '-'}</div>
+          <div class="value" style="font-size: 12px;">Email: ${rma.customerEmail}</div>
+          ${rma.customerLineId ? `<div class="value" style="font-size: 12px;">Line ID: ${rma.customerLineId}</div>` : ''}
         </div>
         <div class="box">
           <div class="label">Service Status (สถานะ)</div>
           <div class="value" style="font-size: 15px; font-weight: bold;">
-            ${claim.status === 'REPAIRED' ? 'ดำเนินการเสร็จสิ้น (Completed)' :
-      claim.status === 'REJECTED' ? 'ส่งคืน (Returned/Rejected)' :
-        claim.status.replace('_', ' ')}
+            ${rma.status === 'REPAIRED' ? 'ดำเนินการเสร็จสิ้น (Completed)' :
+      rma.status === 'REJECTED' ? 'ส่งคืน (Returned/Rejected)' :
+        rma.status.replace('_', ' ')}
           </div>
         </div>
       </div>
@@ -242,15 +242,15 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
         <tbody>
           <tr>
             <td>
-              <strong>${claim.brand} ${claim.productModel}</strong><br/>
-              <span style="font-size: 11px; color: #666;">${claim.productType}</span>
+              <strong>${rma.brand} ${rma.productModel}</strong><br/>
+              <span style="font-size: 11px; color: #666;">${rma.productType}</span>
             </td>
             <td>
-              <div>Original: <span style="font-family: monospace;">${claim.serialNumber}</span></div>
-              ${claim.resolution?.replacedSerialNumber ? `<div style="margin-top: 4px; font-weight: bold; color: #000;">New S/N: <span style="font-family: monospace;">${claim.resolution.replacedSerialNumber}</span></div>` : ''}
+              <div>Original: <span style="font-family: monospace;">${rma.serialNumber}</span></div>
+              ${rma.resolution?.replacedSerialNumber ? `<div style="margin-top: 4px; font-weight: bold; color: #000;">New S/N: <span style="font-family: monospace;">${rma.resolution.replacedSerialNumber}</span></div>` : ''}
             </td>
             <td>
-              ${claim.repairCosts?.warrantyStatus ? (translations.th.warranty as any)[claim.repairCosts.warrantyStatus] : '-'}
+              ${rma.repairCosts?.warrantyStatus ? (translations.th.warranty as any)[rma.repairCosts.warrantyStatus] : '-'}
             </td>
           </tr>
         </tbody>
@@ -258,25 +258,25 @@ export const getCustomerFormHTML = async (claim: Claim): Promise<string> => {
       <div class="box" style="margin-bottom: 20px;">
         <div class="label">Resolution (ผลการดำเนินการ)</div>
         <div class="value" style="margin-top: 5px; font-weight: 500;">
-          ${claim.resolution?.actionTaken ? formatAction(claim.resolution.actionTaken) : (claim.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
+          ${rma.resolution?.actionTaken ? formatAction(rma.resolution.actionTaken) : (rma.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
         </div>
         <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
            <div class="label">Original Issue (อาการที่แจ้ง)</div>
-           <div style="font-size: 13px; color: #444;">${claim.issueDescription}</div>
+           <div style="font-size: 13px; color: #444;">${rma.issueDescription}</div>
         </div>
-        ${claim.resolution?.technicalNotes ? `
+        ${rma.resolution?.technicalNotes ? `
         <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
            <div class="label">Technical Note (หมายเหตุช่าง)</div>
-           <div style="font-size: 13px; color: #444;">${claim.resolution.technicalNotes}</div>
+           <div style="font-size: 13px; color: #444;">${rma.resolution.technicalNotes}</div>
         </div>` : ''}
       </div>
-      ${getImagesHTML(claim)}
+      ${getImagesHTML(rma)}
       <div class="box">
         <div class="label">Items Returned to Customer (อุปกรณ์ที่ส่งคืนลูกค้า)</div>
         <div class="value">
           <ul style="margin: 5px 0 0 20px; padding: 0; list-style-type: square;">
-            <li>Main Unit (${claim.productModel})</li>
-            ${claim.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
+            <li>Main Unit (${rma.productModel})</li>
+            ${rma.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
           </ul>
         </div>
       </div>

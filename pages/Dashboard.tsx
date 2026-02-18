@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { DashboardStats, Team, ClaimStatus } from '../types';
+import { DashboardStats, Team, RMAStatus } from '../types';
 import { MockDb } from '../services/mockDb';
 import { Clock, CheckCircle2, AlertTriangle, Truck, TrendingUp, AlertOctagon, Timer, ChevronRight, Layers, Box, Wifi, Zap, ShoppingBag, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -19,9 +19,9 @@ export const Dashboard: React.FC = () => {
             const data = await MockDb.getStats(teamFilter);
 
             // Recalculate "Revenue Pipeline" to act as "Pending Vendor Count" for this view
-            const allClaims = await MockDb.getAllClaims();
-            const claimsAtVendor = allClaims.filter(c => {
-                const isWaiting = c.status === ClaimStatus.WAITING_PARTS;
+            const allRMAs = await MockDb.getRMAs();
+            const rmasAtVendor = allRMAs.filter(c => {
+                const isWaiting = c.status === RMAStatus.WAITING_PARTS;
                 if (!teamFilter) return isWaiting;
                 const isTeamMatch = teamFilter === 'GROUP_C'
                     ? [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team)
@@ -29,7 +29,7 @@ export const Dashboard: React.FC = () => {
                 return isWaiting && isTeamMatch;
             }).length;
 
-            setStats({ ...data, revenuePipeline: claimsAtVendor });
+            setStats({ ...data, revenuePipeline: rmasAtVendor });
         };
         fetchData();
 
@@ -97,7 +97,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-10">
-                <StatCard label={t('dashboard.pendingAction')} value={stats.pendingClaims} icon={<Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />} color="bg-blue-500" />
+                <StatCard label={t('dashboard.pendingAction')} value={stats.pendingRMAs} icon={<Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />} color="bg-blue-500" />
                 <StatCard label={t('dashboard.revenuePipeline')} value={stats.revenuePipeline} icon={<Truck className="w-6 h-6 text-orange-600 dark:text-orange-400" />} color="bg-orange-500" />
                 <StatCard label={t('dashboard.avgTurnaround')} value={`${stats.avgTurnaroundHours}`} subLabel={t('dashboard.hrs')} subValue="Avg" icon={<Timer className="w-6 h-6 text-purple-600 dark:text-purple-400" />} color="bg-purple-500" />
                 <StatCard label={t('dashboard.overdue')} value={stats.overdueCount} icon={<AlertOctagon className="w-6 h-6 text-red-600 dark:text-red-400" />} color="bg-red-500" />
@@ -130,17 +130,17 @@ export const Dashboard: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-1">Requires immediate action</p>
                     </div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar max-h-[400px]">
-                        {stats.urgentClaims.map(claim => (
-                            <Link key={claim.id} to={`/admin/track?id=${claim.id}`} className="block bg-[#f5f5f7] dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-[#3a3a3c] p-5 rounded-3xl transition-all group">
+                        {stats.urgentRMAs.map(rma => (
+                            <Link key={rma.id} to={`/admin/track?id=${rma.id}`} className="block bg-[#f5f5f7] dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-[#3a3a3c] p-5 rounded-3xl transition-all group">
                                 <div className="flex justify-between items-start mb-2">
-                                    <div className="font-bold text-[#1d1d1f] dark:text-white group-hover:text-[#0071e3] transition-colors">{claim.productModel}</div>
-                                    <div className="text-[10px] font-mono text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded-lg">{claim.id}</div>
+                                    <div className="font-bold text-[#1d1d1f] dark:text-white group-hover:text-[#0071e3] transition-colors">{rma.productModel}</div>
+                                    <div className="text-[10px] font-mono text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded-lg">{rma.id}</div>
                                 </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">{claim.issueDescription}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">{rma.issueDescription}</div>
                                 <div className="flex justify-between items-center">
-                                    <StatusBadge status={claim.status} />
+                                    <StatusBadge status={rma.status} />
                                     <div className="text-[11px] font-medium text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full">
-                                        {Math.floor((Date.now() - new Date(claim.createdAt).getTime()) / (86400000))}d ago
+                                        {Math.floor((Date.now() - new Date(rma.createdAt).getTime()) / (86400000))}d ago
                                     </div>
                                 </div>
                             </Link>

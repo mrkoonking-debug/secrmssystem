@@ -119,8 +119,8 @@ export interface RMA {
 
 // 10. โครงสร้างข้อมูลสำหรับ Dashboard (สถิติรวม)
 export interface DashboardStats {
-  totalClaims: number;      // งานทั้งหมดในระบบ
-  pendingClaims: number;    // งานที่ยังค้างอยู่
+  totalRMAs: number;      // งานทั้งหมดในระบบ
+  pendingRMAs: number;    // งานที่ยังค้างอยู่
   resolvedThisMonth: number;// งานที่จบได้ในเดือนนี้
   criticalIssues: number;   // งานวิกฤต/ล่าช้า
 
@@ -132,5 +132,5 @@ export interface DashboardStats {
     bucket4_7: number;        // 4-7 วัน
     bucket7plus: number;      // มากกว่า 7 วัน
   };
-  urgentClaims: RMA[];      // รายการงานด่วนที่ต้องรีบดู
+  urgentRMAs: RMA[];      // รายการงานด่วนที่ต้องรีบดู
 }

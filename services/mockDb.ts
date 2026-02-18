@@ -451,13 +451,13 @@ export const MockDb = {
       }
     });
     return {
-      totalClaims: filtered.length,
-      pendingClaims: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).length,
+      totalRMAs: filtered.length,
+      pendingRMAs: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).length,
       resolvedThisMonth: filtered.filter(c => c.status === RMAStatus.CLOSED).length,
       criticalIssues: aging.bucket7plus,
       revenuePipeline: filtered.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
       avgTurnaroundHours: 48, overdueCount: aging.bucket7plus, agingBuckets: aging,
-      urgentClaims: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).slice(0, 5)
+      urgentRMAs: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).slice(0, 5)
     };
   }
 };

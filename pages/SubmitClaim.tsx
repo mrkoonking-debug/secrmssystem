@@ -99,14 +99,10 @@ export const SubmitClaim: React.FC = () => {
         setStep('success');
         window.scrollTo(0, 0);
       } else {
-        navigate('/admin/rmas'); // Assuming we rename route too, or keep claim route for now? Let's check router later. For now keep claims route to avoid 404 if router not updated.
-        // Actually, let's keep it consistent with the "Refactor" goal. If I rename the route, I must update App.tsx. 
-        // For now, I'll stick to /admin/claims unless I update the router. 
-        // The instruction was "Refactor Claim to RMA (System-wide)". I should probably update the router too.
-        // But for this specific file, let's keep /admin/claims for a moment until I see the router.
+        navigate('/admin/rmas');
       }
     } catch (error) {
-      console.error("Failed to save claims:", error);
+      console.error("Failed to save rmas:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +117,7 @@ export const SubmitClaim: React.FC = () => {
               <Save className="w-12 h-12 text-green-600 dark:text-green-400" />
             </div>
             <h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-4">{t('submit.successTitle') || 'Submission Successful'}</h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">{t('submit.successDesc') || 'The claim has been registered successfully.'}</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">{t('submit.successDesc') || 'The rma has been registered successfully.'}</p>
 
             <div className="bg-gray-50 dark:bg-[#2c2c2e] p-6 rounded-2xl border border-gray-200 dark:border-[#424245] mb-8">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{t('publicSubmit.yourRef')}</div>
@@ -130,7 +126,7 @@ export const SubmitClaim: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row justify-center gap-3">
               <button
-                onClick={() => navigate('/admin/claims')}
+                onClick={() => navigate('/admin/rmas')}
                 className="px-8 py-3 bg-gray-100 dark:bg-[#2c2c2e] hover:bg-gray-200 dark:hover:bg-[#3a3a3c] text-[#1d1d1f] dark:text-white rounded-full font-semibold transition-colors"
               >
                 {t('submit.backToList') || 'Back to List'}

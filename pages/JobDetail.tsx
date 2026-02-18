@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Claim, ClaimStatus } from '../types';
+import { RMA, RMAStatus } from '../types';
 import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, History, Trash2, Truck, Pencil, Check, X, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
@@ -10,17 +10,17 @@ import { GlassSelect } from '../components/GlassSelect';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
-    const [claims, setClaims] = useState<Claim[]>([]);
+    const [rmas, setRMAs] = useState<RMA[]>([]);
     const [jobInfo, setJobInfo] = useState<{ customer: string, count: number, date: string } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [expandedClaims, setExpandedClaims] = useState<Set<string>>(new Set());
-    const [editingDistClaim, setEditingDistClaim] = useState<string | null>(null);
+    const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
+    const [editingDistRMA, setEditingDistRMA] = useState<string | null>(null);
     const [editDistValue, setEditDistValue] = useState('');
     const [customDistValue, setCustomDistValue] = useState('');
     const [distOptions, setDistOptions] = useState<any[]>([]);
-    const [editingIssueClaim, setEditingIssueClaim] = useState<string | null>(null);
+    const [editingIssueRMA, setEditingIssueRMA] = useState<string | null>(null);
     const [editIssueValue, setEditIssueValue] = useState('');
-    const [editingWarrantyClaim, setEditingWarrantyClaim] = useState<string | null>(null);
+    const [editingWarrantyRMA, setEditingWarrantyRMA] = useState<string | null>(null);
     const [editWarrantyValue, setEditWarrantyValue] = useState('');
     const { t } = useLanguage();
     const navigate = useNavigate();
@@ -34,51 +34,43 @@ export const JobDetail: React.FC = () => {
         loadDists();
     }, [t]);
 
-    const handleSaveDistributor = async (claimId: string) => {
+    const handleSaveDistributor = async (rmaId: string) => {
         const newDist = editDistValue === 'Other' ? customDistValue.trim() : editDistValue;
         if (!newDist) return;
-        await MockDb.updateClaim(claimId, { distributor: newDist, updatedAt: new Date().toISOString() });
-        await MockDb.addTimelineEvent(claimId, {
+        await MockDb.updateRMA(rmaId, { distributor: newDist, updatedAt: new Date().toISOString() });
+        await MockDb.addTimelineEvent(rmaId, {
             type: 'SYSTEM',
             description: `เปลี่ยน Distributor เป็น: ${newDist}`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
-        // Refresh
-        const allClaims = await MockDb.getAllClaims();
-        const decodedId = decodeURIComponent(jobId || '');
-        const jobClaims = allClaims.filter(c =>
-            c.quotationNumber === decodedId ||
-            c.groupRequestId === decodedId ||
-            (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
-        );
-        setClaims(jobClaims);
-        setEditingDistClaim(null);
+        await refreshRMAs();
+        setEditingDistRMA(null);
         setEditDistValue('');
         setCustomDistValue('');
     };
 
-    const refreshClaims = async () => {
-        const allClaims = await MockDb.getAllClaims();
+    const refreshRMAs = async () => {
+        const allRMAs = await MockDb.getRMAs();
         const decodedId = decodeURIComponent(jobId || '');
-        const jobClaims = allClaims.filter(c =>
+        const jobRMAs = allRMAs.filter(c =>
             c.quotationNumber === decodedId ||
             c.groupRequestId === decodedId ||
             (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
         );
-        setClaims(jobClaims);
+        setRMAs(jobRMAs);
     };
 
-    const handleSaveIssue = async (claimId: string) => {
+    const handleSaveIssue = async (rmaId: string) => {
         const newIssue = editIssueValue.trim();
         if (!newIssue) return;
-        await MockDb.updateClaim(claimId, { issueDescription: newIssue, updatedAt: new Date().toISOString() });
-        await MockDb.addTimelineEvent(claimId, {
+        await MockDb.updateRMA(rmaId, { issueDescription: newIssue, updatedAt: new Date().toISOString() });
+        await MockDb.addTimelineEvent(rmaId, {
             type: 'SYSTEM',
             description: `แก้ไขอาการที่แจ้ง`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
-        await refreshClaims();
-        setEditingIssueClaim(null);
+        await refreshRMAs();
+        setEditingIssueRMA(null);
         setEditIssueValue('');
     };
 
@@ -88,19 +80,19 @@ export const JobDetail: React.FC = () => {
         { value: 'VOID', label: t('warranty.VOID') }
     ];
 
-    const handleSaveWarranty = async (claimId: string) => {
+    const handleSaveWarranty = async (rmaId: string) => {
         if (!editWarrantyValue) return;
-        await MockDb.updateClaim(claimId, {
+        await MockDb.updateRMA(rmaId, {
             repairCosts: { labor: 0, parts: 0, warrantyStatus: editWarrantyValue as any },
             updatedAt: new Date().toISOString()
         });
-        await MockDb.addTimelineEvent(claimId, {
+        await MockDb.addTimelineEvent(rmaId, {
             type: 'SYSTEM',
             description: `เปลี่ยนสถานะประกัน: ${t(`warranty.${editWarrantyValue}`)}`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
-        await refreshClaims();
-        setEditingWarrantyClaim(null);
+        await refreshRMAs();
+        setEditingWarrantyRMA(null);
         setEditWarrantyValue('');
     };
 
@@ -108,19 +100,19 @@ export const JobDetail: React.FC = () => {
         const fetch = async () => {
             if (jobId) {
                 const decodedId = decodeURIComponent(jobId);
-                const allClaims = await MockDb.getAllClaims();
-                const jobClaims = allClaims.filter(c =>
+                const allRMAs = await MockDb.getRMAs();
+                const jobRMAs = allRMAs.filter(c =>
                     c.quotationNumber === decodedId ||
                     c.groupRequestId === decodedId ||
                     (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
                 );
 
-                if (jobClaims.length > 0) {
-                    setClaims(jobClaims);
-                    jobClaims.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                    setJobInfo({ customer: jobClaims[0].customerName, count: jobClaims.length, date: jobClaims[0].createdAt });
+                if (jobRMAs.length > 0) {
+                    setRMAs(jobRMAs);
+                    jobRMAs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+                    setJobInfo({ customer: jobRMAs[0].customerName, count: jobRMAs.length, date: jobRMAs[0].createdAt });
                 } else {
-                    navigate('/admin/claims');
+                    navigate('/admin/rmas'); // Updated route
                 }
             }
             setLoading(false);
@@ -129,13 +121,13 @@ export const JobDetail: React.FC = () => {
     }, [jobId, navigate]);
 
     const toggleHistory = (id: string) => {
-        const newSet = new Set(expandedClaims);
+        const newSet = new Set(expandedRMAs);
         if (newSet.has(id)) {
             newSet.delete(id);
         } else {
             newSet.add(id);
         }
-        setExpandedClaims(newSet);
+        setExpandedRMAs(newSet);
     };
 
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
@@ -144,7 +136,7 @@ export const JobDetail: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8">
-                <Link to="/admin/claims" className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> {t('track.backToList')}</Link>
+                <Link to="/admin/rmas" className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> {t('track.backToList')}</Link>
                 <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white/50 dark:bg-white/10 rounded-full border border-gray-200 dark:border-white/10">JOB: {decodeURIComponent(jobId || '')}</div>
             </div>
 
@@ -158,17 +150,17 @@ export const JobDetail: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{claims.filter(c => c.status === ClaimStatus.CLOSED || c.status === ClaimStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">Done</div></div>
-                        <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{claims.filter(c => c.status !== ClaimStatus.CLOSED && c.status !== ClaimStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">Active</div></div>
+                        <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">Done</div></div>
+                        <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">Active</div></div>
                     </div>
                 </div>
             </div>
 
             <div className="space-y-4">
                 <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white ml-2 mb-4">{t('claimsList.items')}</h2>
-                {claims.map((item, index) => {
-                    const isClosed = [ClaimStatus.CLOSED, ClaimStatus.REPAIRED, ClaimStatus.SHIPPED, ClaimStatus.REJECTED].includes(item.status);
-                    const isExpanded = expandedClaims.has(item.id);
+                {rmas.map((item, index) => {
+                    const isClosed = [RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.SHIPPED, RMAStatus.REJECTED].includes(item.status);
+                    const isExpanded = expandedRMAs.has(item.id);
 
                     // เรียงลำดับประวัติให้ล่าสุดอยู่บนสุด
                     const sortedHistory = item.history ? [...item.history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [];
@@ -181,11 +173,11 @@ export const JobDetail: React.FC = () => {
                                     <div><div className="font-bold text-lg text-[#1d1d1f] dark:text-white">{item.productModel}</div><div className="text-sm text-gray-500">{item.brand}</div><div className="mt-1 inline-block text-xs font-mono bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">S/N: {item.serialNumber}</div></div>
                                     <div>
                                         <div className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">{t('track.issueReported')}
-                                            {editingIssueClaim !== item.id && (
-                                                <button onClick={() => { setEditingIssueClaim(item.id); setEditIssueValue(item.issueDescription); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Issue"><Pencil className="w-3 h-3" /></button>
+                                            {editingIssueRMA !== item.id && (
+                                                <button onClick={() => { setEditingIssueRMA(item.id); setEditIssueValue(item.issueDescription); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Issue"><Pencil className="w-3 h-3" /></button>
                                             )}
                                         </div>
-                                        {editingIssueClaim === item.id ? (
+                                        {editingIssueRMA === item.id ? (
                                             <div className="space-y-2">
                                                 <textarea
                                                     value={editIssueValue}
@@ -195,7 +187,7 @@ export const JobDetail: React.FC = () => {
                                                 />
                                                 <div className="flex items-center gap-2">
                                                     <button onClick={() => handleSaveIssue(item.id)} disabled={!editIssueValue.trim()} className="px-3 py-1 rounded-lg bg-green-500 text-white text-xs font-bold hover:bg-green-600 disabled:opacity-40 transition-colors flex items-center gap-1"><Check className="w-3 h-3" /> Save</button>
-                                                    <button onClick={() => { setEditingIssueClaim(null); setEditIssueValue(''); }} className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white text-xs font-bold hover:bg-gray-300 transition-colors">Cancel</button>
+                                                    <button onClick={() => { setEditingIssueRMA(null); setEditIssueValue(''); }} className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white text-xs font-bold hover:bg-gray-300 transition-colors">Cancel</button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -203,7 +195,7 @@ export const JobDetail: React.FC = () => {
                                         )}
                                         <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
                                             <Truck className="w-3 h-3" /> {t('submit.distributor')}:{' '}
-                                            {editingDistClaim === item.id ? (
+                                            {editingDistRMA === item.id ? (
                                                 <span className="inline-flex items-center gap-2 ml-1">
                                                     <span className="inline-block w-full md:w-48">
                                                         <GlassSelect
@@ -223,19 +215,19 @@ export const JobDetail: React.FC = () => {
                                                         />
                                                     )}
                                                     <button onClick={() => handleSaveDistributor(item.id)} disabled={!editDistValue || (editDistValue === 'Other' && !customDistValue.trim())} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-40 transition-colors"><Check className="w-3 h-3" /></button>
-                                                    <button onClick={() => { setEditingDistClaim(null); setEditDistValue(''); setCustomDistValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
+                                                    <button onClick={() => { setEditingDistRMA(null); setEditDistValue(''); setCustomDistValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 ml-1">
                                                     <span className="text-[#1d1d1f] dark:text-white font-medium">{item.distributor || '-'}</span>
-                                                    <button onClick={() => { setEditingDistClaim(item.id); setEditDistValue(item.distributor || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Distributor"><Pencil className="w-3 h-3" /></button>
+                                                    <button onClick={() => { setEditingDistRMA(item.id); setEditDistValue(item.distributor || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Distributor"><Pencil className="w-3 h-3" /></button>
                                                 </span>
                                             )}
                                         </div>
                                         {/* Warranty Status */}
                                         <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">
                                             <ShieldCheck className="w-3 h-3" /> {t('track.warrantyStatus')}:{' '}
-                                            {editingWarrantyClaim === item.id ? (
+                                            {editingWarrantyRMA === item.id ? (
                                                 <span className="inline-flex items-center gap-2 ml-1">
                                                     <span className="inline-block w-full md:w-48">
                                                         <GlassSelect
@@ -246,7 +238,7 @@ export const JobDetail: React.FC = () => {
                                                         />
                                                     </span>
                                                     <button onClick={() => handleSaveWarranty(item.id)} disabled={!editWarrantyValue} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-40 transition-colors"><Check className="w-3 h-3" /></button>
-                                                    <button onClick={() => { setEditingWarrantyClaim(null); setEditWarrantyValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
+                                                    <button onClick={() => { setEditingWarrantyRMA(null); setEditWarrantyValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 ml-1">
@@ -255,7 +247,7 @@ export const JobDetail: React.FC = () => {
                                                             item.repairCosts?.warrantyStatus === 'VOID' ? 'text-red-500' :
                                                                 'text-[#1d1d1f] dark:text-white'
                                                         }`}>{item.repairCosts?.warrantyStatus ? t(`warranty.${item.repairCosts.warrantyStatus}`) : '-'}</span>
-                                                    <button onClick={() => { setEditingWarrantyClaim(item.id); setEditWarrantyValue(item.repairCosts?.warrantyStatus || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Warranty"><Pencil className="w-3 h-3" /></button>
+                                                    <button onClick={() => { setEditingWarrantyRMA(item.id); setEditWarrantyValue(item.repairCosts?.warrantyStatus || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Warranty"><Pencil className="w-3 h-3" /></button>
                                                 </span>
                                             )}
                                         </div>
@@ -274,22 +266,15 @@ export const JobDetail: React.FC = () => {
                                         {/* Delete Button */}
                                         <button
                                             onClick={async () => {
-                                                if (!confirm('Are you sure you want to delete this claim? This action cannot be undone.')) return;
+                                                if (!confirm('Are you sure you want to delete this rma? This action cannot be undone.')) return;
                                                 setLoading(true);
-                                                await MockDb.deleteClaim(item.id);
+                                                await MockDb.deleteRMA(item.id);
                                                 // Refresh List
-                                                const allClaims = await MockDb.getAllClaims(); // Re-fetch to update state
-                                                const jobClaims = allClaims.filter(c =>
-                                                    c.quotationNumber === decodeURIComponent(jobId || '') ||
-                                                    c.groupRequestId === decodeURIComponent(jobId || '') ||
-                                                    (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodeURIComponent(jobId || ''))
-                                                );
-                                                setClaims(jobClaims);
+                                                await refreshRMAs();
                                                 setLoading(false);
-                                                if (jobClaims.length === 0) navigate('/admin/claims');
                                             }}
                                             className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-                                            title="Delete Claim"
+                                            title="Delete RMA"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
