@@ -23,7 +23,9 @@ export const JobDetail: React.FC = () => {
     const [editingWarrantyRMA, setEditingWarrantyRMA] = useState<string | null>(null);
     const [editWarrantyValue, setEditWarrantyValue] = useState('');
     const [editingNotesRMA, setEditingNotesRMA] = useState<string | null>(null);
-    const [editNotesValue, setEditNotesValue] = useState('');
+    const [notesState, setNotesState] = useState<Record<string, string>>({}); // Static Notes State
+    const [editingStatusRMA, setEditingStatusRMA] = useState<string | null>(null);
+    const [editStatusValue, setEditStatusValue] = useState<RMAStatus | ''>('');
     const { t } = useLanguage();
     const navigate = useNavigate();
 
@@ -99,16 +101,33 @@ export const JobDetail: React.FC = () => {
     };
 
     const handleSaveNotes = async (rmaId: string) => {
-        const newNotes = editNotesValue.trim();
+        const newNotes = (notesState[rmaId] || '').trim();
+        // Optimistic update or just wait for refresh?
+        // User requested: "The text must remain in the field after saving."
+        // We do NOT clear notesState[rmaId].
+
         await MockDb.updateRMA(rmaId, { notes: newNotes, updatedAt: new Date().toISOString() });
         await MockDb.addTimelineEvent(rmaId, {
             type: 'NOTE',
-            description: `อัปเดตบันทึก: ${newNotes}`,
+            description: `อัปเดตบันทึก: ${newNotes || '(Empty)'}`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
         await refreshRMAs();
-        setEditingNotesRMA(null);
-        setEditNotesValue('');
+    };
+
+    const statusOptions = Object.values(RMAStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
+
+    const handleSaveStatus = async (rmaId: string) => {
+        if (!editStatusValue) return;
+        await MockDb.updateRMA(rmaId, { status: editStatusValue as RMAStatus, updatedAt: new Date().toISOString() });
+        await MockDb.addTimelineEvent(rmaId, {
+            type: 'STATUS_CHANGE',
+            description: `เปลี่ยนสถานะเป็น: ${t(`status.${editStatusValue}`)}`,
+            user: MockDb.getCurrentUser()?.name || 'Staff'
+        });
+        await refreshRMAs();
+        setEditingStatusRMA(null);
+        setEditStatusValue('');
     };
 
     useEffect(() => {
@@ -266,34 +285,54 @@ export const JobDetail: React.FC = () => {
                                                 </span>
                                             )}
                                         </div>
-                                        {/* Notes Section */}
-                                        <div className="mt-2 text-xs text-gray-400 flex items-start gap-1">
-                                            <FileText className="w-3 h-3 mt-0.5" /> {t('track.internalNote') || 'Notes'}:{' '}
-                                            {editingNotesRMA === item.id ? (
-                                                <div className="flex-grow ml-1">
-                                                    <textarea
-                                                        value={editNotesValue}
-                                                        onChange={e => setEditNotesValue(e.target.value)}
-                                                        rows={2}
-                                                        className="w-full px-2 py-1.5 text-xs rounded-lg outline-none bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-1 focus:ring-[#0071e3] resize-none mb-1"
-                                                        placeholder="Add a note..."
-                                                    />
-                                                    <div className="flex gap-1">
-                                                        <button onClick={() => handleSaveNotes(item.id)} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors"><Check className="w-3 h-3" /></button>
-                                                        <button onClick={() => { setEditingNotesRMA(null); setEditNotesValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 ml-1 flex-grow">
-                                                    <span className="text-[#1d1d1f] dark:text-white font-medium break-words">{item.notes || '-'}</span>
-                                                    <button onClick={() => { setEditingNotesRMA(item.id); setEditNotesValue(item.notes || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Notes"><Pencil className="w-3 h-3" /></button>
-                                                </span>
-                                            )}
+                                        <div className="mt-2 text-xs text-gray-400 flex items-start gap-1 w-full">
+                                            <FileText className="w-3 h-3 mt-1 flex-shrink-0" />
+                                            <span className="font-bold uppercase mt-1 w-24 flex-shrink-0 truncate" title={t('track.internalNote') || 'Notes'}>{t('track.internalNote') || 'Notes'}:</span>
+                                            <div className="flex-grow flex items-center gap-2">
+                                                <textarea
+                                                    value={notesState[item.id] !== undefined ? notesState[item.id] : (item.notes || '')}
+                                                    onChange={e => setNotesState(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                    rows={1}
+                                                    className="flex-grow px-2 py-1 text-sm bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-[#0071e3] outline-none resize-none transition-colors"
+                                                    placeholder={t('track.addNote') || 'Add note...'}
+                                                    style={{ minHeight: '1.5rem' }}
+                                                />
+                                                <button
+                                                    onClick={() => handleSaveNotes(item.id)}
+                                                    className="p-1 rounded-md text-gray-400 hover:text-[#0071e3] transition-colors"
+                                                    title="Save Note"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex-shrink-0 flex flex-wrap items-center md:flex-col md:items-end gap-3 md:min-w-[140px]">
-                                    <StatusBadge status={item.status} />
+                                    {editingStatusRMA === item.id ? (
+                                        <div className="flex items-center gap-2 min-w-[200px] bg-white dark:bg-[#2c2c2e] p-1 rounded-xl shadow-lg border border-gray-100 dark:border-[#333] z-10">
+                                            <div className="flex-grow">
+                                                <GlassSelect
+                                                    value={editStatusValue}
+                                                    onChange={val => setEditStatusValue(val as RMAStatus)}
+                                                    options={statusOptions}
+                                                />
+                                            </div>
+                                            <button onClick={() => handleSaveStatus(item.id)} className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600"><Check className="w-4 h-4" /></button>
+                                            <button onClick={() => setEditingStatusRMA(null)} className="p-1.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-300"><X className="w-4 h-4" /></button>
+                                        </div>
+                                    ) : (
+                                        <div className="group relative inline-block">
+                                            <StatusBadge status={item.status} />
+                                            <button
+                                                onClick={() => { setEditingStatusRMA(item.id); setEditStatusValue(item.status); }}
+                                                className="absolute -right-2 -top-2 p-1 bg-white dark:bg-gray-700 rounded-full shadow-md text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all border border-gray-100 dark:border-gray-600 z-10"
+                                                title="Change Status"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => toggleHistory(item.id)}

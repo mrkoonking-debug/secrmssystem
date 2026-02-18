@@ -66,6 +66,7 @@ export const TrackClaim: React.FC = () => {
             if (c) {
                 setRMA(c);
                 setStatus(c.status);
+                setNote(c.notes || ''); // Load existing notes
                 if (c.resolution) setResolution(c.resolution);
                 if (c.delayReason) setDelayReason(c.delayReason);
                 if (c.repairCosts?.warrantyStatus) setWarrantyStatus(c.repairCosts.warrantyStatus);
@@ -98,6 +99,7 @@ export const TrackClaim: React.FC = () => {
                 resolution,
                 delayReason,
                 distributorSentItems: shipmentConfig,
+                notes: note, // Save persistent notes
                 repairCosts: { ...rma.repairCosts, labor: rma.repairCosts?.labor || 0, parts: rma.repairCosts?.parts || 0, warrantyStatus }
             };
 
@@ -120,7 +122,10 @@ export const TrackClaim: React.FC = () => {
 
             await MockDb.updateRMA(rma.id, updates);
 
-            if (note.trim()) { await MockDb.addTimelineEvent(rma.id, { type: 'NOTE', description: note, user: userName }); setNote(''); }
+            // Do NOT clear note after save, it is now a persistent field
+            if (note.trim() !== (rma.notes || '')) {
+                await MockDb.addTimelineEvent(rma.id, { type: 'NOTE', description: `อัปเดตบันทึก: ${note}`, user: userName });
+            }
 
             const updated = await MockDb.getRMAById(rma.id);
             if (updated) {
