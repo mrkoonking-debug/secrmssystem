@@ -23,7 +23,7 @@ export const JobDetail: React.FC = () => {
     const [editingWarrantyRMA, setEditingWarrantyRMA] = useState<string | null>(null);
     const [editWarrantyValue, setEditWarrantyValue] = useState('');
     const [editingNotesRMA, setEditingNotesRMA] = useState<string | null>(null);
-    const [notesState, setNotesState] = useState<Record<string, string>>({}); // Static Notes State
+
     const [editingStatusRMA, setEditingStatusRMA] = useState<string | null>(null);
     const [editStatusValue, setEditStatusValue] = useState<RMAStatus | ''>('');
     const { t } = useLanguage();
@@ -100,20 +100,7 @@ export const JobDetail: React.FC = () => {
         setEditWarrantyValue('');
     };
 
-    const handleSaveNotes = async (rmaId: string) => {
-        const newNotes = (notesState[rmaId] || '').trim();
-        // Optimistic update or just wait for refresh?
-        // User requested: "The text must remain in the field after saving."
-        // We do NOT clear notesState[rmaId].
 
-        await MockDb.updateRMA(rmaId, { notes: newNotes, updatedAt: new Date().toISOString() });
-        await MockDb.addTimelineEvent(rmaId, {
-            type: 'NOTE',
-            description: `อัปเดตบันทึก: ${newNotes || '(Empty)'}`,
-            user: MockDb.getCurrentUser()?.name || 'Staff'
-        });
-        await refreshRMAs();
-    };
 
     const statusOptions = Object.values(RMAStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
 
@@ -288,22 +275,8 @@ export const JobDetail: React.FC = () => {
                                         <div className="mt-2 text-xs text-gray-400 flex items-start gap-1 w-full">
                                             <FileText className="w-3 h-3 mt-1 flex-shrink-0" />
                                             <span className="font-bold uppercase mt-1 w-24 flex-shrink-0 truncate" title={t('track.internalNote') || 'Notes'}>{t('track.internalNote') || 'Notes'}:</span>
-                                            <div className="flex-grow flex items-center gap-2">
-                                                <textarea
-                                                    value={notesState[item.id] !== undefined ? notesState[item.id] : (item.notes || '')}
-                                                    onChange={e => setNotesState(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                                    rows={1}
-                                                    className="flex-grow px-2 py-1 text-sm bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-[#0071e3] outline-none resize-none transition-colors"
-                                                    placeholder={t('track.addNote') || 'Add note...'}
-                                                    style={{ minHeight: '1.5rem' }}
-                                                />
-                                                <button
-                                                    onClick={() => handleSaveNotes(item.id)}
-                                                    className="p-1 rounded-md text-gray-400 hover:text-[#0071e3] transition-colors"
-                                                    title="Save Note"
-                                                >
-                                                    <Check className="w-4 h-4" />
-                                                </button>
+                                            <div className="flex-grow py-1 text-sm text-[#1d1d1f] dark:text-white break-words">
+                                                {item.notes ? item.notes : <span className="text-gray-300 italic">ไม่มีบันทึก</span>}
                                             </div>
                                         </div>
                                     </div>
