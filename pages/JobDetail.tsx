@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus } from '../types';
-import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, History, Trash2, Truck, Pencil, Check, X, ShieldCheck, FileText } from 'lucide-react';
+import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
-import { GlassSelect } from '../components/GlassSelect';
+import { EditRMAFullPage } from '../components/EditRMAFullPage';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -14,44 +14,32 @@ export const JobDetail: React.FC = () => {
     const [jobInfo, setJobInfo] = useState<{ customer: string, count: number, date: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
-    const [editingDistRMA, setEditingDistRMA] = useState<string | null>(null);
-    const [editDistValue, setEditDistValue] = useState('');
-    const [customDistValue, setCustomDistValue] = useState('');
-    const [distOptions, setDistOptions] = useState<any[]>([]);
-    const [editingIssueRMA, setEditingIssueRMA] = useState<string | null>(null);
-    const [editIssueValue, setEditIssueValue] = useState('');
-    const [editingWarrantyRMA, setEditingWarrantyRMA] = useState<string | null>(null);
-    const [editWarrantyValue, setEditWarrantyValue] = useState('');
-    const [editingNotesRMA, setEditingNotesRMA] = useState<string | null>(null);
+    const [editingRMA, setEditingRMA] = useState<RMA | null>(null);
 
-    const [editingStatusRMA, setEditingStatusRMA] = useState<string | null>(null);
-    const [editStatusValue, setEditStatusValue] = useState<RMAStatus | ''>('');
     const { t } = useLanguage();
     const navigate = useNavigate();
 
-    // Load distributor options
-    useEffect(() => {
-        const loadDists = async () => {
-            const dists = await MockDb.getDistributors();
-            setDistOptions([...dists, { value: 'Other', label: t('submit.other') }]);
-        };
-        loadDists();
-    }, [t]);
+    // ... (rest of useEffects)
 
-    const handleSaveDistributor = async (rmaId: string) => {
-        const newDist = editDistValue === 'Other' ? customDistValue.trim() : editDistValue;
-        if (!newDist) return;
-        await MockDb.updateRMA(rmaId, { distributor: newDist, updatedAt: new Date().toISOString() });
+    const handleSaveChanges = async (rmaId: string, updates: Partial<RMA>, diffs: { field: string, old: string, new: string }[]) => {
+        await MockDb.updateRMA(rmaId, { ...updates, updatedAt: new Date().toISOString() });
+
+        // Add single system event summarizing changes
+        const changeDesc = diffs.map(d => `${d.field}: ${d.old} -> ${d.new}`).join(', ');
         await MockDb.addTimelineEvent(rmaId, {
             type: 'SYSTEM',
-            description: `เปลี่ยน Distributor เป็น: ${newDist}`,
+            description: `Edited: ${changeDesc}`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
+
         await refreshRMAs();
-        setEditingDistRMA(null);
-        setEditDistValue('');
-        setCustomDistValue('');
+        setEditingRMA(null);
     };
+    useEffect(() => {
+        // ... (Distributor options loading left in case needed elsewhere or we can remove if unused)
+        // Actually, if we are not editing, we don't need to load options for the dropdowns here.
+        // But keeping it harmless for now to minimize diff if I'm not deleting the MockDb call.
+    }, [t]);
 
     const refreshRMAs = async () => {
         const allRMAs = await MockDb.getRMAs();
@@ -62,59 +50,6 @@ export const JobDetail: React.FC = () => {
             (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
         );
         setRMAs(jobRMAs);
-    };
-
-    const handleSaveIssue = async (rmaId: string) => {
-        const newIssue = editIssueValue.trim();
-        if (!newIssue) return;
-        await MockDb.updateRMA(rmaId, { issueDescription: newIssue, updatedAt: new Date().toISOString() });
-        await MockDb.addTimelineEvent(rmaId, {
-            type: 'SYSTEM',
-            description: `แก้ไขอาการที่แจ้ง`,
-            user: MockDb.getCurrentUser()?.name || 'Staff'
-        });
-        await refreshRMAs();
-        setEditingIssueRMA(null);
-        setEditIssueValue('');
-    };
-
-    const warrantyOptions = [
-        { value: 'IN_WARRANTY', label: t('warranty.IN_WARRANTY') },
-        { value: 'OUT_OF_WARRANTY', label: t('warranty.OUT_OF_WARRANTY') },
-        { value: 'VOID', label: t('warranty.VOID') }
-    ];
-
-    const handleSaveWarranty = async (rmaId: string) => {
-        if (!editWarrantyValue) return;
-        await MockDb.updateRMA(rmaId, {
-            repairCosts: { labor: 0, parts: 0, warrantyStatus: editWarrantyValue as any },
-            updatedAt: new Date().toISOString()
-        });
-        await MockDb.addTimelineEvent(rmaId, {
-            type: 'SYSTEM',
-            description: `เปลี่ยนสถานะประกัน: ${t(`warranty.${editWarrantyValue}`)}`,
-            user: MockDb.getCurrentUser()?.name || 'Staff'
-        });
-        await refreshRMAs();
-        setEditingWarrantyRMA(null);
-        setEditWarrantyValue('');
-    };
-
-
-
-    const statusOptions = Object.values(RMAStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
-
-    const handleSaveStatus = async (rmaId: string) => {
-        if (!editStatusValue) return;
-        await MockDb.updateRMA(rmaId, { status: editStatusValue as RMAStatus, updatedAt: new Date().toISOString() });
-        await MockDb.addTimelineEvent(rmaId, {
-            type: 'STATUS_CHANGE',
-            description: `เปลี่ยนสถานะเป็น: ${t(`status.${editStatusValue}`)}`,
-            user: MockDb.getCurrentUser()?.name || 'Staff'
-        });
-        await refreshRMAs();
-        setEditingStatusRMA(null);
-        setEditStatusValue('');
     };
 
     useEffect(() => {
@@ -194,83 +129,24 @@ export const JobDetail: React.FC = () => {
                                     <div><div className="font-bold text-lg text-[#1d1d1f] dark:text-white">{item.productModel}</div><div className="text-sm text-gray-500">{item.brand}</div><div className="mt-1 inline-block text-xs font-mono bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">S/N: {item.serialNumber}</div></div>
                                     <div>
                                         <div className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">{t('track.issueReported')}
-                                            {editingIssueRMA !== item.id && (
-                                                <button onClick={() => { setEditingIssueRMA(item.id); setEditIssueValue(item.issueDescription); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Issue"><Pencil className="w-3 h-3" /></button>
-                                            )}
                                         </div>
-                                        {editingIssueRMA === item.id ? (
-                                            <div className="space-y-2">
-                                                <textarea
-                                                    value={editIssueValue}
-                                                    onChange={e => setEditIssueValue(e.target.value)}
-                                                    rows={3}
-                                                    className="w-full px-3 py-2 text-sm rounded-xl outline-none bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-[#0071e3] resize-none"
-                                                />
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => handleSaveIssue(item.id)} disabled={!editIssueValue.trim()} className="px-3 py-1 rounded-lg bg-green-500 text-white text-xs font-bold hover:bg-green-600 disabled:opacity-40 transition-colors flex items-center gap-1"><Check className="w-3 h-3" /> Save</button>
-                                                    <button onClick={() => { setEditingIssueRMA(null); setEditIssueValue(''); }} className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white text-xs font-bold hover:bg-gray-300 transition-colors">Cancel</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="text-sm text-gray-700 dark:text-gray-200 flex items-start gap-2"><AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" /><span className="line-clamp-2">{item.issueDescription}</span></div>
-                                        )}
+                                        <div className="text-sm text-gray-700 dark:text-gray-200 flex items-start gap-2"><AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" /><span className="line-clamp-2">{item.issueDescription}</span></div>
                                         <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
                                             <Truck className="w-3 h-3" /> {t('submit.distributor')}:{' '}
-                                            {editingDistRMA === item.id ? (
-                                                <span className="inline-flex items-center gap-2 ml-1">
-                                                    <span className="inline-block w-full md:w-48">
-                                                        <GlassSelect
-                                                            value={editDistValue}
-                                                            onChange={val => setEditDistValue(val)}
-                                                            options={distOptions}
-                                                            searchable
-                                                            placeholder="Select..."
-                                                        />
-                                                    </span>
-                                                    {editDistValue === 'Other' && (
-                                                        <input
-                                                            value={customDistValue}
-                                                            onChange={e => setCustomDistValue(e.target.value)}
-                                                            className="w-32 px-2 py-1.5 text-xs rounded-lg outline-none bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white focus:ring-1 focus:ring-[#0071e3]"
-                                                            placeholder="Specify..."
-                                                        />
-                                                    )}
-                                                    <button onClick={() => handleSaveDistributor(item.id)} disabled={!editDistValue || (editDistValue === 'Other' && !customDistValue.trim())} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-40 transition-colors"><Check className="w-3 h-3" /></button>
-                                                    <button onClick={() => { setEditingDistRMA(null); setEditDistValue(''); setCustomDistValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 ml-1">
-                                                    <span className="text-[#1d1d1f] dark:text-white font-medium">{item.distributor || '-'}</span>
-                                                    <button onClick={() => { setEditingDistRMA(item.id); setEditDistValue(item.distributor || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Distributor"><Pencil className="w-3 h-3" /></button>
-                                                </span>
-                                            )}
+                                            <span className="inline-flex items-center gap-1 ml-1">
+                                                <span className="text-[#1d1d1f] dark:text-white font-medium">{item.distributor || '-'}</span>
+                                            </span>
                                         </div>
                                         {/* Warranty Status */}
                                         <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">
                                             <ShieldCheck className="w-3 h-3" /> {t('track.warrantyStatus')}:{' '}
-                                            {editingWarrantyRMA === item.id ? (
-                                                <span className="inline-flex items-center gap-2 ml-1">
-                                                    <span className="inline-block w-full md:w-48">
-                                                        <GlassSelect
-                                                            value={editWarrantyValue}
-                                                            onChange={val => setEditWarrantyValue(val)}
-                                                            options={warrantyOptions}
-                                                            placeholder="Select..."
-                                                        />
-                                                    </span>
-                                                    <button onClick={() => handleSaveWarranty(item.id)} disabled={!editWarrantyValue} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 disabled:opacity-40 transition-colors"><Check className="w-3 h-3" /></button>
-                                                    <button onClick={() => { setEditingWarrantyRMA(null); setEditWarrantyValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 ml-1">
-                                                    <span className={`font-medium ${item.repairCosts?.warrantyStatus === 'IN_WARRANTY' ? 'text-green-500' :
-                                                        item.repairCosts?.warrantyStatus === 'OUT_OF_WARRANTY' ? 'text-orange-500' :
-                                                            item.repairCosts?.warrantyStatus === 'VOID' ? 'text-red-500' :
-                                                                'text-[#1d1d1f] dark:text-white'
-                                                        }`}>{item.repairCosts?.warrantyStatus ? t(`warranty.${item.repairCosts.warrantyStatus}`) : '-'}</span>
-                                                    <button onClick={() => { setEditingWarrantyRMA(item.id); setEditWarrantyValue(item.repairCosts?.warrantyStatus || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Warranty"><Pencil className="w-3 h-3" /></button>
-                                                </span>
-                                            )}
+                                            <span className="inline-flex items-center gap-1 ml-1">
+                                                <span className={`font-medium ${item.repairCosts?.warrantyStatus === 'IN_WARRANTY' ? 'text-green-500' :
+                                                    item.repairCosts?.warrantyStatus === 'OUT_OF_WARRANTY' ? 'text-orange-500' :
+                                                        item.repairCosts?.warrantyStatus === 'VOID' ? 'text-red-500' :
+                                                            'text-[#1d1d1f] dark:text-white'
+                                                    }`}>{item.repairCosts?.warrantyStatus ? t(`warranty.${item.repairCosts.warrantyStatus}`) : '-'}</span>
+                                            </span>
                                         </div>
                                         <div className="mt-2 text-xs text-gray-400 flex items-start gap-1 w-full">
                                             <FileText className="w-3 h-3 mt-1 flex-shrink-0" />
@@ -282,30 +158,9 @@ export const JobDetail: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex-shrink-0 flex flex-wrap items-center md:flex-col md:items-end gap-3 md:min-w-[140px]">
-                                    {editingStatusRMA === item.id ? (
-                                        <div className="flex items-center gap-2 min-w-[200px] bg-white dark:bg-[#2c2c2e] p-1 rounded-xl shadow-lg border border-gray-100 dark:border-[#333] z-10">
-                                            <div className="flex-grow">
-                                                <GlassSelect
-                                                    value={editStatusValue}
-                                                    onChange={val => setEditStatusValue(val as RMAStatus)}
-                                                    options={statusOptions}
-                                                />
-                                            </div>
-                                            <button onClick={() => handleSaveStatus(item.id)} className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600"><Check className="w-4 h-4" /></button>
-                                            <button onClick={() => setEditingStatusRMA(null)} className="p-1.5 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-300"><X className="w-4 h-4" /></button>
-                                        </div>
-                                    ) : (
-                                        <div className="group relative inline-block">
-                                            <StatusBadge status={item.status} />
-                                            <button
-                                                onClick={() => { setEditingStatusRMA(item.id); setEditStatusValue(item.status); }}
-                                                className="absolute -right-2 -top-2 p-1 bg-white dark:bg-gray-700 rounded-full shadow-md text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all border border-gray-100 dark:border-gray-600 z-10"
-                                                title="Change Status"
-                                            >
-                                                <Pencil className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="group relative inline-block">
+                                        <StatusBadge status={item.status} />
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => toggleHistory(item.id)}
@@ -330,9 +185,12 @@ export const JobDetail: React.FC = () => {
                                             <Trash2 className="w-4 h-4" />
                                         </button>
 
-                                        <Link to={`/admin/track?id=${item.id}`} className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95">
+                                        <button
+                                            onClick={() => setEditingRMA(item)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
+                                        >
                                             <Edit2 className="w-4 h-4" /> {t('track.edit')}
-                                        </Link>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -362,6 +220,16 @@ export const JobDetail: React.FC = () => {
                     );
                 })}
             </div>
+
+            {/* Edit Modal / Slide-over */}
+            {editingRMA && (
+                <EditRMAFullPage
+                    isOpen={!!editingRMA}
+                    onClose={() => setEditingRMA(null)}
+                    rma={editingRMA}
+                    onSave={handleSaveChanges}
+                />
+            )}
         </div>
     );
 };
