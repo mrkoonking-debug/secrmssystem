@@ -230,7 +230,11 @@ export const CustomerSubmit: React.FC = () => {
                         <button onClick={() => setShowLabelModal(true)} className="px-8 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
                             <Printer className="w-4 h-4" /> {t('publicSubmit.printLabel')}
                         </button>
-                        <button onClick={() => navigate('/')} className="px-8 py-3 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-full font-semibold transition-colors">{t('publicSubmit.backHome')}</button>
+                        <button onClick={() => {
+                            if (window.confirm(`คุณได้จดบันทึกรหัสอ้างอิง (${submittedRef}) หรือพิมพ์ใบจ่าหน้ากล่องเรียบร้อยแล้วใช่หรือไม่? หากออกจากหน้านี้ คุณอาจไม่สามารถเรียกดูรหัสนี้ได้อีก`)) {
+                                navigate('/');
+                            }
+                        }} className="px-8 py-3 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-full font-semibold transition-colors">{t('publicSubmit.backHome')}</button>
                     </div>
                     <p className="mt-8 text-xs text-gray-400">{t('publicSubmit.thankYou')}</p>
                 </div>

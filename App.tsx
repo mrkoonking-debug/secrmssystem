@@ -38,6 +38,9 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
 
+  // --- DEBUG: Test Firebase Connection REMOVED ---
+
+
   return (
     <div className="relative w-full h-screen flex flex-col overflow-hidden bg-[#f5f5f7] dark:bg-black transition-colors duration-300">
       {isAdmin ? (

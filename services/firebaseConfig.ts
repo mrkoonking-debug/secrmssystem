@@ -14,6 +14,12 @@ export const firebaseConfig = {
   appId: env.VITE_FIREBASE_APP_ID || "1:988616933794:web:4f8267e73e3269cb05f2fb"
 };
 
+console.log('Firebase Config Loaded:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  apiKeyLength: firebaseConfig.apiKey?.length
+});
+
 const isConfigured =
   firebaseConfig.apiKey !== "YOUR_API_KEY" &&
   firebaseConfig.apiKey !== "" &&
@@ -32,7 +38,8 @@ if (isConfigured) {
     console.error("❌ Firebase Init Error:", e);
   }
 } else {
-  console.warn("⚠️ SEC-CLAIM: Running in OFFLINE mode (No Firebase Config)");
+  console.error("❌ SEC-CLAIM: Firebase Config invalid or missing. App will fail to load data.");
+  console.warn("Please check .env or hardcoded keys in firebaseConfig.ts");
 }
 
 export { db, auth, isConfigured };

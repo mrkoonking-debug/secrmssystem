@@ -20,8 +20,8 @@ export const ClaimsList: React.FC = () => {
     useEffect(() => {
         const fetch = async () => {
             const allRMAs = await MockDb.getRMAs();
-            // Filter out unassigned rmas (they should appear in IncomingClaims/IncomingRMAs instead)
-            const assignedRMAs = allRMAs.filter(c => c.team && (c.team as any) !== 'UNASSIGNED');
+            // Filter out unassigned rmas AND invalid data
+            const assignedRMAs = allRMAs.filter(c => c && c.id && c.team && (c.team as any) !== 'UNASSIGNED');
             setRMAs(assignedRMAs);
             setLoading(false);
         };
@@ -43,12 +43,17 @@ export const ClaimsList: React.FC = () => {
     const handleJobClick = (jobId: string) => navigate(`/admin/job/${encodeURIComponent(jobId)}`);
 
     const groupedByDate = useMemo(() => {
-        const matchesSearch = (c: RMA) =>
-            c.id.toLowerCase().includes(search.toLowerCase()) ||
-            c.customerName.toLowerCase().includes(search.toLowerCase()) ||
-            c.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
-            c.productModel.toLowerCase().includes(search.toLowerCase()) ||
-            (c.quotationNumber && c.quotationNumber.toLowerCase().includes(search.toLowerCase()));
+        const matchesSearch = (c: RMA) => {
+            if (!c || !c.id) return false;
+            const term = search.toLowerCase();
+            return (
+                (c.id && c.id.toLowerCase().includes(term)) ||
+                (c.customerName && c.customerName.toLowerCase().includes(term)) ||
+                (c.serialNumber && c.serialNumber.toLowerCase().includes(term)) ||
+                (c.productModel && c.productModel.toLowerCase().includes(term)) ||
+                (c.quotationNumber && c.quotationNumber.toLowerCase().includes(term))
+            );
+        };
 
         const matchesStatus = (c: RMA) => {
             if (statusFilter === 'ALL') return true;

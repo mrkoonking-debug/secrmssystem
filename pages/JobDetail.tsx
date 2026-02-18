@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus } from '../types';
-import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, History, Trash2, Truck, Pencil, Check, X, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, History, Trash2, Truck, Pencil, Check, X, ShieldCheck, FileText } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { GlassSelect } from '../components/GlassSelect';
@@ -22,6 +22,8 @@ export const JobDetail: React.FC = () => {
     const [editIssueValue, setEditIssueValue] = useState('');
     const [editingWarrantyRMA, setEditingWarrantyRMA] = useState<string | null>(null);
     const [editWarrantyValue, setEditWarrantyValue] = useState('');
+    const [editingNotesRMA, setEditingNotesRMA] = useState<string | null>(null);
+    const [editNotesValue, setEditNotesValue] = useState('');
     const { t } = useLanguage();
     const navigate = useNavigate();
 
@@ -94,6 +96,19 @@ export const JobDetail: React.FC = () => {
         await refreshRMAs();
         setEditingWarrantyRMA(null);
         setEditWarrantyValue('');
+    };
+
+    const handleSaveNotes = async (rmaId: string) => {
+        const newNotes = editNotesValue.trim();
+        await MockDb.updateRMA(rmaId, { notes: newNotes, updatedAt: new Date().toISOString() });
+        await MockDb.addTimelineEvent(rmaId, {
+            type: 'NOTE',
+            description: `อัปเดตบันทึก: ${newNotes}`,
+            user: MockDb.getCurrentUser()?.name || 'Staff'
+        });
+        await refreshRMAs();
+        setEditingNotesRMA(null);
+        setEditNotesValue('');
     };
 
     useEffect(() => {
@@ -248,6 +263,30 @@ export const JobDetail: React.FC = () => {
                                                                 'text-[#1d1d1f] dark:text-white'
                                                         }`}>{item.repairCosts?.warrantyStatus ? t(`warranty.${item.repairCosts.warrantyStatus}`) : '-'}</span>
                                                     <button onClick={() => { setEditingWarrantyRMA(item.id); setEditWarrantyValue(item.repairCosts?.warrantyStatus || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Warranty"><Pencil className="w-3 h-3" /></button>
+                                                </span>
+                                            )}
+                                        </div>
+                                        {/* Notes Section */}
+                                        <div className="mt-2 text-xs text-gray-400 flex items-start gap-1">
+                                            <FileText className="w-3 h-3 mt-0.5" /> {t('track.internalNote') || 'Notes'}:{' '}
+                                            {editingNotesRMA === item.id ? (
+                                                <div className="flex-grow ml-1">
+                                                    <textarea
+                                                        value={editNotesValue}
+                                                        onChange={e => setEditNotesValue(e.target.value)}
+                                                        rows={2}
+                                                        className="w-full px-2 py-1.5 text-xs rounded-lg outline-none bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-1 focus:ring-[#0071e3] resize-none mb-1"
+                                                        placeholder="Add a note..."
+                                                    />
+                                                    <div className="flex gap-1">
+                                                        <button onClick={() => handleSaveNotes(item.id)} className="p-1 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors"><Check className="w-3 h-3" /></button>
+                                                        <button onClick={() => { setEditingNotesRMA(null); setEditNotesValue(''); }} className="p-1 rounded-md bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white hover:bg-gray-400 transition-colors"><X className="w-3 h-3" /></button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 ml-1 flex-grow">
+                                                    <span className="text-[#1d1d1f] dark:text-white font-medium break-words">{item.notes || '-'}</span>
+                                                    <button onClick={() => { setEditingNotesRMA(item.id); setEditNotesValue(item.notes || ''); }} className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-[#0071e3] transition-colors" title="Edit Notes"><Pencil className="w-3 h-3" /></button>
                                                 </span>
                                             )}
                                         </div>

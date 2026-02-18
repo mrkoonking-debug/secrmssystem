@@ -17,8 +17,8 @@ service cloud.firestore {
       allow write: if isAuth(); // Ideally only Admin
     }
     
-    // 2. Claims Collection
-    match /claims/{claimId} {
+    // 2. RMAs Collection (Renamed from Claims)
+    match /rmas/{rmaId} {
       // Public Tracking: Allow read if you know the ID? Or allow list?
       // "Allow list" is dangerous for public.
       // Better: Allow read if isAuth() OR if resource.data.quotationNumber == request.query.... (Complex)

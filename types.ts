@@ -105,6 +105,7 @@ export interface RMA {
   history: TimelineEvent[]; // ประวัติการทำงานทั้งหมด (Array)
 
   // ข้อมูลการดำเนินการ
+  notes?: string;        // *** NEW: Internal Notes (บันทึกข้อความ) ***
   serviceType?: 'INTERNAL' | 'EXTERNAL'; // ซ่อมเอง (Internal) หรือ ส่งศูนย์นอก (External)
   resolution?: ResolutionDetails;        // ผลสรุปการซ่อม
   delayReason?: DelayReason;             // สาเหตุที่งานช้า
@@ -133,4 +134,17 @@ export interface DashboardStats {
     bucket7plus: number;      // มากกว่า 7 วัน
   };
   urgentRMAs: RMA[];      // รายการงานด่วนที่ต้องรีบดู
+}
+
+// 11. แบรนด์และผู้นำเข้า (Dynamic Management)
+export interface Brand {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export interface Distributor {
+  id: string;
+  value: string;
+  label: string;
 }

@@ -1,5 +1,5 @@
 
-import { RMA, RMAStatus, DashboardStats, Team, TimelineEvent } from '../types';
+import { RMA, RMAStatus, DashboardStats, Team, TimelineEvent, Brand, Distributor } from '../types';
 import { db, auth, isConfigured, firebaseConfig } from './firebaseConfig';
 import { initializeApp, deleteApp } from 'firebase/app';
 import {
@@ -88,13 +88,7 @@ const mapDocToRMA = (d: any): RMA => {
 export const MockDb = {
   login: async (u: string, p: string) => {
     if (!isConfigured || !auth) {
-      const user = OFFLINE_USERS.find(x => x.email === u && p === 'Sec@1065152');
-      if (user) {
-        currentUser = user;
-        localStorage.setItem('mock_user', JSON.stringify(user));
-        return { success: true };
-      }
-      return { success: false, error: "Invalid offline credentials" };
+      return { success: false, error: "Firebase Authentication not configured" };
     }
     try {
       const cred = await signInWithEmailAndPassword(auth, u, p);
@@ -137,81 +131,72 @@ export const MockDb = {
   getCurrentUser: () => currentUser,
 
   // --- Dynamic Brands Management ---
-  getBrands: async () => {
-    if (!isConfigured || !db) return OFFLINE_BRANDS;
+  getBrands: async (): Promise<Brand[]> => {
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     try {
       const snap = await getDocs(collection(db, 'brands'));
-      return snap.empty ? OFFLINE_BRANDS : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Only use fallback if collection is truly empty AND we want initial seed, 
+      // but for "Force Firebase", we should arguably just return empty or seed it. 
+      // Let's return empty if empty.
+      return snap.empty ? [] : snap.docs.map(d => ({ id: d.id, ...d.data() } as Brand));
     } catch (e) {
-      console.warn("Error fetching brands (falling back to offline):", e);
-      return OFFLINE_BRANDS;
+      console.error("Error fetching brands:", e);
+      throw e;
     }
   },
   addBrand: async (brand: any) => {
     const id = `b-${Date.now()}`;
-    if (!isConfigured || !db) { OFFLINE_BRANDS.push({ id, ...brand }); return; }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await setDoc(doc(db, 'brands', id), brand);
   },
   updateBrand: async (id: string, updates: any) => {
-    if (!isConfigured || !db) {
-      const idx = OFFLINE_BRANDS.findIndex(b => b.id === id);
-      if (idx !== -1) OFFLINE_BRANDS[idx] = { ...OFFLINE_BRANDS[idx], ...updates };
-      return;
-    }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await updateDoc(doc(db, 'brands', id), updates);
   },
   deleteBrand: async (id: string) => {
-    if (!isConfigured || !db) { OFFLINE_BRANDS = OFFLINE_BRANDS.filter(b => b.id !== id); return; }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await deleteDoc(doc(db, 'brands', id));
   },
 
   // --- Dynamic Distributors Management ---
-  getDistributors: async () => {
-    if (!isConfigured || !db) return OFFLINE_DISTRIBUTORS;
+  getDistributors: async (): Promise<Distributor[]> => {
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     try {
       const snap = await getDocs(collection(db, 'distributors'));
-      return snap.empty ? OFFLINE_DISTRIBUTORS : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      return snap.empty ? [] : snap.docs.map(d => ({ id: d.id, ...d.data() } as Distributor));
     } catch (e) {
-      console.warn("Error fetching distributors (falling back to offline):", e);
-      return OFFLINE_DISTRIBUTORS;
+      console.error("Error fetching distributors:", e);
+      throw e;
     }
   },
   addDistributor: async (dist: any) => {
     const id = `d-${Date.now()}`;
-    if (!isConfigured || !db) { OFFLINE_DISTRIBUTORS.push({ id, ...dist }); return; }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await setDoc(doc(db, 'distributors', id), dist);
   },
   updateDistributor: async (id: string, updates: any) => {
-    if (!isConfigured || !db) {
-      const idx = OFFLINE_DISTRIBUTORS.findIndex(d => d.id === id);
-      if (idx !== -1) OFFLINE_DISTRIBUTORS[idx] = { ...OFFLINE_DISTRIBUTORS[idx], ...updates };
-      return;
-    }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await updateDoc(doc(db, 'distributors', id), updates);
   },
   deleteDistributor: async (id: string) => {
-    if (!isConfigured || !db) { OFFLINE_DISTRIBUTORS = OFFLINE_DISTRIBUTORS.filter(d => d.id !== id); return; }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await deleteDoc(doc(db, 'distributors', id));
   },
 
   // --- Settings ---
   getSettings: async () => {
-    if (!isConfigured || !db) return OFFLINE_SETTINGS;
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     try {
-      // Race against 3s timeout
-      const snap: any = await Promise.race([
-        getDoc(doc(db, 'settings', 'config')),
-        new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000))
-      ]);
-      return snap.exists() ? snap.data() : OFFLINE_SETTINGS;
+      const snap = await getDoc(doc(db, 'settings', 'config'));
+      return snap.exists() ? snap.data() : OFFLINE_SETTINGS; // Keep default settings if DB doc missing, but from memory/const not offline mode per se
     } catch (e) {
-      console.warn("getSettings failed/timedout, using offline:", e);
-      return OFFLINE_SETTINGS;
+      console.error("getSettings failed:", e);
+      throw e;
     }
   },
   updateSettings: async (s: any) => {
-    if (!isConfigured || !db) { OFFLINE_SETTINGS = { ...OFFLINE_SETTINGS, ...s }; return; }
-    try { await setDoc(doc(db, 'settings', 'config'), s); } catch (e) { console.error("updateSettings failed", e); }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    try { await setDoc(doc(db, 'settings', 'config'), s); } catch (e) { console.error("updateSettings failed", e); throw e; }
   },
 
   // --- Seed Data (Admin Only) ---
@@ -265,7 +250,7 @@ export const MockDb = {
     }
   },
   createStaffAccount: async (data: any) => {
-    if (!isConfigured) { OFFLINE_USERS.push({ uid: `u-${Date.now()}`, ...data }); return true; }
+    if (!isConfigured) throw new Error("Firebase Not Configured");
     const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
     const secondaryAuth = getAuth(secondaryApp);
     try {
@@ -281,23 +266,23 @@ export const MockDb = {
     }
   },
   deleteStaffAccount: async (uid: string) => {
-    if (!isConfigured || !db) { OFFLINE_USERS = OFFLINE_USERS.filter(u => u.uid !== uid); return; }
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     await deleteDoc(doc(db, 'users', uid));
   },
 
   // --- RMA Management ---
   getRMAs: async (): Promise<RMA[]> => {
-    if (!isConfigured || !db) return OFFLINE_STORAGE;
+    if (!isConfigured || !db) {
+      console.error("Firebase not configured!");
+      throw new Error("Firebase not configured");
+    }
     try {
       const q = query(collection(db, 'rmas'), orderBy('createdAt', 'desc'), limit(500));
-      const snap: any = await Promise.race([
-        getDocs(q),
-        new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000))
-      ]);
+      const snap = await getDocs(q);
       return snap.docs.map(mapDocToRMA);
     } catch (e) {
-      console.warn("getRMAs failed/timedout, using offline:", e);
-      return OFFLINE_STORAGE;
+      console.error("getRMAs failed:", e);
+      throw e;
     }
   },
 
@@ -332,7 +317,7 @@ export const MockDb = {
   },
 
   getRMAById: async (id: string): Promise<RMA | undefined> => {
-    if (!isConfigured || !db) return OFFLINE_STORAGE.find(c => c.id === id || c.quotationNumber === id);
+    if (!isConfigured || !db) return undefined;
     try {
       const snap = await getDoc(doc(db, 'rmas', id));
       if (snap.exists()) return mapDocToRMA(snap);
@@ -340,8 +325,8 @@ export const MockDb = {
       const qSnap = await getDocs(q);
       return !qSnap.empty ? mapDocToRMA(qSnap.docs[0]) : undefined;
     } catch (e) {
-      console.warn("getRMAById failed, using offline:", e);
-      return OFFLINE_STORAGE.find(c => c.id === id || c.quotationNumber === id);
+      console.error("getRMAById failed:", e);
+      throw e;
     }
   },
   searchRMAsPublic: async (text: string): Promise<RMA[]> => {
@@ -354,78 +339,70 @@ export const MockDb = {
     // [NEW] ID Format: RMA-26XXXX
     let id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Ensure Unique ID
-    if (isConfigured && db) {
-      try {
-        const checkExists = async () => {
-          const snap = await getDoc(doc(db, 'rmas', id));
-          return snap.exists();
-        };
+    if (!isConfigured || !db) throw new Error("Firebase Disconnected");
 
-        let exists = await Promise.race([
-          checkExists(),
-          new Promise((_, r) => setTimeout(() => r(false), 2000))
-        ]);
+    try {
+      const checkExists = async () => {
+        const snap = await getDoc(doc(db, 'rmas', id));
+        return snap.exists();
+      };
 
-        if (exists) {
-          id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
-        }
-      } catch (e) { console.warn("ID Check timeout/fail", e); }
-    } else {
-      while (OFFLINE_STORAGE.some(x => x.id === id)) {
+      const exists = await checkExists();
+
+      if (exists) {
         id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
       }
-    }
+    } catch (e) { console.warn("ID Check fail", e); }
 
     const now = new Date().toISOString();
     const newRMAData = {
       ...c,
       status: RMAStatus.PENDING,
       history: [{ id: `evt-${Date.now()}`, date: now, type: 'SYSTEM', description: c.createdBy?.includes('Web') ? 'ลูกค้าลงทะเบียนล่วงหน้าผ่านหน้าเว็บ' : 'รับสินค้าเข้าเข้าระบบ', user: currentUser?.name || 'System' }],
-      createdAt: isConfigured ? serverTimestamp() : now,
-      updatedAt: isConfigured ? serverTimestamp() : now
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
-    if (isConfigured && db) {
-      try {
-        await setDoc(doc(db, 'rmas', id), newRMAData);
-        return { ...newRMAData, id, createdAt: now, updatedAt: now } as any;
-      } catch (e) {
-        console.warn("Write RMA failed, fallback offline", e);
-      }
+
+    try {
+      await setDoc(doc(db, 'rmas', id), newRMAData);
+      // Return with ID but use local time for immediate UI update since serverTimestamp is async
+      return { ...newRMAData, id, createdAt: now, updatedAt: now } as any;
+    } catch (e) {
+      console.error("Write RMA failed", e);
+      throw e;
     }
-    const offlineRMA = { ...newRMAData, id, createdAt: now, updatedAt: now } as RMA;
-    OFFLINE_STORAGE.unshift(offlineRMA);
-    return offlineRMA;
   },
   updateRMA: async (id: string, updates: Partial<RMA>) => {
-    if (isConfigured && db) {
-      try { await updateDoc(doc(db, 'rmas', id), { ...updates, updatedAt: serverTimestamp() }); }
-      catch (e) { console.error("updateRMA failed", e); }
+    if (!isConfigured || !db) throw new Error("Firebase Disconnected");
+    try {
+      await updateDoc(doc(db, 'rmas', id), { ...updates, updatedAt: serverTimestamp() });
+    } catch (e) {
+      console.error("updateRMA failed", e);
+      throw e;
     }
-    else { const idx = OFFLINE_STORAGE.findIndex(c => c.id === id); if (idx !== -1) OFFLINE_STORAGE[idx] = { ...OFFLINE_STORAGE[idx], ...updates, updatedAt: new Date().toISOString() }; }
   },
   addTimelineEvent: async (id: string, evt: any) => {
-    if (isConfigured && db) {
-      try {
-        const snap: any = await Promise.race([
-          getDoc(doc(db, 'rmas', id)),
-          new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), 3000))
-        ]);
-        if (snap.exists()) await updateDoc(doc(db, 'rmas', id), { history: [...snap.data().history, { id: `evt-${Date.now()}`, date: Timestamp.now(), ...evt }], updatedAt: serverTimestamp() });
-      } catch (e) {
-        console.warn("addTimelineEvent failed/timedout", e);
+    if (!isConfigured || !db) throw new Error("Firebase Disconnected");
+    try {
+      const snap = await getDoc(doc(db, 'rmas', id));
+      if (snap.exists()) {
+        const currentHistory = snap.data().history || [];
+        await updateDoc(doc(db, 'rmas', id), {
+          history: [...currentHistory, { id: `evt-${Date.now()}`, date: Timestamp.now(), ...evt }],
+          updatedAt: serverTimestamp()
+        });
       }
-    } else { const c = OFFLINE_STORAGE.find(x => x.id === id); if (c) c.history.push({ id: `evt-${Date.now()}`, date: new Date().toISOString(), ...evt } as any); }
+    } catch (e) {
+      console.error("addTimelineEvent failed", e);
+      throw e;
+    }
   },
 
   // --- Delete Functions ---
   deleteRMA: async (id: string) => {
-    if (isConfigured && db) {
-      try { await deleteDoc(doc(db, 'rmas', id)); }
-      catch (e) { console.error("deleteRMA failed", e); }
-    } else {
-      OFFLINE_STORAGE = OFFLINE_STORAGE.filter(c => c.id !== id);
-    }
+    if (!isConfigured || !db) throw new Error("Firebase Disconnected");
+    try { await deleteDoc(doc(db, 'rmas', id)); }
+    catch (e) { console.error("deleteRMA failed", e); throw e; }
   },
 
   clearDatabase: async () => {
