@@ -1,0 +1,196 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { MockDb } from '../services/mockDb';
+import { Claim, ClaimStatus, Team } from '../types';
+import { StatusBadge } from '../components/StatusBadge';
+import { Search, Plus, ChevronRight, ChevronDown, Box, Layers, Wifi, Zap, ShoppingBag, Package, User, ChevronsUpDown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
+
+export const ClaimsList: React.FC = () => {
+    const [claims, setClaims] = useState<Claim[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'DONE'>('ALL');
+    const [teamFilter, setTeamFilter] = useState<'ALL' | 'GROUP_C' | Team>('ALL');
+    const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set(['Today', 'Yesterday']));
+    const [isTeamCExpanded, setIsTeamCExpanded] = useState(false);
+    const { t } = useLanguage();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetch = async () => {
+            const allClaims = await MockDb.getAllClaims();
+            // Filter out unassigned claims (they should appear in IncomingClaims instead)
+            const assignedClaims = allClaims.filter(c => c.team && (c.team as any) !== 'UNASSIGNED');
+            setClaims(assignedClaims);
+            setLoading(false);
+        };
+        fetch();
+    }, []);
+
+    const toggleDateGroup = (dateLabel: string) => {
+        const newSet = new Set(expandedDates);
+        if (newSet.has(dateLabel)) newSet.delete(dateLabel);
+        else newSet.add(dateLabel);
+        setExpandedDates(newSet);
+    };
+
+    const handleExpandAll = () => {
+        if (expandedDates.size > 0) setExpandedDates(new Set());
+        else setExpandedDates(new Set(['Today', 'Yesterday', 'This Week', 'Earlier']));
+    };
+
+    const handleJobClick = (jobId: string) => navigate(`/admin/job/${encodeURIComponent(jobId)}`);
+
+    const groupedByDate = useMemo(() => {
+        const matchesSearch = (c: Claim) =>
+            c.id.toLowerCase().includes(search.toLowerCase()) ||
+            c.customerName.toLowerCase().includes(search.toLowerCase()) ||
+            c.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
+            c.productModel.toLowerCase().includes(search.toLowerCase()) ||
+            (c.quotationNumber && c.quotationNumber.toLowerCase().includes(search.toLowerCase()));
+
+        const matchesStatus = (c: Claim) => {
+            if (statusFilter === 'ALL') return true;
+            if (statusFilter === 'PENDING') return c.status === ClaimStatus.PENDING;
+            if (statusFilter === 'IN_PROGRESS') return [ClaimStatus.DIAGNOSING, ClaimStatus.WAITING_PARTS].includes(c.status);
+            if (statusFilter === 'DONE') return [ClaimStatus.REPAIRED, ClaimStatus.SHIPPED, ClaimStatus.CLOSED, ClaimStatus.REJECTED].includes(c.status);
+            return true;
+        };
+
+        const matchesTeam = (c: Claim) => {
+            if (teamFilter === 'ALL') return true;
+            if (teamFilter === 'GROUP_C') return [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team);
+            return c.team === teamFilter;
+        }
+
+        const filteredClaims = claims.filter(c => matchesSearch(c) && matchesStatus(c) && matchesTeam(c));
+
+        const getDateLabel = (dateStr: string) => {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffDays = Math.floor(Math.abs(now.getTime() - date.getTime()) / (86400000));
+            if (diffDays === 0 && date.getDate() === now.getDate()) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays <= 7) return 'This Week';
+            return 'Earlier';
+        };
+
+        const groups: Record<string, Claim[]> = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Earlier': [] };
+        filteredClaims.forEach(c => {
+            const label = getDateLabel(c.createdAt);
+            if (groups[label]) groups[label].push(c);
+            else groups['Earlier'].push(c);
+        });
+        Object.keys(groups).forEach(key => { if (groups[key].length === 0) delete groups[key]; });
+        return groups;
+    }, [claims, search, statusFilter, teamFilter]);
+
+    const getQuotesForDate = (claimsInDate: Claim[]) => {
+        return claimsInDate.reduce((acc, claim) => {
+            const quoteKey = claim.quotationNumber || claim.groupRequestId || 'Unassigned';
+            if (!acc[quoteKey]) acc[quoteKey] = [];
+            acc[quoteKey].push(claim);
+            return acc;
+        }, {} as Record<string, Claim[]>);
+    };
+
+    const getTeamCount = (team: Team) => claims.filter(c => c.team === team && ![ClaimStatus.CLOSED].includes(c.status)).length;
+    const getGroupCCount = () => claims.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team) && ![ClaimStatus.CLOSED].includes(c.status)).length;
+    const handleGroupCClick = () => { setIsTeamCExpanded(!isTeamCExpanded); setTeamFilter('GROUP_C'); };
+    const isClaimOverdue = (c: Claim) => ![ClaimStatus.CLOSED, ClaimStatus.REPAIRED, ClaimStatus.SHIPPED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 7);
+
+    if (loading) return <div className="p-12 text-center">Loading Claims...</div>;
+
+    return (
+        <div className="max-w-6xl mx-auto px-2 md:px-6 pb-20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                <div><h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white tracking-tight mb-1">{t('claimsList.title')}</h1><p className="text-gray-500 text-sm">{t('claimsList.subtitle')}</p></div>
+                <Link to="/admin/submit" className="bg-[#0071e3] hover:bg-[#0077ed] text-white px-6 py-3 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all transform hover:scale-105"><Plus className="h-4 w-4" /> {t('nav.newRequest')}</Link>
+            </div>
+
+            <div className="mb-8 space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onClick={() => { setTeamFilter('ALL'); setIsTeamCExpanded(false); }} className={`rounded-2xl p-4 text-left transition-all border border-gray-100 dark:border-[#333] ${teamFilter === 'ALL' ? 'ring-2 ring-[#0071e3] bg-white dark:bg-[#1c1c1e]' : 'bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e]'}`}><div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">{t('claimsList.active')}</div><div className="text-2xl font-bold text-[#1d1d1f] dark:text-white">{claims.filter(c => c.status !== ClaimStatus.CLOSED).length}</div></button>
+                    <button onClick={() => { setTeamFilter(Team.HIKVISION); setIsTeamCExpanded(false); }} className={`rounded-2xl p-4 text-left transition-all border border-gray-100 dark:border-[#333] ${teamFilter === Team.HIKVISION ? 'ring-2 ring-red-500 bg-white dark:bg-[#1c1c1e]' : 'bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e]'}`}><div className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-2">Hikvision</div><div className="text-2xl font-bold text-[#1d1d1f] dark:text-white">{getTeamCount(Team.HIKVISION)}</div></button>
+                    <button onClick={() => { setTeamFilter(Team.DAHUA); setIsTeamCExpanded(false); }} className={`rounded-2xl p-4 text-left transition-all border border-gray-100 dark:border-[#333] ${teamFilter === Team.DAHUA ? 'ring-2 ring-orange-500 bg-white dark:bg-[#1c1c1e]' : 'bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e]'}`}><div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-2">Dahua</div><div className="text-2xl font-bold text-[#1d1d1f] dark:text-white">{getTeamCount(Team.DAHUA)}</div></button>
+                    <button onClick={handleGroupCClick} className={`rounded-2xl p-4 text-left transition-all border border-gray-100 dark:border-[#333] ${isTeamCExpanded || teamFilter === 'GROUP_C' ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-[#1c1c1e]' : 'bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e]'}`}><div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Team C Group</div><div className="text-2xl font-bold text-[#1d1d1f] dark:text-white">{getGroupCCount()}</div></button>
+                </div>
+                {isTeamCExpanded && (
+                    <div className="grid grid-cols-3 gap-4 animate-fade-in pl-4 border-l-2 border-blue-500/30">
+                        <button onClick={() => setTeamFilter(Team.TEAM_C)} className={`rounded-xl p-3 bg-white dark:bg-[#1c1c1e] border ${teamFilter === Team.TEAM_C ? 'border-cyan-500' : 'border-gray-100 dark:border-[#333]'} dark:text-white`}>Network ({getTeamCount(Team.TEAM_C)})</button>
+                        <button onClick={() => setTeamFilter(Team.TEAM_E)} className={`rounded-xl p-3 bg-white dark:bg-[#1c1c1e] border ${teamFilter === Team.TEAM_E ? 'border-yellow-500' : 'border-gray-100 dark:border-[#333]'} dark:text-white`}>UPS ({getTeamCount(Team.TEAM_E)})</button>
+                        <button onClick={() => setTeamFilter(Team.TEAM_G)} className={`rounded-xl p-3 bg-white dark:bg-[#1c1c1e] border ${teamFilter === Team.TEAM_G ? 'border-fuchsia-500' : 'border-gray-100 dark:border-[#333]'} dark:text-white`}>Online ({getTeamCount(Team.TEAM_G)})</button>
+                    </div>
+                )}
+            </div>
+
+            <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] shadow-sm border border-gray-200 dark:border-[#333] p-1 mb-8 sticky top-24 z-30 flex flex-col md:flex-row md:items-center gap-2">
+                <div className="relative flex-grow group"><Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="text" placeholder={t('claimsList.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-transparent border-none rounded-2xl py-3 pl-11 pr-4 text-sm text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-0" /></div>
+                <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide px-2 md:px-0">
+                    <button onClick={handleExpandAll} className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] flex-shrink-0"><ChevronsUpDown className="w-4 h-4" /></button>
+                    <div className="h-6 w-px bg-gray-200 dark:bg-white/10 flex-shrink-0"></div>
+                    {['ALL', 'PENDING', 'IN_PROGRESS', 'DONE'].map((s) => (
+                        <button key={s} onClick={() => setStatusFilter(s as any)} className={`px-3 py-2 text-xs font-medium rounded-xl transition-all whitespace-nowrap flex-shrink-0 ${statusFilter === s ? 'bg-gray-100 dark:bg-[#333] text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}>{s === 'ALL' ? t('claimsList.filterStatus') : t(`status.${s}`)}</button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-8">
+                {Object.keys(groupedByDate).length === 0 ? (
+                    <div className="text-center py-24 bg-white dark:bg-[#1c1c1e] rounded-[2.5rem] border border-gray-200 dark:border-[#333]"><Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />{t('claimsList.noClaims')}</div>
+                ) : (
+                    ['Today', 'Yesterday', 'This Week', 'Earlier'].map(dateLabel => {
+                        const claimsInDate = groupedByDate[dateLabel];
+                        if (!claimsInDate) return null;
+                        const isDateExpanded = expandedDates.has(dateLabel);
+                        const quotesInDate = getQuotesForDate(claimsInDate);
+                        const sortedQuoteKeys = Object.keys(quotesInDate).sort((a, b) => new Date(quotesInDate[b][0].updatedAt).getTime() - new Date(quotesInDate[a][0].updatedAt).getTime());
+
+                        return (
+                            <div key={dateLabel} className="animate-fade-in">
+                                <button onClick={() => toggleDateGroup(dateLabel)} className="w-full flex items-center gap-3 mb-4 group">
+                                    <div className={`p-1.5 rounded-lg transition-colors ${isDateExpanded ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-[#2c2c2e]'}`}>{isDateExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</div>
+                                    <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{dateLabel === 'Today' ? t('claimsList.today') : dateLabel} <span className="text-sm font-medium text-gray-400">({claimsInDate.length})</span></h2>
+                                    <div className="flex-grow h-px bg-gray-200 dark:bg-white/10 group-hover:bg-blue-500/20"></div>
+                                </button>
+
+                                {isDateExpanded && (
+                                    <div className="space-y-4 pl-4 md:pl-0">
+                                        {sortedQuoteKeys.map(quoteKey => {
+                                            const quoteItems = quotesInDate[quoteKey];
+                                            const customerName = quoteItems[0]?.customerName || 'Unknown';
+
+                                            return (
+                                                <div key={quoteKey} onClick={() => handleJobClick(quoteKey)} className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] overflow-hidden border border-gray-100 dark:border-[#333] hover:shadow-md cursor-pointer transition-all group">
+                                                    <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5" /></div>
+                                                            <div>
+                                                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">{quoteKey} {quoteItems.some(i => isClaimOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">{t('claimsList.attentionNeeded')}</span>}</h3>
+                                                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"><User className="w-3 h-3" /> {customerName} <span className="w-1 h-1 bg-gray-300 rounded-full"></span> <span className="text-gray-500 font-normal">{quoteItems.length} {t('claimsList.items')}</span></div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 justify-between md:justify-end">
+                                                            <div className="flex -space-x-2">
+                                                                {quoteItems.slice(0, 3).map((item) => (
+                                                                    <div key={item.id} className={`w-8 h-8 rounded-full border-2 border-white dark:border-[#1c1c1e] flex items-center justify-center text-[10px] font-bold text-white ${item.team === Team.HIKVISION ? 'bg-red-500' : 'bg-blue-500'}`}>{item.brand.substring(0, 1)}</div>
+                                                                ))}
+                                                                {quoteItems.length > 3 && <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#1c1c1e] bg-gray-200 dark:bg-[#333] text-gray-500 text-[10px] flex items-center justify-center">+{quoteItems.length - 3}</div>}
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 group-hover:text-[#0071e3] flex items-center gap-1">Details <ChevronRight className="w-4 h-4" /></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
+};
