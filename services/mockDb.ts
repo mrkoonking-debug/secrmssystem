@@ -303,6 +303,7 @@ export const MockDb = {
           allLogs.push({
             ...evt,
             claimId: rma.id, // Keep this key for UI consistency if needed, or rename to rmaId later
+            jobId: rma.quotationNumber || rma.groupRequestId || rma.id, // Derived Job ID
             claimRef: rma.quotationNumber || rma.id,
             productModel: rma.productModel,
             serialNumber: rma.serialNumber,

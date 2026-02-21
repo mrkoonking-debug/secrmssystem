@@ -164,6 +164,11 @@ export const getImporterFormHTML = async (rma: RMA): Promise<string> => {
       <div class="box" style="margin-bottom: 20px; border: 1px solid #000;">
         <div class="label" style="color: #000;">Reported Fault / Symptom (อาการเสีย)</div>
         <div class="value" style="margin-top: 8px; font-size: 14px;">${rma.issueDescription}</div>
+        ${rma.devicePassword ? `
+        <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+           <div class="label">Device Password (รหัสผ่านเครื่อง)</div>
+           <div class="value" style="font-size: 14px; font-weight: bold; color: #d32f2f;">${rma.devicePassword}</div>
+        </div>` : ''}
       </div>
       <div class="box">
         <div class="label">Included Accessories (อุปกรณ์ที่ส่งไปด้วย)</div>
@@ -295,4 +300,53 @@ export const getCustomerFormHTML = async (rma: RMA): Promise<string> => {
       </div>
     </div>
   `;
+};
+
+export const printJobDocuments = async (rmas: RMA[]) => {
+  try {
+    let combinedHTML = '';
+
+    for (let i = 0; i < rmas.length; i++) {
+      const rma = rmas[i];
+      const importerHTML = await getImporterFormHTML(rma);
+      const customerHTML = await getCustomerFormHTML(rma);
+
+      combinedHTML += `
+          ${importerHTML}
+          <div style="page-break-before: always;"></div>
+          ${customerHTML}
+        `;
+
+      if (i < rmas.length - 1) {
+        combinedHTML += '<div style="page-break-before: always;"></div>';
+      }
+    }
+
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    iframe.style.display = 'none';
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      console.error("Failed to access iframe document for printing.");
+      return;
+    }
+
+    const jobId = rmas.length > 0 ? (rmas[0].quotationNumber || rmas[0].groupRequestId || rmas[0].id) : 'Job';
+    doc.write(`<html><head><title>Print Documents - ${jobId}</title></head><body><div id="print-content">${combinedHTML}</div></body></html>`);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      // Cleanup after short delay to ensure print dialog opened
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
+    }, 500);
+  } catch (err) {
+    console.error("Error generating print documents:", err);
+    alert("Error generating documents. Please try again.");
+  }
 };

@@ -1,20 +1,24 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus } from '../types';
-import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText } from 'lucide-react';
+import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
-import { EditRMAFullPage } from '../components/EditRMAFullPage';
+import { EditRMADrawer } from '../components/EditRMADrawer';
+import { printJobDocuments } from '../services/printService';
+import { Printer } from 'lucide-react'; // Added import or ensure it is already there
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
     const [rmas, setRMAs] = useState<RMA[]>([]);
-    const [jobInfo, setJobInfo] = useState<{ customer: string, count: number, date: string } | null>(null);
+    const [jobInfo, setJobInfo] = useState<{ id: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
     const [editingRMA, setEditingRMA] = useState<RMA | null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const { t } = useLanguage();
     const navigate = useNavigate();
@@ -34,12 +38,8 @@ export const JobDetail: React.FC = () => {
 
         await refreshRMAs();
         setEditingRMA(null);
+        setIsEditOpen(false); // Close drawer after saving
     };
-    useEffect(() => {
-        // ... (Distributor options loading left in case needed elsewhere or we can remove if unused)
-        // Actually, if we are not editing, we don't need to load options for the dropdowns here.
-        // But keeping it harmless for now to minimize diff if I'm not deleting the MockDb call.
-    }, [t]);
 
     const refreshRMAs = async () => {
         const allRMAs = await MockDb.getRMAs();
@@ -53,28 +53,55 @@ export const JobDetail: React.FC = () => {
     };
 
     useEffect(() => {
-        const fetch = async () => {
-            if (jobId) {
-                const decodedId = decodeURIComponent(jobId);
+        const fetchJobData = async () => {
+            if (!jobId) return;
+            setLoading(true);
+            try {
                 const allRMAs = await MockDb.getRMAs();
+                const decodedId = decodeURIComponent(jobId);
+
+                // Enhanced lookup logic
                 const jobRMAs = allRMAs.filter(c =>
                     c.quotationNumber === decodedId ||
                     c.groupRequestId === decodedId ||
-                    (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
+                    (c.id === decodedId)
                 );
 
                 if (jobRMAs.length > 0) {
                     setRMAs(jobRMAs);
                     jobRMAs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-                    setJobInfo({ customer: jobRMAs[0].customerName, count: jobRMAs.length, date: jobRMAs[0].createdAt });
+
+                    const first = jobRMAs[0];
+                    setJobInfo({
+                        id: decodedId,
+                        customerName: first.customerName,
+                        count: jobRMAs.length,
+                        date: first.createdAt,
+                        status: jobRMAs.every(r => r.status === RMAStatus.CLOSED) ? 'Completed' : 'In Progress',
+                        type: first.quotationNumber ? 'QUOTATION' : first.groupRequestId ? 'GROUP' : 'SINGLE'
+                    });
+
+                    // Check for auto-open query param
+                    const editRmaId = searchParams.get('editRmaId');
+                    if (editRmaId && !isEditOpen) {
+                        const targetRMA = jobRMAs.find(r => r.id === editRmaId);
+                        if (targetRMA) {
+                            setEditingRMA(targetRMA);
+                            setIsEditOpen(true);
+                        }
+                    }
                 } else {
-                    navigate('/admin/rmas'); // Updated route
+                    // navigate('/admin/rmas'); // Optional redirect
                 }
+            } catch (error) {
+                console.error("Failed to fetch job", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
-        fetch();
-    }, [jobId, navigate]);
+
+        fetchJobData();
+    }, [jobId, searchParams]);
 
     const toggleHistory = (id: string) => {
         const newSet = new Set(expandedRMAs);
@@ -84,6 +111,23 @@ export const JobDetail: React.FC = () => {
             newSet.add(id);
         }
         setExpandedRMAs(newSet);
+    };
+
+    const handleEditClick = (rma: RMA) => {
+        setEditingRMA(rma);
+        setIsEditOpen(true);
+        // Optional: Update URL to reflect state?
+        // setSearchParams({ editRmaId: rma.id });
+        // Might be annoying if user just wants quick edit.
+    };
+
+    const handleCloseEdit = () => {
+        setIsEditOpen(false);
+        setEditingRMA(null);
+        // Clear param if it exists
+        if (searchParams.get('editRmaId')) {
+            setSearchParams({}, { replace: true });
+        }
     };
 
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
@@ -101,14 +145,24 @@ export const JobDetail: React.FC = () => {
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
-                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{jobId}</h1>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customer}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} Items</span></div>
+                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{jobInfo.id}</h1>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customerName}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} Items</span></div>
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">Done</div></div>
-                        <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">Active</div></div>
+                        <button
+                            onClick={() => printJobDocuments(rmas)}
+                            className="flex items-center gap-2 px-6 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-bold shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
+                            title="Print Distributor & Customer Forms"
+                        >
+                            <Printer className="w-5 h-5" />
+                            <span>Print Forms</span>
+                        </button>
                     </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-4 md:mt-0">
+                    <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">Done</div></div>
+                    <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">Active</div></div>
                 </div>
             </div>
 
@@ -186,10 +240,11 @@ export const JobDetail: React.FC = () => {
                                         </button>
 
                                         <button
-                                            onClick={() => setEditingRMA(item)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
+                                            onClick={() => handleEditClick(item)}
+                                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-[#0071e3] transition-colors"
+                                            title="Edit Details"
                                         >
-                                            <Edit2 className="w-4 h-4" /> {t('track.edit')}
+                                            <Edit3 className="w-4 h-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -221,11 +276,11 @@ export const JobDetail: React.FC = () => {
                 })}
             </div>
 
-            {/* Edit Modal / Slide-over */}
+            {/* Edit Slide-over */}
             {editingRMA && (
-                <EditRMAFullPage
-                    isOpen={!!editingRMA}
-                    onClose={() => setEditingRMA(null)}
+                <EditRMADrawer
+                    isOpen={isEditOpen}
+                    onClose={handleCloseEdit}
                     rma={editingRMA}
                     onSave={handleSaveChanges}
                 />

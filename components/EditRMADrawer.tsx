@@ -6,14 +6,14 @@ import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 
-interface EditRMAFullPageProps {
+interface EditRMADrawerProps {
     isOpen: boolean;
     onClose: () => void;
     rma: RMA;
     onSave: (rmaId: string, updates: Partial<RMA>, diffs: { field: string, old: string, new: string }[]) => Promise<void>;
 }
 
-export const EditRMAFullPage: React.FC<EditRMAFullPageProps> = ({ isOpen, onClose, rma, onSave }) => {
+export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, rma, onSave }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = useState<RMA | null>(null);
     const [distOptions, setDistOptions] = useState<any[]>([]);

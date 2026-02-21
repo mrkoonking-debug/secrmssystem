@@ -129,7 +129,7 @@ export const LogsManagement: React.FC = () => {
 
                 <div className="flex flex-col items-end gap-2">
                   <Link
-                    to={`/admin/track?id=${log.claimId}`}
+                    to={`/admin/job/${log.jobId}?editRmaId=${log.claimId}`}
                     className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#2c2c2e] hover:bg-[#0071e3] hover:text-white border border-gray-200 dark:border-white/10 text-xs font-bold rounded-xl transition-all shadow-sm"
                   >
                     Jump to Claim <ArrowRight className="w-3 h-3" />
