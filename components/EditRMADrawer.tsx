@@ -22,6 +22,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [isSaving, setIsSaving] = useState(false);
     const [customDist, setCustomDist] = useState('');
 
+    // Custom Action State
+    const [customAction, setCustomAction] = useState('');
+
     // Team State
     const [tempTeam, setTempTeam] = useState<Team | ''>('');
     const [mainGroup, setMainGroup] = useState<'A' | 'B' | 'C' | ''>('');
@@ -33,6 +36,19 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             setIsReviewing(false);
             setDiffs([]);
             setCustomDist(rma.distributor || '');
+
+            // Initialize customAction if current actionTaken is not in predefined options
+            const predefinedActions = ["Replaced Component", "Swapped Unit", "Software Update", "No Fault Found", "Other"];
+            if (rma.resolution?.actionTaken && !predefinedActions.includes(rma.resolution.actionTaken)) {
+                setCustomAction(rma.resolution.actionTaken);
+                // Also set formData.resolution.actionTaken to 'Other' to show the custom input
+                setFormData(prev => prev ? ({
+                    ...prev,
+                    resolution: { ...prev.resolution!, actionTaken: 'Other' }
+                }) : null);
+            } else {
+                setCustomAction('');
+            }
 
             // Sync Team
             setTempTeam(rma.team);
@@ -119,8 +135,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         }
 
         // Resolution Fields
-        if (formData.resolution?.actionTaken !== rma.resolution?.actionTaken) {
-            newDiffs.push({ field: t('track.actionTaken'), old: fmt(rma.resolution?.actionTaken), new: fmt(formData.resolution?.actionTaken) });
+        const currentActionTaken = formData.resolution?.actionTaken === 'Other' ? customAction : formData.resolution?.actionTaken;
+        if (currentActionTaken !== rma.resolution?.actionTaken) {
+            newDiffs.push({ field: t('track.actionTaken'), old: fmt(rma.resolution?.actionTaken), new: fmt(currentActionTaken) });
         }
         if (formData.resolution?.rootCause !== rma.resolution?.rootCause) {
             newDiffs.push({ field: t('track.rootCause'), old: fmt(rma.resolution?.rootCause), new: fmt(formData.resolution?.rootCause) });
@@ -162,7 +179,11 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         const updates: Partial<RMA> = {
             ...formData,
             team: tempTeam as Team,
-            distributor: formData.distributor === 'Other' ? customDist : formData.distributor
+            distributor: formData.distributor === 'Other' ? customDist : formData.distributor,
+            resolution: formData.resolution ? {
+                ...formData.resolution,
+                actionTaken: formData.resolution.actionTaken === 'Other' ? customAction : formData.resolution.actionTaken
+            } : undefined
         };
 
         await onSave(rma.id, updates, diffs);
@@ -181,7 +202,8 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         { value: "Replaced Component", label: t('actions.replaced_component') },
         { value: "Swapped Unit", label: t('actions.swapped_unit') },
         { value: "Software Update", label: t('actions.software_update') },
-        { value: "No Fault Found", label: t('actions.no_fault_found') }
+        { value: "No Fault Found", label: t('actions.no_fault_found') },
+        { value: "Other", label: t('submit.other') }
     ];
 
     const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit" || formData.resolution?.actionTaken === "Replaced Component";
@@ -334,7 +356,27 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         </div>
                                     </div>
 
-                                    <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={val => handleResolutionChange('actionTaken', val)} options={actionOptions} searchable recentKey="actionTaken" />
+                                    <div className="flex flex-col gap-2 relative z-50">
+                                        <GlassSelect
+                                            label={t('track.actionTaken')}
+                                            value={formData.resolution?.actionTaken || ''}
+                                            onChange={(val) => handleResolutionChange('actionTaken', val)}
+                                            options={actionOptions}
+                                            placeholder={t('track.selectAction')}
+                                            searchable
+                                            recentKey="actionTaken"
+                                        />
+                                        {formData.resolution?.actionTaken === 'Other' && (
+                                            <input
+                                                type="text"
+                                                value={customAction}
+                                                onChange={(e) => setCustomAction(e.target.value)}
+                                                className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#0071e3] text-[#1d1d1f] dark:text-white mt-1 animate-fade-in"
+                                                placeholder="Specify action taken..."
+                                                autoFocus
+                                            />
+                                        )}
+                                    </div>
 
                                     {/* ALWAYS VISIBLE but Disabled if not Swapped */}
                                     <div>

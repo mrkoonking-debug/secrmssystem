@@ -52,9 +52,9 @@ const getImagesHTML = (rma: RMA) => {
         </div>
     `).join('');
   return `
-        <div class="box" style="margin-top: 8px; page-break-inside: avoid;">
-            <div class="label" style="border-bottom: 1px dashed #ccc; padding-bottom: 3px; margin-bottom: 6px;">Attached Images (รูปภาพประกอบ)</div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+        <div style="margin-top: 16px; border-top: 1px solid #e5e5ea; padding-top: 12px; page-break-inside: avoid;">
+            <div class="apple-section-title" style="margin-bottom: 8px; border:none; padding:0; font-size:12px;">Attached Images (รูปภาพประกอบ)</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
                 ${images}
             </div>
         </div>
@@ -63,9 +63,10 @@ const getImagesHTML = (rma: RMA) => {
 
 const getCommonStyles = () => `
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+    
     .print-doc { 
-      font-family: 'Prompt', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #1d1d1f !important;
       line-height: 1.4; 
       width: 210mm;
@@ -76,26 +77,116 @@ const getCommonStyles = () => `
       box-sizing: border-box;
       position: relative;
     }
-    .print-doc h1, .print-doc h2, .print-doc h3, .print-doc h4 { color: #000; margin-top: 0; }
-    .print-doc .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; border-bottom: 2px solid #f2f2f7; padding-bottom: 6px; }
+
+    /* Typography Utilities */
+    .print-doc h1, .print-doc h2, .print-doc h3, .print-doc h4 { color: #1d1d1f; margin-top: 0; }
+    .print-doc .apple-section-title { 
+        font-size: 14px; 
+        font-weight: 600; 
+        color: #1d1d1f; 
+        margin-bottom: 12px; 
+        padding-bottom: 4px; 
+        border-bottom: 1px solid #e5e5ea; 
+        letter-spacing: -0.01em;
+    }
+    
+    /* Header Styles */
+    .print-doc .doc-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-start; 
+        margin-bottom: 12px; 
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e5e5ea; 
+    }
     .print-doc .doc-title-block { text-align: left; }
-    .print-doc .doc-title { font-size: 16px; font-weight: 600; color: #0071e3; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 1px; }
+    .print-doc .doc-title { 
+        font-size: 18px; 
+        font-weight: 700; 
+        color: #1d1d1f; 
+        letter-spacing: -0.015em; 
+        line-height: 1.2; 
+        margin-bottom: 2px; 
+    }
     .print-doc .doc-subtitle { font-size: 11px; color: #86868b; font-weight: 400; }
-    .print-doc .meta-grid { display: flex; gap: 8px; margin-bottom: 6px; }
-    .print-doc .meta-grid > div { flex: 1; }
-    .print-doc .item-card { border: 1.5px solid #d1d1d6; border-radius: 8px; padding: 10px; margin-bottom: 12px; page-break-inside: avoid; }
-    .print-doc .item-card-header { font-weight: 700; font-size: 13px; background: #f2f2f7; padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e5ea; margin-bottom: 8px; display: inline-block; }
-    .print-doc .box { background: #fbfbfd; padding: 6px; border-radius: 6px; border: 1px solid #e5e5ea; margin-bottom: 6px; box-sizing: border-box; }
-    .print-doc .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #86868b; font-weight: 600; margin-bottom: 1px; display: block; }
-    .print-doc .value { font-size: 11px; font-weight: 500; color: #1d1d1f; }
-    .print-doc table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 6px; border: 1px solid #e5e5ea; border-radius: 4px; overflow: hidden; }
-    .print-doc th { background: #f2f2f7; text-align: left; padding: 4px 8px; font-size: 9px; text-transform: uppercase; font-weight: 600; color: #1d1d1f; border-bottom: 1px solid #d1d1d6; }
-    .print-doc td { padding: 4px 8px; border-bottom: 1px solid #f2f2f7; font-size: 11px; color: #1d1d1f; vertical-align: top; background: white; }
-    .print-doc tr:last-child td { border-bottom: none; }
-    .print-doc .footer-grid { display: flex; justify-content: space-between; margin-top: 6px; gap: 20px; page-break-inside: avoid; }
+
+    /* Meta Info Styles */
+    .print-doc .meta-grid { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr;
+        gap: 16px; 
+        margin-bottom: 16px; 
+    }
+    .print-doc .meta-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    /* Item Card (Apple Style - No border, just layout isolation) */
+    .print-doc .apple-item-block { 
+        margin-bottom: 20px; 
+        page-break-inside: avoid; 
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .print-doc .apple-item-header { 
+        font-weight: 700; 
+        font-size: 14px; 
+        color: #1d1d1f;
+        letter-spacing: -0.01em;
+    }
+    .print-doc .apple-item-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 4px;
+    }
+    .print-doc .apple-item-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 4px;
+    }
+
+    /* Universal Label/Value */
+    .print-doc .label { 
+        font-size: 9px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.04em; 
+        color: #86868b; 
+        font-weight: 600; 
+        margin-bottom: 2px; 
+        display: block; 
+    }
+    .print-doc .value { 
+        font-size: 12px; 
+        font-weight: 500; 
+        color: #1d1d1f; 
+    }
+    .print-doc .value-secondary {
+        font-size: 11px;
+        color: #444;
+    }
+    
+    /* Footer/Signatures */
+    .print-doc .footer-grid { 
+        display: flex; 
+        justify-content: space-between; 
+        margin-top: 24px; 
+        gap: 32px; 
+        page-break-inside: avoid; 
+        border-top: 1px solid #e5e5ea;
+        padding-top: 16px;
+    }
     .print-doc .footer-grid > div { flex: 1; }
-    .print-doc .signature-box { margin-top: 3px; }
-    .print-doc .signature-line { height: 16px; border-bottom: 1px solid #d1d1d6; margin-bottom: 4px; }
+    .print-doc .signature-box { margin-top: 4px; }
+    .print-doc .signature-line { 
+        height: 24px; 
+        border-bottom: 1px dashed #d1d1d6; 
+        margin-bottom: 6px; 
+    }
     @media print {
       @page { size: A4; margin: 0; }
       body * { visibility: hidden; }
@@ -161,8 +252,8 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
           <div class="box" style="margin-bottom: 0;">
-            <div class="label" style="color: #000;">Reported Fault / Symptom (อาการเสีย)</div>
-            <div class="value" style="margin-top: 3px; font-size: 12px;">${item.issueDescription}</div>
+            <div class="label" style="color: #000;">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
+            <div class="value" style="margin-top: 3px; font-size: 12px;">${item.resolution?.rootCause || '-'}</div>
             ${item.deviceUsername || item.devicePassword ? `
             <div style="margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
                <div>
@@ -211,95 +302,100 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
 
 export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
   if (!rmas || rmas.length === 0) return '';
-  const rma = rmas[0];
+  const rma = rmas[0]; // Use first RMA for common details
   const settings = await MockDb.getSettings();
+
   return `
     ${getCommonStyles()}
     <div class="print-doc">
       ${getLogoHTML(settings)}
       <div class="doc-header">
         <div class="doc-title-block">
-          <div class="doc-title">ใบส่งคืนสินค้าเคลม</div>
-          <div class="doc-subtitle">Product Return Note</div>
+          <div class="doc-title">ใบรับคืนสินค้าเคลม / บริการ (Customer Return Note)</div>
+          <div class="doc-subtitle">For Customer (ส่วนของลูกค้า)</div>
         </div>
         <div style="text-align: right;">
-          <div class="label">Job Reference</div>
-          <div class="value" style="font-size: 16px;">${rma.quotationNumber || 'N/A'}</div>
-          <div class="value" style="font-size: 12px; margin-top: 2px;">RMA ID: ${rma.id}</div>
+          <div class="label">Service Ref No.</div>
+          <div class="value" style="font-size: 18px; font-weight: bold;">${rma.id}</div>
+          <div class="value" style="font-size: 12px;">Date: ${new Date().toLocaleDateString('th-TH')}</div>
         </div>
       </div>
       <div class="meta-grid">
-        <div class="box">
+        <div class="meta-block">
           <div class="label">Customer Details (ลูกค้า)</div>
-          <div class="value" style="font-size: 15px; font-weight: bold;">${rma.customerName}</div>
-          <div class="value" style="font-size: 12px;">Tel: ${rma.customerPhone || '-'}</div>
-          <div class="value" style="font-size: 12px;">Email: ${rma.customerEmail}</div>
-          ${rma.customerLineId ? `<div class="value" style="font-size: 12px;">Line ID: ${rma.customerLineId}</div>` : ''}
+          <div class="value" style="font-size: 14px; font-weight: 700;">${rma.customerName}</div>
+          <div class="value-secondary">Tel: ${rma.customerPhone || '-'}</div>
+          <div class="value-secondary">Email: ${rma.customerEmail}</div>
+          ${rma.customerLineId ? `<div class="value-secondary">Line ID: ${rma.customerLineId}</div>` : ''}
         </div>
-        <div class="box">
+        <div class="meta-block">
           <div class="label">Service Status (สถานะ)</div>
-          <div class="value" style="font-size: 15px; font-weight: bold;">
+          <div class="value" style="font-size: 14px; font-weight: 700;">
             ${rma.status === 'REPAIRED' ? 'ดำเนินการเสร็จสิ้น (Completed)' :
       rma.status === 'REJECTED' ? 'ส่งคืน (Returned/Rejected)' :
         rma.status.replace('_', ' ')}
           </div>
         </div>
       </div>
-      <h3 style="font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 3px; text-transform: uppercase; font-weight: 600;">Service Item Details (${rmas.length} Items)</h3>
+      
+      <div class="apple-section-title">Service Item Details (${rmas.length} Items)</div>
+      
       ${rmas.map((item, index) => `
-      <div class="item-card">
-        <div class="item-card-header">
-          Item ${index + 1}: ${item.brand}
+      <div class="apple-item-block">
+        <div class="apple-item-header">
+          ${index + 1}. ${item.brand} — ${item.productModel}
         </div>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; padding: 0 4px;">
-          <div style="grid-column: span 1;">
+        <div class="apple-item-grid-3">
+          <div>
             <div class="label">Product Model (รุ่น)</div>
-            <div class="value" style="font-size: 12px; font-weight: 600;">${item.productModel}</div>
-            <div style="font-size: 10px; color: #666; margin-top: 2px;">${item.productType}</div>
+            <div class="value" style="font-size: 13px; font-weight: 600;">${item.productModel}</div>
+            <div class="value-secondary" style="font-size: 10px; margin-top: 1px;">${item.productType}</div>
           </div>
-          <div style="grid-column: span 1;">
+          <div>
             <div class="label">Serial Number (S/N)</div>
-            <div class="value" style="font-size: 12px; font-family: monospace;">Original: ${item.serialNumber}</div>
-            ${item.resolution?.replacedSerialNumber ? `<div style="margin-top: 2px; font-weight: bold; color: #000; font-size: 12px; font-family: monospace;">New S/N: ${item.resolution.replacedSerialNumber}</div>` : ''}
+            <div class="value-secondary" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">Original: ${item.serialNumber}</div>
+            ${item.resolution?.replacedSerialNumber ? `<div class="value" style="margin-top: 2px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">New: ${item.resolution.replacedSerialNumber}</div>` : ''}
           </div>
-          <div style="grid-column: span 1;">
+          <div>
             <div class="label">Warranty (การรับประกัน)</div>
-            <div class="value" style="font-size: 12px;">${item.repairCosts?.warrantyStatus ? (translations.th.warranty as any)[item.repairCosts.warrantyStatus] : '-'}</div>
+            <div class="value">${item.repairCosts?.warrantyStatus ? (translations.th.warranty as any)[item.repairCosts.warrantyStatus] : '-'}</div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
-          <div class="box" style="margin-bottom: 0;">
-            <div class="label">Resolution (ผลการดำเนินการ)</div>
-            <div class="value" style="margin-top: 3px; font-weight: 500;">
+        <div class="apple-item-grid" style="border-top: 1px solid #e5e5ea; padding-top: 8px;">
+          <div>
+            <div class="label" style="color:#1d1d1f; font-weight: 700;">Resolution (ผลการดำเนินการ)</div>
+            <div class="value" style="margin-top: 2px; font-size: 13px;">
               ${item.resolution?.actionTaken ? formatAction(item.resolution.actionTaken) : (item.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
             </div>
-            <div style="margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px;">
-               <div class="label">Original Issue (อาการที่แจ้ง)</div>
-               <div style="font-size: 12px; color: #444;">${item.issueDescription}</div>
+            
+            <div style="margin-top: 12px;">
+               <div class="label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
+               <div class="value-secondary">${item.resolution?.rootCause || '-'}</div>
                ${item.deviceUsername || item.devicePassword ? `
-               <div style="margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background-color: #fbfbfd; padding: 4px; border-radius: 4px; border: 1px solid #e5e5ea;">
+               <div style="margin-top: 6px; display: flex; gap: 16px;">
                  <div>
-                   <div class="label" style="font-size: 8px;">Device Username (ยูสเซอร์)</div>
-                   <div style="font-size: 11px; font-weight: bold; color: #d32f2f;">${item.deviceUsername || '-'}</div>
+                   <div class="label" style="font-size: 8px;">Device Username</div>
+                   <div style="font-family: monospace; font-size: 11px;">${item.deviceUsername || '-'}</div>
                  </div>
                  <div>
-                   <div class="label" style="font-size: 8px;">Device Password (รหัสผ่าน)</div>
-                   <div style="font-size: 11px; font-weight: bold; color: #d32f2f;">${item.devicePassword || '-'}</div>
+                   <div class="label" style="font-size: 8px;">Device Password</div>
+                   <div style="font-family: monospace; font-size: 11px;">${item.devicePassword || '-'}</div>
                  </div>
                </div>` : ''}
             </div>
             ${item.resolution?.technicalNotes ? `
-            <div style="margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px;">
+            <div style="margin-top: 12px;">
                <div class="label">Technical Note (หมายเหตุช่าง)</div>
-               <div style="font-size: 12px; color: #444;">${item.resolution.technicalNotes}</div>
+               <div class="value-secondary">${item.resolution.technicalNotes}</div>
             </div>` : ''}
           </div>
-          <div class="box" style="margin-bottom: 0;">
+          
+          <div>
             <div class="label">Items Returned (อุปกรณ์ที่ส่งคืนลูกค้า)</div>
-            <div class="value" style="margin-top: 3px;">
-              <ul style="margin: 0 0 0 20px; padding: 0; list-style-type: square; font-size: 12px;">
+            <div class="value-secondary" style="margin-top: 2px;">
+              <ul style="margin: 0 0 0 16px; padding: 0; font-size: 11px; line-height: 1.6; color:#444;">
                 <li>Main Unit (${item.productModel})</li>
                 ${item.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
               </ul>

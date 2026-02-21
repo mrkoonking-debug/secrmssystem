@@ -122,7 +122,7 @@ export const DocumentPreview: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8 px-2">
-                <Link to={`/admin/track?id=${id}`} className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> Back to RMA</Link>
+                <Link to={`/admin/job/${encodeURIComponent(id || '')}`} className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> Back to RMA</Link>
                 <div className="flex items-center gap-3"><h1 className="text-xl font-bold text-[#1d1d1f] dark:text-white capitalize">{type === 'importer' ? 'Distributor RMA' : 'Customer Return'} Form</h1><div className="text-xs font-mono text-gray-400 px-2 py-1 bg-white/50 dark:bg-white/10 rounded-lg border border-gray-200 dark:border-white/10">{id}</div></div>
             </div>
 

@@ -11,7 +11,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m
 const ClaimsList = lazy(() => import('./pages/ClaimsList').then(m => ({ default: m.ClaimsList })));
 const JobDetail = lazy(() => import('./pages/JobDetail').then(m => ({ default: m.JobDetail })));
 const SubmitClaim = lazy(() => import('./pages/SubmitClaim').then(m => ({ default: m.SubmitClaim })));
-const TrackClaim = lazy(() => import('./pages/TrackClaim').then(m => ({ default: m.TrackClaim })));
+
 const DocumentPreview = lazy(() => import('./pages/DocumentPreview').then(m => ({ default: m.DocumentPreview })));
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
 const CustomerSearch = lazy(() => import('./pages/CustomerSearch').then(m => ({ default: m.CustomerSearch })));
@@ -55,7 +55,7 @@ const AppContent: React.FC = () => {
                   <Route path="/admin/incoming" element={<ProtectedRoute><IncomingClaims /></ProtectedRoute>} />
                   <Route path="/admin/job/:jobId" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
                   <Route path="/admin/submit" element={<ProtectedRoute><SubmitClaim /></ProtectedRoute>} />
-                  <Route path="/admin/track" element={<ProtectedRoute><TrackClaim /></ProtectedRoute>} />
+
                   <Route path="/admin/document/:type/:id" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
                   <Route path="/admin/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
                   <Route path="/admin/logs" element={<ProtectedRoute><LogsManagement /></ProtectedRoute>} />
