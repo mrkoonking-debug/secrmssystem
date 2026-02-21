@@ -25,8 +25,8 @@ export const DocumentPreview: React.FC = () => {
                 if (found) {
                     setRMA(found);
                     let content = '';
-                    if (type === 'importer') content = await getImporterFormHTML(found);
-                    else if (type === 'customer') content = await getCustomerFormHTML(found);
+                    if (type === 'importer') content = await getImporterFormHTML([found]);
+                    else if (type === 'customer') content = await getCustomerFormHTML([found]);
                     setHtmlContent(content);
                 } else {
                     navigate('/admin/rmas');

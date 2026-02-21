@@ -91,6 +91,14 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             newDiffs.push({ field: t('track.issueReported'), old: fmt(rma.issueDescription), new: fmt(formData.issueDescription) });
         }
 
+        if (formData.deviceUsername !== rma.deviceUsername) {
+            newDiffs.push({ field: 'Device Username', old: fmt(rma.deviceUsername), new: fmt(formData.deviceUsername) });
+        }
+
+        if (formData.devicePassword !== rma.devicePassword) {
+            newDiffs.push({ field: 'Device Password', old: fmt(rma.devicePassword), new: fmt(formData.devicePassword) });
+        }
+
         const currentDist = formData.distributor === 'Other' ? customDist : formData.distributor;
         if (currentDist !== rma.distributor) {
             newDiffs.push({ field: t('submit.distributor'), old: fmt(rma.distributor), new: fmt(currentDist) });
@@ -220,6 +228,28 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             rows={5}
                                             className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]"
                                         />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Device Username (ยูสเซอร์)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.deviceUsername || ''}
+                                                onChange={e => handleFormChange('deviceUsername', e.target.value)}
+                                                className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]"
+                                                placeholder="N/A"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1">Device Password (รหัสผ่าน)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.devicePassword || ''}
+                                                onChange={e => handleFormChange('devicePassword', e.target.value)}
+                                                className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]"
+                                                placeholder="N/A"
+                                            />
+                                        </div>
                                     </div>
                                     <div>
                                         <GlassSelect
