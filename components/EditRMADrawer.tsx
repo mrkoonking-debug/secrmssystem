@@ -210,7 +210,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <div className="lg:col-span-4 space-y-6">
                             <div className="bg-white dark:bg-[#1c1c1e] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 h-full">
                                 <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-3">
-                                    <AlertOctagon className="w-5 h-5 text-gray-400" /> Intake Information
+                                    <AlertOctagon className="w-5 h-5 text-gray-400" /> {t('track.intakeInfo')}
                                 </h3>
                                 <div className="space-y-6">
                                     <div>
@@ -228,13 +228,15 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             value={formData.distributor || ''}
                                             onChange={val => handleFormChange('distributor', val)}
                                             options={distOptions}
+                                            searchable
+                                            recentKey="distributor"
                                         />
                                         {formData.distributor === 'Other' && (
                                             <input
                                                 value={customDist}
                                                 onChange={e => setCustomDist(e.target.value)}
                                                 className="mt-2 w-full px-3 py-2 text-xs rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white"
-                                                placeholder="Specify Distributor..."
+                                                placeholder={t('submit.distributor')}
                                             />
                                         )}
                                     </div>
@@ -244,6 +246,8 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             value={formData.repairCosts?.warrantyStatus || ''}
                                             onChange={handleWarrantyChange}
                                             options={warrantyOptions}
+                                            searchable
+                                            recentKey="warrantyStatus"
                                         />
                                     </div>
                                 </div>
@@ -254,7 +258,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <div className="lg:col-span-4 space-y-6">
                             <div className="bg-white dark:bg-[#1c1c1e] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 h-full">
                                 <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-3">
-                                    <ShieldCheck className="w-5 h-5 text-gray-400" /> Status & Resolution
+                                    <ShieldCheck className="w-5 h-5 text-gray-400" /> {t('track.statusResolution')}
                                 </h3>
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
@@ -263,12 +267,14 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             value={formData.status || ''}
                                             onChange={val => handleFormChange('status', val)}
                                             options={statusOptions}
+                                            searchable
+                                            recentKey="status"
                                         />
                                         <div>
                                             <div className="flex justify-between items-center mb-2 ml-1">
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('track.assignedTeam')}</label>
                                                 {!isChangingTeam && (
-                                                    <button onClick={() => setIsChangingTeam(true)} className="text-[10px] text-blue-500 font-bold hover:underline">Change</button>
+                                                    <button onClick={() => setIsChangingTeam(true)} className="text-[10px] text-blue-500 font-bold hover:underline">{t('track.changeBtn')}</button>
                                                 )}
                                             </div>
                                             {isChangingTeam ? (
@@ -289,7 +295,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                             ))}
                                                         </div>
                                                     )}
-                                                    <button onClick={() => { setIsChangingTeam(false); setTempTeam(rma.team); }} className="w-full py-1 text-[10px] text-gray-400 hover:text-red-500">Cancel</button>
+                                                    <button onClick={() => { setIsChangingTeam(false); setTempTeam(rma.team); }} className="w-full py-1 text-[10px] text-gray-400 hover:text-red-500">{t('track.cancelBtn')}</button>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-sm font-bold text-[#1d1d1f] dark:text-white border border-gray-200 dark:border-white/10">
@@ -299,7 +305,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         </div>
                                     </div>
 
-                                    <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={val => handleResolutionChange('actionTaken', val)} options={actionOptions} />
+                                    <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={val => handleResolutionChange('actionTaken', val)} options={actionOptions} searchable recentKey="actionTaken" />
 
                                     {/* ALWAYS VISIBLE but Disabled if not Swapped */}
                                     <div>
@@ -337,7 +343,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <div className="lg:col-span-4 space-y-6">
                             <div className="bg-white dark:bg-[#1c1c1e] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 h-full">
                                 <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-6 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-3">
-                                    <Truck className="w-5 h-5 text-gray-400" /> Logistics & Notes
+                                    <Truck className="w-5 h-5 text-gray-400" /> {t('track.logisticsNotes')}
                                 </h3>
                                 <div className="space-y-6">
                                     <div>
@@ -351,7 +357,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             </div>
                                         ) : (
                                             <div className="space-y-2">
-                                                <GlassSelect value={formData.delayReason || ''} onChange={val => handleFormChange('delayReason', val)} options={delayOptions.filter(d => d.value !== 'NONE')} hasError />
+                                                <GlassSelect value={formData.delayReason || ''} onChange={val => handleFormChange('delayReason', val)} options={delayOptions.filter(d => d.value !== 'NONE')} hasError searchable recentKey="delayReason" />
                                                 <button onClick={() => handleFormChange('delayReason', 'NONE')} className="text-xs font-bold text-green-500 hover:underline ml-1">กลับเป็นปกติ</button>
                                             </div>
                                         )}
@@ -364,7 +370,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             onChange={e => handleFormChange('notes', e.target.value)}
                                             rows={6}
                                             className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]"
-                                            placeholder="Add internal notes..."
+                                            placeholder={t('track.addNotesPlaceholder')}
                                         />
                                     </div>
                                 </div>
@@ -382,9 +388,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     <div>
                                         <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
                                             <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                            Confirm Changes
+                                            {t('track.confirmChanges')}
                                         </h3>
-                                        <p className="text-sm text-gray-500 mt-1">Please verify the following updates for RMA <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{rma.id}</span></p>
+                                        <p className="text-sm text-gray-500 mt-1">{t('track.verifyChangesMsg')} <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{rma.id}</span></p>
                                     </div>
                                     <button onClick={() => setIsReviewing(false)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                                         <X className="w-5 h-5" />
@@ -396,9 +402,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-gray-50 dark:bg-black/20 sticky top-0 z-10">
                                             <tr>
-                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/4">Field</th>
-                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/3">Original Value</th>
-                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/3">New Value</th>
+                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/4">{t('track.field')}</th>
+                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/3">{t('track.oldValue')}</th>
+                                                <th className="px-8 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs w-1/3">{t('track.newValue')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -425,14 +431,14 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 {/* Modal Footer */}
                                 <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#2c2c2e] flex justify-between items-center z-20">
                                     <div className="text-xs text-gray-400">
-                                        <span className="font-bold text-gray-600 dark:text-gray-300">{diffs.length}</span> field{diffs.length > 1 ? 's' : ''} modified
+                                        <span className="font-bold text-gray-600 dark:text-gray-300">{diffs.length}</span> {t('track.field')}{diffs.length > 1 ? 's' : ''} modified
                                     </div>
                                     <div className="flex gap-3">
                                         <button
                                             onClick={() => setIsReviewing(false)}
                                             className="px-6 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                         >
-                                            Back to Edit
+                                            {t('track.cancelEdit')}
                                         </button>
                                         <button
                                             onClick={handleFinalSave}
@@ -440,9 +446,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             className="px-8 py-2.5 rounded-xl text-sm font-bold text-white bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all flex items-center gap-2 transform active:scale-95"
                                         >
                                             {isSaving ? (
-                                                <>Processing...</>
+                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</>
                                             ) : (
-                                                <>Confirm Update <ArrowRight className="w-4 h-4" /></>
+                                                <>{t('track.confirmChanges')} <ArrowRight className="w-4 h-4" /></>
                                             )}
                                         </button>
                                     </div>
@@ -459,7 +465,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         onClick={onClose}
                         className="px-6 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                        Cancel
+                        {t('track.cancelBtn')}
                     </button>
                     <button
                         onClick={handlePreSave}

@@ -71,33 +71,33 @@ const getCommonStyles = () => `
     .print-doc { 
       font-family: 'Prompt', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       color: #1d1d1f !important;
-      line-height: 1.5; 
+      line-height: 1.4; 
       width: 210mm;
       min-height: 297mm;
-      padding: 20mm;
+      padding: 15mm 20mm;
       margin: 0 auto; 
       background: white;
       box-sizing: border-box;
       position: relative;
     }
-    .print-doc h1, .print-doc h2, .print-doc h3, .print-doc h4 { color: #000; }
-    .print-doc .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #f2f2f7; padding-bottom: 20px; }
+    .print-doc h1, .print-doc h2, .print-doc h3, .print-doc h4 { color: #000; margin-top: 0; }
+    .print-doc .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px solid #f2f2f7; padding-bottom: 10px; }
     .print-doc .doc-title-block { text-align: left; }
-    .print-doc .doc-title { font-size: 24px; font-weight: 600; color: #0071e3; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 4px; }
-    .print-doc .doc-subtitle { font-size: 14px; color: #86868b; font-weight: 400; }
-    .print-doc .meta-grid { display: flex; gap: 20px; margin-bottom: 30px; }
+    .print-doc .doc-title { font-size: 20px; font-weight: 600; color: #0071e3; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 2px; }
+    .print-doc .doc-subtitle { font-size: 13px; color: #86868b; font-weight: 400; }
+    .print-doc .meta-grid { display: flex; gap: 15px; margin-bottom: 15px; }
     .print-doc .meta-grid > div { flex: 1; }
-    .print-doc .box { background: #fbfbfd; padding: 16px; border-radius: 16px; border: 1px solid #e5e5ea; }
-    .print-doc .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #86868b; font-weight: 600; margin-bottom: 6px; display: block; }
-    .print-doc .value { font-size: 14px; font-weight: 500; color: #1d1d1f; }
-    .print-doc table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 30px; border: 1px solid #e5e5ea; border-radius: 12px; overflow: hidden; }
-    .print-doc th { background: #f2f2f7; text-align: left; padding: 12px 16px; font-size: 12px; text-transform: uppercase; font-weight: 600; color: #1d1d1f; border-bottom: 1px solid #d1d1d6; }
-    .print-doc td { padding: 14px 16px; border-bottom: 1px solid #f2f2f7; font-size: 14px; color: #1d1d1f; vertical-align: top; background: white; }
+    .print-doc .box { background: #fbfbfd; padding: 12px; border-radius: 12px; border: 1px solid #e5e5ea; margin-bottom: 12px; box-sizing: border-box; }
+    .print-doc .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #86868b; font-weight: 600; margin-bottom: 2px; display: block; }
+    .print-doc .value { font-size: 13px; font-weight: 500; color: #1d1d1f; }
+    .print-doc table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 15px; border: 1px solid #e5e5ea; border-radius: 8px; overflow: hidden; }
+    .print-doc th { background: #f2f2f7; text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; font-weight: 600; color: #1d1d1f; border-bottom: 1px solid #d1d1d6; }
+    .print-doc td { padding: 10px 12px; border-bottom: 1px solid #f2f2f7; font-size: 13px; color: #1d1d1f; vertical-align: top; background: white; }
     .print-doc tr:last-child td { border-bottom: none; }
-    .print-doc .footer-grid { display: flex; justify-content: space-between; margin-top: 60px; gap: 60px; page-break-inside: avoid; }
+    .print-doc .footer-grid { display: flex; justify-content: space-between; margin-top: 15px; gap: 40px; page-break-inside: avoid; }
     .print-doc .footer-grid > div { flex: 1; }
-    .print-doc .signature-box { margin-top: 20px; }
-    .print-doc .signature-line { height: 50px; border-bottom: 1px solid #d1d1d6; margin-bottom: 12px; }
+    .print-doc .signature-box { margin-top: 5px; }
+    .print-doc .signature-line { height: 25px; border-bottom: 1px solid #d1d1d6; margin-bottom: 8px; }
     @media print {
       @page { size: A4; margin: 0; }
       body * { visibility: hidden; }
@@ -161,7 +161,7 @@ export const getImporterFormHTML = async (rma: RMA): Promise<string> => {
           </tr>
         </tbody>
       </table>
-      <div class="box" style="margin-bottom: 20px; border: 1px solid #000;">
+      <div class="box" style="border: 1px solid #000;">
         <div class="label" style="color: #000;">Reported Fault / Symptom (อาการเสีย)</div>
         <div class="value" style="margin-top: 8px; font-size: 14px;">${rma.issueDescription}</div>
         ${rma.devicePassword ? `
@@ -260,7 +260,7 @@ export const getCustomerFormHTML = async (rma: RMA): Promise<string> => {
           </tr>
         </tbody>
       </table>
-      <div class="box" style="margin-bottom: 20px;">
+      <div class="box">
         <div class="label">Resolution (ผลการดำเนินการ)</div>
         <div class="value" style="margin-top: 5px; font-weight: 500;">
           ${rma.resolution?.actionTaken ? formatAction(rma.resolution.actionTaken) : (rma.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
@@ -302,18 +302,39 @@ export const getCustomerFormHTML = async (rma: RMA): Promise<string> => {
   `;
 };
 
-export const printJobDocuments = async (rmas: RMA[]) => {
+export const printDistributorDocuments = async (rmas: RMA[]) => {
   try {
     let combinedHTML = '';
 
     for (let i = 0; i < rmas.length; i++) {
       const rma = rmas[i];
       const importerHTML = await getImporterFormHTML(rma);
-      const customerHTML = await getCustomerFormHTML(rma);
 
       combinedHTML += `
           ${importerHTML}
-          <div style="page-break-before: always;"></div>
+        `;
+
+      if (i < rmas.length - 1) {
+        combinedHTML += '<div style="page-break-before: always;"></div>';
+      }
+    }
+
+    executePrint(combinedHTML, rmas.length > 0 ? (rmas[0].quotationNumber || rmas[0].groupRequestId || rmas[0].id) : 'Distributor_Forms');
+  } catch (err) {
+    console.error("Error generating print documents:", err);
+    alert("Error generating documents. Please try again.");
+  }
+};
+
+export const printCustomerDocuments = async (rmas: RMA[]) => {
+  try {
+    let combinedHTML = '';
+
+    for (let i = 0; i < rmas.length; i++) {
+      const rma = rmas[i];
+      const customerHTML = await getCustomerFormHTML(rma);
+
+      combinedHTML += `
           ${customerHTML}
         `;
 
@@ -322,31 +343,34 @@ export const printJobDocuments = async (rmas: RMA[]) => {
       }
     }
 
-    const iframe = document.createElement('iframe');
-    document.body.appendChild(iframe);
-    iframe.style.display = 'none';
-
-    const doc = iframe.contentWindow?.document;
-    if (!doc) {
-      console.error("Failed to access iframe document for printing.");
-      return;
-    }
-
-    const jobId = rmas.length > 0 ? (rmas[0].quotationNumber || rmas[0].groupRequestId || rmas[0].id) : 'Job';
-    doc.write(`<html><head><title>Print Documents - ${jobId}</title></head><body><div id="print-content">${combinedHTML}</div></body></html>`);
-    doc.close();
-
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      // Cleanup after short delay to ensure print dialog opened
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 1000);
-    }, 500);
+    executePrint(combinedHTML, rmas.length > 0 ? (rmas[0].quotationNumber || rmas[0].groupRequestId || rmas[0].id) : 'Customer_Forms');
   } catch (err) {
     console.error("Error generating print documents:", err);
     alert("Error generating documents. Please try again.");
   }
+};
+
+const executePrint = (html: string, titleName: string) => {
+  const iframe = document.createElement('iframe');
+  document.body.appendChild(iframe);
+  iframe.style.display = 'none';
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    console.error("Failed to access iframe document for printing.");
+    return;
+  }
+
+  doc.write(`<html><head><title>Print - ${titleName}</title></head><body><div id="print-content">${html}</div></body></html>`);
+  doc.close();
+
+  setTimeout(() => {
+    iframe.contentWindow?.print();
+    // Cleanup after short delay to ensure print dialog opened
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    }, 1000);
+  }, 500);
 };

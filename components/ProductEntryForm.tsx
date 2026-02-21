@@ -121,7 +121,7 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
         <div className="space-y-6 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                    <GlassSelect label={t('submit.brand')} value={currentItem.brand} onChange={val => { setCurrentItem(p => ({ ...p, brand: val })); setErrors(p => ({ ...p, brand: '' })); }} options={brandOptions} searchable hasError={!!errors.brand} />
+                    <GlassSelect label={t('submit.brand')} value={currentItem.brand} onChange={val => { setCurrentItem(p => ({ ...p, brand: val })); setErrors(p => ({ ...p, brand: '' })); }} options={brandOptions} searchable recentKey="brand" hasError={!!errors.brand} />
                     {currentItem.brand === 'Other' && <input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className={`mt-2 ${getInputClass(!!errors.customBrand)}`} placeholder={t('placeholders.specifyBrand')} />}
                 </div>
 
@@ -150,7 +150,7 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {mode === 'admin' && (
                     <div>
-                        <GlassSelect label={t('submit.distributor')} value={currentItem.distributor} onChange={val => setCurrentItem(p => ({ ...p, distributor: val }))} options={distOptions} searchable hasError={!!errors.distributor} />
+                        <GlassSelect label={t('submit.distributor')} value={currentItem.distributor} onChange={val => setCurrentItem(p => ({ ...p, distributor: val }))} options={distOptions} searchable recentKey="distributor" hasError={!!errors.distributor} />
                         {currentItem.distributor === 'Other' && <input value={customDistributor} onChange={e => setCustomDistributor(e.target.value)} className={`mt-2 ${getInputClass(!!errors.customDistributor)}`} placeholder={t('placeholders.specifyDistributor')} />}
                     </div>
                 )}

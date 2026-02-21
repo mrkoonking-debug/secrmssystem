@@ -7,7 +7,7 @@ import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, Hist
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { EditRMADrawer } from '../components/EditRMADrawer';
-import { printJobDocuments } from '../services/printService';
+import { printDistributorDocuments, printCustomerDocuments } from '../services/printService';
 import { Printer } from 'lucide-react'; // Added import or ensure it is already there
 
 export const JobDetail: React.FC = () => {
@@ -146,23 +146,31 @@ export const JobDetail: React.FC = () => {
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
                             <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{jobInfo.id}</h1>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customerName}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} Items</span></div>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customerName}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} {t('claimsList.items')}</span></div>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <button
-                            onClick={() => printJobDocuments(rmas)}
-                            className="flex items-center gap-2 px-6 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-bold shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
-                            title="Print Distributor & Customer Forms"
+                            onClick={() => printDistributorDocuments(rmas)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl font-medium transition-all shadow-sm"
+                            title="Print Distributor RMA Form"
                         >
-                            <Printer className="w-5 h-5" />
-                            <span>Print Forms</span>
+                            <Printer className="w-4 h-4" />
+                            <span className="text-sm">{t('track.printDistForm')}</span>
+                        </button>
+                        <button
+                            onClick={() => printCustomerDocuments(rmas)}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
+                            title="Print Customer Return Note"
+                        >
+                            <User className="w-4 h-4" />
+                            <span className="text-sm">{t('track.printCustForm')}</span>
                         </button>
                     </div>
                 </div>
                 <div className="flex gap-2 justify-end mt-4 md:mt-0">
-                    <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">Done</div></div>
-                    <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">Active</div></div>
+                    <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">{t('track.doneBadge')}</div></div>
+                    <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">{t('track.activeBadge')}</div></div>
                 </div>
             </div>
 
@@ -266,7 +274,7 @@ export const JobDetail: React.FC = () => {
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="pl-8 text-sm text-gray-400">No history available</div>
+                                            <div className="pl-8 text-sm text-gray-400">{t('track.noHistory')}</div>
                                         )}
                                     </div>
                                 </div>

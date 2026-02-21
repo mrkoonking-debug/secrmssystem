@@ -314,7 +314,7 @@ export const TrackClaim: React.FC = () => {
 
                     {/* Row 1: Status + Team + Warranty */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div><GlassSelect label={t('track.statusLabel')} value={status} onChange={val => setStatus(val as RMAStatus)} options={statusOptions} /></div>
+                        <div><GlassSelect label={t('track.statusLabel')} value={status} onChange={val => setStatus(val as RMAStatus)} options={statusOptions} searchable recentKey="status" /></div>
                         <div>
                             <div className="flex justify-between items-center mb-2 ml-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('track.assignedTeam')}</label>
@@ -348,12 +348,12 @@ export const TrackClaim: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        <div><GlassSelect label={t('track.warrantyStatus')} value={warrantyStatus} onChange={val => setWarrantyStatus(val as any)} options={warrantyOptions} /></div>
+                        <div><GlassSelect label={t('track.warrantyStatus')} value={warrantyStatus} onChange={val => setWarrantyStatus(val as any)} options={warrantyOptions} searchable recentKey="warrantyStatus" /></div>
                     </div>
 
                     {/* Row 2: Action + Root Cause + Vendor Ref */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pt-6 border-t border-gray-200/50 dark:border-white/10">
-                        <div><GlassSelect label={t('track.actionTaken')} value={resolution.actionTaken} onChange={val => setResolution({ ...resolution, actionTaken: val })} options={actionOptions} placeholder={t('track.selectAction')} /></div>
+                        <div><GlassSelect label={t('track.actionTaken')} value={resolution.actionTaken} onChange={val => setResolution({ ...resolution, actionTaken: val })} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" /></div>
                         {showNewSerialInput && (
                             <div className="animate-fade-in">
                                 <label className="block text-xs font-bold text-green-600 dark:text-green-400 uppercase mb-2 ml-2 tracking-wider flex items-center gap-1"><RefreshCw className="w-3 h-3" /> {t('track.newSerial')}</label>
@@ -382,7 +382,7 @@ export const TrackClaim: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-2 animate-fade-in">
-                                    <GlassSelect value={delayReason} onChange={val => setDelayReason(val as DelayReason)} options={delayOptions.filter(d => d.value !== 'NONE')} hasError />
+                                    <GlassSelect value={delayReason} onChange={val => setDelayReason(val as DelayReason)} options={delayOptions.filter(d => d.value !== 'NONE')} hasError searchable recentKey="delayReason" />
                                     <button
                                         onClick={() => setDelayReason('NONE' as DelayReason)}
                                         className="text-xs font-bold text-green-500 hover:text-green-600 hover:underline flex items-center gap-1 ml-2"

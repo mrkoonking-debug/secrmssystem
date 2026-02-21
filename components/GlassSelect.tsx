@@ -17,6 +17,7 @@ interface GlassSelectProps {
   hasError?: boolean;
   disabled?: boolean;
   searchable?: boolean;
+  recentKey?: string;
 }
 
 export const GlassSelect: React.FC<GlassSelectProps> = ({
@@ -28,10 +29,12 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
   className = '',
   hasError = false,
   disabled = false,
-  searchable = false
+  searchable = false,
+  recentKey
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [frequencies, setFrequencies] = useState<Record<string, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +49,16 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load frequent items from localStorage
+  useEffect(() => {
+    if (recentKey) {
+      try {
+        const stored = localStorage.getItem(`gs_freq_${recentKey}`);
+        if (stored) setFrequencies(JSON.parse(stored));
+      } catch (e) { }
+    }
+  }, [recentKey]);
+
   // Reset search when closed
   useEffect(() => {
     if (!isOpen) {
@@ -55,11 +68,54 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
     }
   }, [isOpen, searchable]);
 
+  const handleSelect = (val: string) => {
+    if (recentKey) {
+      const newFreq = { ...frequencies, [val]: (frequencies[val] || 0) + 1 };
+      setFrequencies(newFreq);
+      localStorage.setItem(`gs_freq_${recentKey}`, JSON.stringify(newFreq));
+    }
+    onChange(val);
+    setIsOpen(false);
+  };
+
   const selectedOption = options.find(opt => opt.value === value);
 
   const filteredOptions = searchable
     ? options.filter(opt => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
     : options;
+
+  let frequentOptions: Option[] = [];
+  let normalOptions = filteredOptions;
+
+  if (recentKey && !searchQuery) {
+    frequentOptions = options
+      .filter(opt => (frequencies[opt.value] || 0) > 0)
+      .sort((a, b) => (frequencies[b.value] || 0) - (frequencies[a.value] || 0))
+      .slice(0, 3);
+
+    const freqValues = new Set(frequentOptions.map(o => o.value));
+    normalOptions = filteredOptions.filter(o => !freqValues.has(o.value));
+  }
+
+  const renderOption = (option: Option) => (
+    <button
+      key={option.value}
+      type="button"
+      onClick={() => handleSelect(option.value)}
+      className={`
+        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all mb-0.5 last:mb-0 text-left
+        ${option.value === value
+          ? 'bg-[#0071e3] text-white shadow-sm'
+          : 'text-[#1d1d1f] dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]'}
+      `}
+    >
+      <div className="flex items-center gap-2">
+        {option.icon}
+        <span className="font-medium truncate">{option.label}</span>
+      </div>
+      {option.value === value && <Check className="w-4 h-4 flex-shrink-0" />}
+    </button>
+  );
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
@@ -113,28 +169,18 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
             {filteredOptions.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-400">No results found</div>
             ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className={`
-                    w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all mb-0.5 last:mb-0 text-left
-                    ${option.value === value
-                      ? 'bg-[#0071e3] text-white shadow-sm'
-                      : 'text-[#1d1d1f] dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#3a3a3c]'}
-                  `}
-                >
-                  <div className="flex items-center gap-2">
-                    {option.icon}
-                    <span className="font-medium truncate">{option.label}</span>
-                  </div>
-                  {option.value === value && <Check className="w-4 h-4 flex-shrink-0" />}
-                </button>
-              ))
+              <>
+                {frequentOptions.length > 0 && (
+                  <>
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      Frequently / Recently Used
+                    </div>
+                    {frequentOptions.map(renderOption)}
+                    <div className="h-px bg-gray-200 dark:bg-gray-800 my-1.5 mx-2" />
+                  </>
+                )}
+                {normalOptions.map(renderOption)}
+              </>
             )}
           </div>
         </div>
