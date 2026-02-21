@@ -66,7 +66,7 @@ export const Login: React.FC = () => {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
               <img src="/logo.png" alt="SEC Claim Logo" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white tracking-tight mb-1">SEC RMA System</h2>
+            <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white tracking-tight mb-1">SEC RMS SYSTEM</h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">{t('login.subtitle')}</p>
           </div>
 

@@ -33,7 +33,7 @@ export const CustomerSearch: React.FC = () => {
                 {/* SEC Claim System - Title only, non-clickable */}
                 <div className="flex items-center gap-2 select-none">
                     <img src="/logo.png?v=2" alt="Logo" className="w-8 h-8 object-contain" />
-                    <span className="font-semibold text-lg tracking-tight text-[#1d1d1f] dark:text-white">SEC RMA System</span>
+                    <span className="font-semibold text-lg tracking-tight text-[#1d1d1f] dark:text-white">SEC RMS SYSTEM</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <ThemeToggle />

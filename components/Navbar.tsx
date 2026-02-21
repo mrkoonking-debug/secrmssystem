@@ -108,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#f5f5f7]/95 dark:bg-[#161617]/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-[#333] flex items-center justify-between px-4">
         <Link to={user ? "/admin/dashboard" : "/"} className="flex items-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-          <span className="font-bold text-base text-[#1d1d1f] dark:text-white tracking-tighter">SEC RMA</span>
+          <span className="font-bold text-base text-[#1d1d1f] dark:text-white tracking-tighter">SEC RMS SYSTEM</span>
         </Link>
         <div className="flex items-center gap-2">
           {unassignedCount > 0 && (
@@ -170,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
             <div className="h-10 w-10 flex items-center justify-center transition-transform group-hover:scale-105">
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-bold text-xl text-[#1d1d1f] dark:text-white tracking-tighter text-nowrap">SEC RMA</span>
+            <span className="font-bold text-xl text-[#1d1d1f] dark:text-white tracking-tighter text-nowrap">SEC RMS SYSTEM</span>
           </Link>
         </div>
 

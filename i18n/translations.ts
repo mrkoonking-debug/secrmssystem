@@ -116,7 +116,7 @@ export const translations = {
       caughtUp: 'All caught up!'
     },
     public: {
-      heroTitle: 'SEC RMA',
+      heroTitle: 'SEC RMS SYSTEM',
       heroTitleSuffix: 'System.',
       heroSubtitle: 'Track status and register your claims.',
       checkStatusLabel: 'Check Status',
@@ -208,7 +208,7 @@ export const translations = {
       refLabel: 'REF'
     },
     login: {
-      title: 'SEC RMA System',
+      title: 'SEC RMS SYSTEM',
       subtitle: 'Staff Access Only',
       username: 'Username',
       password: 'Password',
@@ -501,7 +501,7 @@ export const translations = {
       caughtUp: 'เคลียร์งานครบแล้ว!'
     },
     public: {
-      heroTitle: 'SEC RMA',
+      heroTitle: 'SEC RMS SYSTEM',
       heroTitleSuffix: 'System.',
       heroSubtitle: 'ติดตามสถานะและลงทะเบียนเคลมสินค้า',
       checkStatusLabel: 'ตรวจสอบสถานะ',
