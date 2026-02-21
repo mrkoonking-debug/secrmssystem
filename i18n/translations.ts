@@ -71,11 +71,10 @@ export const translations = {
       VOID: 'Warranty Void (Physical Damage)'
     },
     actions: {
-      replaced_component: 'Service Center Replaced Part',
-      swapped_unit: 'Service Center Swapped Unit',
-      software_update: 'Software/Config Fixed (In-House)',
-      no_fault_found: 'No Fault Found',
-      sent_to_vendor: 'Sent to Service Center'
+      replaced_component: 'Vendor Replaced Part',
+      swapped_unit: 'Vendor Swapped Unit',
+      software_update: 'Software/Firmware Fixed (In-House)',
+      no_fault_found: 'No Fault Found (Returned)'
     },
     delays: {
       NONE: 'No Delay',
@@ -460,8 +459,7 @@ export const translations = {
       replaced_component: 'ศูนย์เปลี่ยนอะไหล่',
       swapped_unit: 'ศูนย์เปลี่ยนตัวใหม่ (Swap)',
       software_update: 'แก้ไข Config/Firmware (จบที่ร้าน)',
-      no_fault_found: 'ไม่พบอาการเสีย (ส่งคืน)',
-      sent_to_vendor: 'ส่งเคลมศูนย์ (Vendor RMA)'
+      no_fault_found: 'ไม่พบอาการเสีย (ส่งคืน)'
     },
     delays: {
       NONE: 'ปกติ (ไม่ล่าช้า)',

@@ -193,8 +193,7 @@ export const TrackClaim: React.FC = () => {
         { value: "Replaced Component", label: t('actions.replaced_component') },
         { value: "Swapped Unit", label: t('actions.swapped_unit') },
         { value: "Software Update", label: t('actions.software_update') },
-        { value: "No Fault Found", label: t('actions.no_fault_found') },
-        { value: "Sent to Vendor", label: t('actions.sent_to_vendor') }
+        { value: "No Fault Found", label: t('actions.no_fault_found') }
     ];
     const warrantyOptions = [{ value: "IN_WARRANTY", label: t('warranty.IN_WARRANTY') }, { value: "OUT_OF_WARRANTY", label: t('warranty.OUT_OF_WARRANTY') }, { value: "VOID", label: t('warranty.VOID') }];
 

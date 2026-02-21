@@ -23,8 +23,7 @@ const formatAction = (action: string) => {
     'Replaced Component': translations.th.actions.replaced_component,
     'Swapped Unit': translations.th.actions.swapped_unit,
     'Software Update': translations.th.actions.software_update,
-    'No Fault Found': translations.th.actions.no_fault_found,
-    'Sent to Vendor': translations.th.actions.sent_to_vendor
+    'No Fault Found': translations.th.actions.no_fault_found
   };
   return map[action] || action;
 }

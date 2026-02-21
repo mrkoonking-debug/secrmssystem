@@ -173,8 +173,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         { value: "Replaced Component", label: t('actions.replaced_component') },
         { value: "Swapped Unit", label: t('actions.swapped_unit') },
         { value: "Software Update", label: t('actions.software_update') },
-        { value: "No Fault Found", label: t('actions.no_fault_found') },
-        { value: "Sent to Vendor", label: t('actions.sent_to_vendor') }
+        { value: "No Fault Found", label: t('actions.no_fault_found') }
     ];
 
     const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit" || formData.resolution?.actionTaken === "Replaced Component";
