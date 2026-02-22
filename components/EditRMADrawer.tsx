@@ -312,15 +312,17 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     <ShieldCheck className="w-5 h-5 text-gray-400" /> {t('track.statusResolution')}
                                 </h3>
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <GlassSelect
-                                            label={t('track.statusLabel')}
-                                            value={formData.status || ''}
-                                            onChange={val => handleFormChange('status', val)}
-                                            options={statusOptions}
-                                            searchable
-                                            recentKey="status"
-                                        />
+                                    <div className="grid grid-cols-2 gap-4 relative z-50">
+                                        <div className="relative z-50">
+                                            <GlassSelect
+                                                label={t('track.statusLabel')}
+                                                value={formData.status || ''}
+                                                onChange={val => handleFormChange('status', val)}
+                                                options={statusOptions}
+                                                searchable
+                                                recentKey="status"
+                                            />
+                                        </div>
                                         <div>
                                             <div className="flex justify-between items-center mb-2 ml-1">
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t('track.assignedTeam')}</label>
@@ -356,7 +358,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-2 relative z-50">
+                                    <div className="flex flex-col gap-2 relative z-40">
                                         <GlassSelect
                                             label={t('track.actionTaken')}
                                             value={formData.resolution?.actionTaken || ''}
@@ -396,12 +398,12 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
+                                    <div className="grid grid-cols-2 gap-4 relative z-30">
+                                        <div className="relative z-20">
                                             <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-wider">{t('track.rootCause')}</label>
                                             <input type="text" value={formData.resolution?.rootCause || ''} onChange={(e) => handleResolutionChange('rootCause', e.target.value)} className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#0071e3] text-[#1d1d1f] dark:text-white" placeholder="e.g. Power Surge" />
                                         </div>
-                                        <div>
+                                        <div className="relative z-10">
                                             <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-wider">{t('track.vendorRef')}</label>
                                             <input type="text" value={formData.resolution?.vendorTicketRef || ''} onChange={(e) => handleResolutionChange('vendorTicketRef', e.target.value)} className="w-full px-4 py-3 text-sm rounded-xl outline-none bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-[#0071e3] text-[#1d1d1f] dark:text-white" placeholder="e.g. RMA-SYN-9988" />
                                         </div>

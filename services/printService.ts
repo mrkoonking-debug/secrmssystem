@@ -3,12 +3,6 @@ import { RMA } from '../types';
 import { translations } from '../i18n/translations';
 import { MockDb } from './mockDb';
 
-// Helper to wrap content with dynamic settings
-const withSettings = async (callback: (settings: any) => string) => {
-  const settings = await MockDb.getSettings();
-  return callback(settings);
-};
-
 const formatAccessory = (acc: string) => {
   if (acc.startsWith('acc_hdd::')) return `HDD (${acc.split('::')[1]})`;
   if (acc.startsWith('acc_')) {
@@ -28,396 +22,618 @@ const formatAction = (action: string) => {
   return map[action] || action;
 }
 
-const getLogoHTML = (settings: any) => `
-  <div style="display: flex; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #0b57d0; padding-bottom: 6px;">
-    <div style="margin-right: 12px;">
-      <img src="${settings.logoUrl || '/logo.png'}" alt="Company Logo" style="height: 35px; width: auto; object-fit: contain;" />
-    </div>
-    <div style="flex-grow: 1; text-align: right;">
-      <h2 style="margin: 0; color: #000; font-family: 'Prompt', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">${settings.nameEn}</h2>
-      <div style="font-size: 11px; color: #333; margin-top: 1px;">${settings.nameTh}</div>
-      <div style="font-size: 9px; color: #666; margin-top: 1px;">
-        ${settings.address} | TAX ID: ${settings.taxId} | Tel: ${settings.tel}
-      </div>
-    </div>
-  </div>
-`;
-
 const getImagesHTML = (rma: RMA) => {
   if (!rma.attachments || rma.attachments.length === 0) return '';
   const images = rma.attachments.map(att => `
-        <div style="text-align: center;">
-            <img src="${att.previewUrl || ''}" style="max-width: 100%; max-height: 150px; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" />
-            <div style="font-size: 10px; color: #666; margin-top: 4px;">${att.fileName}</div>
-        </div>
-    `).join('');
+    <div style="text-align: center;">
+      <img src="${att.previewUrl || ''}" style="max-width: 100%; max-height: 120px; border: 1px solid #e5e5ea; padding: 3px; border-radius: 4px;" />
+      <div style="font-size: 9px; color: #86868b; margin-top: 3px;">${att.fileName}</div>
+    </div>
+  `).join('');
   return `
-        <div style="margin-top: 16px; border-top: 1px solid #e5e5ea; padding-top: 12px; page-break-inside: avoid;">
-            <div class="apple-section-title" style="margin-bottom: 8px; border:none; padding:0; font-size:12px;">Attached Images (รูปภาพประกอบ)</div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                ${images}
-            </div>
-        </div>
-    `;
-};
-
-const getCommonStyles = () => `
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
-    
-    .print-doc { 
-      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #1d1d1f !important;
-      line-height: 1.4; 
-      width: 210mm;
-      min-height: 297mm;
-      padding: 10mm 15mm;
-      margin: 0 auto; 
-      background: white;
-      box-sizing: border-box;
-      position: relative;
-    }
-
-    /* Typography Utilities */
-    .print-doc h1, .print-doc h2, .print-doc h3, .print-doc h4 { color: #1d1d1f; margin-top: 0; }
-    .print-doc .apple-section-title { 
-        font-size: 14px; 
-        font-weight: 600; 
-        color: #1d1d1f; 
-        margin-bottom: 12px; 
-        padding-bottom: 4px; 
-        border-bottom: 1px solid #e5e5ea; 
-        letter-spacing: -0.01em;
-    }
-    
-    /* Header Styles */
-    .print-doc .doc-header { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-start; 
-        margin-bottom: 12px; 
-        padding-bottom: 12px;
-        border-bottom: 1px solid #e5e5ea; 
-    }
-    .print-doc .doc-title-block { text-align: left; }
-    .print-doc .doc-title { 
-        font-size: 18px; 
-        font-weight: 700; 
-        color: #1d1d1f; 
-        letter-spacing: -0.015em; 
-        line-height: 1.2; 
-        margin-bottom: 2px; 
-    }
-    .print-doc .doc-subtitle { font-size: 11px; color: #86868b; font-weight: 400; }
-
-    /* Meta Info Styles */
-    .print-doc .meta-grid { 
-        display: grid; 
-        grid-template-columns: 1fr 1fr;
-        gap: 16px; 
-        margin-bottom: 16px; 
-    }
-    .print-doc .meta-block {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    
-    /* Item Card (Apple Style - No border, just layout isolation) */
-    .print-doc .apple-item-block { 
-        margin-bottom: 20px; 
-        page-break-inside: avoid; 
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .print-doc .apple-item-header { 
-        font-weight: 700; 
-        font-size: 14px; 
-        color: #1d1d1f;
-        letter-spacing: -0.01em;
-    }
-    .print-doc .apple-item-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        margin-bottom: 4px;
-    }
-    .print-doc .apple-item-grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 4px;
-    }
-
-    /* Universal Label/Value */
-    .print-doc .label { 
-        font-size: 9px; 
-        text-transform: uppercase; 
-        letter-spacing: 0.04em; 
-        color: #86868b; 
-        font-weight: 600; 
-        margin-bottom: 2px; 
-        display: block; 
-    }
-    .print-doc .value { 
-        font-size: 12px; 
-        font-weight: 500; 
-        color: #1d1d1f; 
-    }
-    .print-doc .value-secondary {
-        font-size: 11px;
-        color: #444;
-    }
-    
-    /* Footer/Signatures */
-    .print-doc .footer-grid { 
-        display: flex; 
-        justify-content: space-between; 
-        margin-top: 24px; 
-        gap: 32px; 
-        page-break-inside: avoid; 
-        border-top: 1px solid #e5e5ea;
-        padding-top: 16px;
-    }
-    .print-doc .footer-grid > div { flex: 1; }
-    .print-doc .signature-box { margin-top: 4px; }
-    .print-doc .signature-line { 
-        height: 24px; 
-        border-bottom: 1px dashed #d1d1d6; 
-        margin-bottom: 6px; 
-    }
-    @media print {
-      @page { size: A4; margin: 0; }
-      body * { visibility: hidden; }
-      #print-content, #print-content * { visibility: visible; }
-      #print-content { position: absolute; left: 0; top: 0; width: 100%; }
-      .print-doc { width: 100%; height: 100%; margin: 0; padding: 20mm !important; box-shadow: none; border: none; }
-    }
-  </style>
-`;
-
-export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
-  if (!rmas || rmas.length === 0) return '';
-  const rma = rmas[0];
-  const settings = await MockDb.getSettings();
-  return `
-    ${getCommonStyles()}
-    <div class="print-doc">
-      ${getLogoHTML(settings)}
-      <div class="doc-header">
-        <div class="doc-title-block">
-          <div class="doc-title">ใบส่งเคลมสินค้า (สำหรับผู้นำเข้า)</div>
-          <div class="doc-subtitle">Distributor RMA Request</div>
-        </div>
-        <div style="text-align: right;">
-          <div class="label">Reference ID</div>
-          <div class="value" style="font-size: 18px; font-weight: bold;">${rma.id}</div>
-          <div class="value" style="font-size: 12px;">Date: ${new Date().toLocaleDateString('th-TH')}</div>
-        </div>
-      </div>
-      <div class="meta-grid">
-        <div class="box">
-          <div class="label">To Distributor (เรียน ผู้นำเข้า)</div>
-          <div class="value" style="font-size: 15px; font-weight: bold;">${rma.distributor}</div>
-          <div class="value" style="font-size: 12px;">RMA / Service Department</div>
-        </div>
-        <div class="box">
-          <div class="label">From (จาก)</div>
-          <div class="value">${settings.nameEn}</div>
-          <div class="value" style="font-size: 12px;">Attn: Technical Support Dept.</div>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc;">
-             <div class="label">End User Reference</div>
-             <div class="value" style="font-size: 12px;">${rma.customerName}</div>
-          </div>
-        </div>
-      </div>
-      <h3 style="font-size: 12px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 3px; text-transform: uppercase; font-weight: 600;">Product Information (${rmas.length} Items)</h3>
-      ${rmas.map((item, index) => `
-      <div class="item-card">
-        <div class="item-card-header">
-          Item ${index + 1}: ${item.brand}
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; padding: 0 4px;">
-          <div>
-            <div class="label">Product Model (รุ่น)</div>
-            <div class="value" style="font-size: 12px; font-weight: 600;">${item.productModel}</div>
-          </div>
-          <div>
-            <div class="label">Serial Number (S/N)</div>
-            <div class="value" style="font-size: 12px; font-family: monospace; font-weight: 600;">${item.serialNumber}</div>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px;">
-          <div class="box" style="margin-bottom: 0;">
-            <div class="label" style="color: #000;">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
-            <div class="value" style="margin-top: 3px; font-size: 12px;">${item.resolution?.rootCause || '-'}</div>
-            ${item.deviceUsername || item.devicePassword ? `
-            <div style="margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-               <div>
-                 <div class="label">Device Username (ยูสเซอร์)</div>
-                 <div class="value" style="font-size: 12px; font-weight: bold; color: #d32f2f;">${item.deviceUsername || '-'}</div>
-               </div>
-               <div>
-                 <div class="label">Device Password (รหัสผ่าน)</div>
-                 <div class="value" style="font-size: 12px; font-weight: bold; color: #d32f2f;">${item.devicePassword || '-'}</div>
-               </div>
-            </div>` : ''}
-          </div>
-          <div class="box" style="margin-bottom: 0;">
-            <div class="label">Included Accessories (อุปกรณ์ที่ส่งไปด้วย)</div>
-            <div class="value" style="font-size: 12px; margin-top: 3px;">
-              ${item.distributorSentItems && item.distributorSentItems.length > 0
-      ? item.distributorSentItems.map(formatAccessory).join(', ')
-      : (item.accessories.length > 0 ? item.accessories.map(formatAccessory).join(', ') : 'Unit Only (เฉพาะเครื่อง)')}
-            </div>
-          </div>
-        </div>
-        ${getImagesHTML(item)}
-      </div>
-      `).join('')}
-      <div class="footer-grid">
-        <div class="signature-box">
-          <div class="label">Sent By (ผู้ส่ง)</div>
-          <div class="signature-line"></div>
-          <div style="display: flex; justify-content: space-between;">
-             <div class="value" style="font-size: 12px;">Name: .................................................</div>
-             <div class="value" style="font-size: 12px;">Date: ........................</div>
-          </div>
-        </div>
-        <div class="signature-box">
-          <div class="label">Received By (ผู้รับ - ${rma.distributor})</div>
-          <div class="signature-line"></div>
-          <div style="display: flex; justify-content: space-between;">
-             <div class="value" style="font-size: 12px;">RMA No: ..............................................</div>
-             <div class="value" style="font-size: 12px;">Date: ........................</div>
-          </div>
-        </div>
-      </div>
+    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e5e5ea;">
+      <div style="font-size: 9px; color: #86868b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; margin-bottom: 8px;">Attached Images</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">${images}</div>
     </div>
   `;
 };
 
-export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
+/* ─────────────────────────────────────────────
+   SHARED STYLES
+───────────────────────────────────────────── */
+const getCommonStyles = () => `
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { background: #f0f0f0; }
+
+    .print-doc {
+      font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1d1d1f;
+      line-height: 1.5;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 14mm 14mm;
+      margin: 0 auto;
+      background: #fff;
+      position: relative;
+    }
+
+    /* ── HEADER ── */
+    .doc-header-bar {
+      background: linear-gradient(135deg, #0b57d0 0%, #1a73e8 100%);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      color: white;
+    }
+    .doc-header-left { display: flex; align-items: center; gap: 12px; }
+    .doc-header-logo { height: 36px; width: auto; object-fit: contain; }
+    .doc-header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+    .doc-header-subtitle { font-size: 10px; opacity: 0.8; margin-top: 2px; }
+    .doc-header-right { text-align: right; }
+    .doc-ref-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
+    .doc-ref-no { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; }
+    .doc-ref-date { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+    /* ── COMPANY INFO BANNER ── */
+    .company-banner {
+      background: #f7f9fc;
+      border: 1px solid #e8edf5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 10px;
+      color: #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .company-banner .co-name { font-size: 12px; font-weight: 700; color: #1d1d1f; }
+
+    /* ── PARTIES BLOCK ── */
+    .parties-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .party-box {
+      border: 1px solid #e5e5ea;
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    .party-box-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #0b57d0;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .party-box-label::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 10px;
+      background: #0b57d0;
+      border-radius: 2px;
+    }
+    .party-name { font-size: 14px; font-weight: 700; color: #1d1d1f; margin-bottom: 2px; }
+    .party-detail { font-size: 10px; color: #666; line-height: 1.6; }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0b57d0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, #d1ddf0, transparent);
+    }
+    .section-title .count-badge {
+      background: #0b57d0;
+      color: white;
+      font-size: 9px;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    /* ── ITEM CARD ── */
+    .item-card {
+      border: 1px solid #e5e5ea;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .item-card-header {
+      background: linear-gradient(to right, #f5f8ff, #eef3fd);
+      border-bottom: 1px solid #e5e5ea;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .item-no {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: #0b57d0;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .item-brand { font-size: 14px; font-weight: 700; color: #1d1d1f; }
+    .item-model { font-size: 11px; color: #555; }
+    .item-sn {
+      font-family: 'Inter', ui-monospace, Menlo, Monaco, monospace;
+      font-size: 11px;
+      color: #333;
+      background: #edf1fa;
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+    .item-body {
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .item-body-full {
+      padding: 12px 14px;
+    }
+
+    /* ── FIELD LABEL / VALUE ── */
+    .f-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #86868b;
+      margin-bottom: 3px;
+    }
+    .f-value {
+      font-size: 12px;
+      font-weight: 500;
+      color: #1d1d1f;
+      line-height: 1.4;
+    }
+    .f-value-mono {
+      font-family: 'Inter', ui-monospace, Menlo, Monaco, monospace;
+      font-size: 11px;
+      color: #333;
+    }
+    .f-value-accent {
+      font-size: 12px;
+      font-weight: 600;
+      color: #0b57d0;
+    }
+    .f-chip {
+      display: inline-block;
+      background: #edf1fa;
+      color: #0b57d0;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 2px;
+    }
+    .f-highlight-box {
+      background: #f7f9fc;
+      border: 1px dashed #c5d5f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+    }
+
+    /* ── ACCESSORY LIST ── */
+    .acc-list { list-style: none; padding: 0; margin: 0; }
+    .acc-list li {
+      font-size: 11px;
+      color: #444;
+      padding: 2px 0 2px 12px;
+      position: relative;
+      line-height: 1.5;
+    }
+    .acc-list li::before {
+      content: '·';
+      position: absolute;
+      left: 0;
+      color: #0b57d0;
+      font-weight: 700;
+    }
+
+    /* ── STATUS BADGE ── */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-badge.ok { background: #e6f4ea; color: #137333; }
+    .status-badge.warn { background: #fff3e0; color: #b45309; }
+    .status-badge.info { background: #e8f0fe; color: #0b57d0; }
+
+    /* ── FOOTER / SIGNATURES ── */
+    .footer-section {
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 2px solid #e5e5ea;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      page-break-inside: avoid;
+    }
+    .sig-box {
+      border: 1px dashed #c5d5f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .sig-title {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #0b57d0;
+      margin-bottom: 3px;
+    }
+    .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
+    .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 5px; }
+    .sig-name-label { font-size: 9px; color: #86868b; }
+
+    @media print {
+      @page { size: A4; margin: 0; }
+      body { background: white; }
+      .print-doc { width: 210mm; min-height: 297mm; padding: 10mm 12mm; }
+    }
+  </style>
+`;
+
+/* ─────────────────────────────────────────────
+   IMPORTER FORM  (ใบส่งเคลมสินค้า → Distributor)
+───────────────────────────────────────────── */
+export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   if (!rmas || rmas.length === 0) return '';
-  const rma = rmas[0]; // Use first RMA for common details
+  const rma = rmas[0];
   const settings = await MockDb.getSettings();
+  const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const itemsHTML = rmas.map((item, index) => {
+    const accList = item.distributorSentItems && item.distributorSentItems.length > 0
+      ? item.distributorSentItems
+      : item.accessories;
+
+    return `
+    <div class="item-card">
+      <div class="item-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="item-no">${index + 1}</div>
+          <div>
+            <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
+            <div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType}</div>
+          </div>
+        </div>
+        <div class="item-sn">S/N: ${item.serialNumber}</div>
+      </div>
+      <div class="item-body">
+        <div>
+          <div class="f-label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
+          <div class="f-value">${item.resolution?.rootCause || '—'}</div>
+          ${item.deviceUsername || item.devicePassword ? `
+          <div class="f-highlight-box" style="margin-top: 8px;">
+            <div class="f-label" style="color: #c2410c; margin-bottom: 6px;">⚠ Device Credentials</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <div class="f-label">Username</div>
+                <div class="f-value-mono">${item.deviceUsername || '—'}</div>
+              </div>
+              <div>
+                <div class="f-label">Password</div>
+                <div class="f-value-mono">${item.devicePassword || '—'}</div>
+              </div>
+            </div>
+          </div>` : ''}
+        </div>
+        <div>
+          <div class="f-label">Included Accessories (อุปกรณ์ที่ส่งไปด้วย)</div>
+          ${accList.length > 0
+        ? `<ul class="acc-list">${accList.map(a => `<li>${formatAccessory(a)}</li>`).join('')}</ul>`
+        : `<div class="f-value" style="color:#86868b;">Unit Only</div>`}
+        </div>
+      </div>
+      ${getImagesHTML(item)}
+    </div>
+    `;
+  }).join('');
 
   return `
     ${getCommonStyles()}
     <div class="print-doc">
-      ${getLogoHTML(settings)}
-      <div class="doc-header">
-        <div class="doc-title-block">
-          <div class="doc-title">ใบรับคืนสินค้าเคลม / บริการ (Customer Return Note)</div>
-          <div class="doc-subtitle">For Customer (ส่วนของลูกค้า)</div>
+
+      <!-- HEADER BAR -->
+      <div class="doc-header-bar">
+        <div class="doc-header-left">
+          <img src="${settings.logoUrl || '/logo.png'}" class="doc-header-logo" alt="logo" />
+          <div>
+            <div class="doc-header-title">ใบส่งเคลมสินค้า</div>
+            <div class="doc-header-subtitle">Distributor RMA Request Form · ${settings.nameEn}</div>
+          </div>
+        </div>
+        <div class="doc-header-right">
+          <div class="doc-ref-label">Reference No.</div>
+          <div class="doc-ref-no">${rma.id}</div>
+          <div class="doc-ref-date">${today}</div>
+        </div>
+      </div>
+
+      <!-- COMPANY BANNER -->
+      <div class="company-banner">
+        <div>
+          <div class="co-name">${settings.nameEn}</div>
+          <div>${settings.nameTh}</div>
+        </div>
+        <div style="text-align: right; font-size: 10px; color: #555;">
+          <div>${settings.address}</div>
+          <div>TAX ID: ${settings.taxId} &nbsp;|&nbsp; Tel: ${settings.tel}</div>
+        </div>
+      </div>
+
+      <!-- PARTIES -->
+      <div class="parties-grid">
+        <div class="party-box">
+          <div class="party-box-label">To: Distributor (เรียน ผู้นำเข้า)</div>
+          <div class="party-name">${rma.distributor}</div>
+          <div class="party-detail">RMA / Service Department</div>
+        </div>
+        <div class="party-box">
+          <div class="party-box-label">From: Our Company (จาก)</div>
+          <div class="party-name">${settings.nameEn}</div>
+          <div class="party-detail">Attn: Technical Support Dept.</div>
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e5ea;">
+            <div class="f-label">End User Reference (ลูกค้าผู้ใช้งาน)</div>
+            <div class="f-value">${rma.customerName}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEMS -->
+      <div class="section-title">
+        Product Information <span class="count-badge">${rmas.length} Items</span>
+      </div>
+      ${itemsHTML}
+
+      <!-- SIGNATURES -->
+      <div class="footer-section">
+        <div class="sig-box">
+          <div class="sig-title">ผู้ส่ง / Sent By</div>
+          <div class="sig-subtitle">${settings.nameEn} · Technical Support</div>
+          <div class="sig-line"></div>
+          <div style="display: flex; justify-content: space-between;">
+            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
+            <div class="sig-name-label">วันที่: ____________</div>
+          </div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-title">ผู้รับ / Received By (${rma.distributor})</div>
+          <div class="sig-subtitle">RMA No. ที่ผู้นำเข้าออกให้</div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center;">
+            <div>
+              <div class="f-label">RMA No. (Vendor Ref)</div>
+              <div style="border-bottom: 1px solid #1d1d1f; height: 22px;"></div>
+            </div>
+            <div>
+              <div class="f-label">วันที่รับ</div>
+              <div style="border-bottom: 1px solid #1d1d1f; height: 22px; width: 80px;"></div>
+            </div>
+          </div>
+          <div class="sig-line"></div>
+          <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
+        </div>
+      </div>
+
+    </div>
+  `;
+};
+
+/* ─────────────────────────────────────────────
+   CUSTOMER FORM (ใบรับคืนสินค้า → Customer)
+───────────────────────────────────────────── */
+export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
+  if (!rmas || rmas.length === 0) return '';
+  const rma = rmas[0];
+  const settings = await MockDb.getSettings();
+  const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const statusText = rma.status === 'REPAIRED'
+    ? { label: 'ดำเนินการเสร็จสิ้น', en: 'Completed', cls: 'ok' }
+    : rma.status === 'REJECTED'
+      ? { label: 'ส่งคืน / ปฏิเสธ', en: 'Returned/Rejected', cls: 'warn' }
+      : { label: rma.status.replace('_', ' '), en: '', cls: 'info' };
+
+  const itemsHTML = rmas.map((item, index) => {
+    const warrantyText = item.repairCosts?.warrantyStatus
+      ? (translations.th.warranty as any)[item.repairCosts.warrantyStatus]
+      : '—';
+    const actionText = item.resolution?.actionTaken
+      ? formatAction(item.resolution.actionTaken)
+      : (item.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked');
+
+    return `
+    <div class="item-card">
+      <div class="item-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="item-no">${index + 1}</div>
+          <div>
+            <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
+            <div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType}</div>
+          </div>
         </div>
         <div style="text-align: right;">
-          <div class="label">Service Ref No.</div>
-          <div class="value" style="font-size: 18px; font-weight: bold;">${rma.id}</div>
-          <div class="value" style="font-size: 12px;">Date: ${new Date().toLocaleDateString('th-TH')}</div>
+          <div class="item-sn">S/N: ${item.serialNumber}</div>
+          ${item.resolution?.replacedSerialNumber
+        ? `<div style="font-family: 'Inter', monospace; font-size: 10px; color: #137333; font-weight: 600; margin-top: 3px;">New S/N: ${item.resolution.replacedSerialNumber}</div>`
+        : ''}
         </div>
       </div>
-      <div class="meta-grid">
-        <div class="meta-block">
-          <div class="label">Customer Details (ลูกค้า)</div>
-          <div class="value" style="font-size: 14px; font-weight: 700;">${rma.customerName}</div>
-          <div class="value-secondary">Tel: ${rma.customerPhone || '-'}</div>
-          <div class="value-secondary">Email: ${rma.customerEmail}</div>
-          ${rma.customerLineId ? `<div class="value-secondary">Line ID: ${rma.customerLineId}</div>` : ''}
-        </div>
-        <div class="meta-block">
-          <div class="label">Service Status (สถานะ)</div>
-          <div class="value" style="font-size: 14px; font-weight: 700;">
-            ${rma.status === 'REPAIRED' ? 'ดำเนินการเสร็จสิ้น (Completed)' :
-      rma.status === 'REJECTED' ? 'ส่งคืน (Returned/Rejected)' :
-        rma.status.replace('_', ' ')}
-          </div>
-        </div>
-      </div>
-      
-      <div class="apple-section-title">Service Item Details (${rmas.length} Items)</div>
-      
-      ${rmas.map((item, index) => `
-      <div class="apple-item-block">
-        <div class="apple-item-header">
-          ${index + 1}. ${item.brand} — ${item.productModel}
-        </div>
-        
-        <div class="apple-item-grid-3">
+      <div class="item-body">
+
+        <!-- LEFT COLUMN -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <div class="label">Product Model (รุ่น)</div>
-            <div class="value" style="font-size: 13px; font-weight: 600;">${item.productModel}</div>
-            <div class="value-secondary" style="font-size: 10px; margin-top: 1px;">${item.productType}</div>
+            <div class="f-label">Warranty Status (การรับประกัน)</div>
+            <div class="f-chip">${warrantyText}</div>
           </div>
           <div>
-            <div class="label">Serial Number (S/N)</div>
-            <div class="value-secondary" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">Original: ${item.serialNumber}</div>
-            ${item.resolution?.replacedSerialNumber ? `<div class="value" style="margin-top: 2px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">New: ${item.resolution.replacedSerialNumber}</div>` : ''}
+            <div class="f-label">Action Taken (วิธีการดำเนินการ)</div>
+            <div class="f-value-accent">${actionText}</div>
           </div>
           <div>
-            <div class="label">Warranty (การรับประกัน)</div>
-            <div class="value">${item.repairCosts?.warrantyStatus ? (translations.th.warranty as any)[item.repairCosts.warrantyStatus] : '-'}</div>
+            <div class="f-label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
+            <div class="f-value">${item.resolution?.rootCause || '—'}</div>
           </div>
+          ${item.resolution?.technicalNotes ? `
+          <div class="f-highlight-box">
+            <div class="f-label" style="margin-bottom: 4px;">Technical Note (หมายเหตุช่าง)</div>
+            <div class="f-value" style="font-size: 11px; color: #444;">${item.resolution.technicalNotes}</div>
+          </div>` : ''}
+          ${item.deviceUsername || item.devicePassword ? `
+          <div class="f-highlight-box" style="border-color: #f5a623;">
+            <div class="f-label" style="color: #c2410c; margin-bottom: 5px;">⚠ Device Credentials</div>
+            <div style="display: flex; gap: 20px;">
+              <div>
+                <div class="f-label">Username</div>
+                <div class="f-value-mono">${item.deviceUsername || '—'}</div>
+              </div>
+              <div>
+                <div class="f-label">Password</div>
+                <div class="f-value-mono">${item.devicePassword || '—'}</div>
+              </div>
+            </div>
+          </div>` : ''}
         </div>
 
-        <div class="apple-item-grid" style="border-top: 1px solid #e5e5ea; padding-top: 8px;">
-          <div>
-            <div class="label" style="color:#1d1d1f; font-weight: 700;">Resolution (ผลการดำเนินการ)</div>
-            <div class="value" style="margin-top: 2px; font-size: 13px;">
-              ${item.resolution?.actionTaken ? formatAction(item.resolution.actionTaken) : (item.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked')}
-            </div>
-            
-            <div style="margin-top: 12px;">
-               <div class="label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
-               <div class="value-secondary">${item.resolution?.rootCause || '-'}</div>
-               ${item.deviceUsername || item.devicePassword ? `
-               <div style="margin-top: 6px; display: flex; gap: 16px;">
-                 <div>
-                   <div class="label" style="font-size: 8px;">Device Username</div>
-                   <div style="font-family: monospace; font-size: 11px;">${item.deviceUsername || '-'}</div>
-                 </div>
-                 <div>
-                   <div class="label" style="font-size: 8px;">Device Password</div>
-                   <div style="font-family: monospace; font-size: 11px;">${item.devicePassword || '-'}</div>
-                 </div>
-               </div>` : ''}
-            </div>
-            ${item.resolution?.technicalNotes ? `
-            <div style="margin-top: 12px;">
-               <div class="label">Technical Note (หมายเหตุช่าง)</div>
-               <div class="value-secondary">${item.resolution.technicalNotes}</div>
-            </div>` : ''}
-          </div>
-          
-          <div>
-            <div class="label">Items Returned (อุปกรณ์ที่ส่งคืนลูกค้า)</div>
-            <div class="value-secondary" style="margin-top: 2px;">
-              <ul style="margin: 0 0 0 16px; padding: 0; font-size: 11px; line-height: 1.6; color:#444;">
-                <li>Main Unit (${item.productModel})</li>
-                ${item.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
-              </ul>
-            </div>
-          </div>
-        </div>
-        ${getImagesHTML(item)}
-      </div>
-      `).join('')}
-      <div class="footer-grid">
-        <div class="signature-box">
-          <div class="label">Delivered By (ผู้ส่งคืน - Sentinel)</div>
-          <div class="signature-line"></div>
-          <div class="value" style="font-size: 11px;">Date: ...........................................</div>
-        </div>
-        <div class="signature-box">
-          <div class="label">Received By (ลูกค้าผู้รับของ)</div>
-          <div style="font-size: 9px; color: #666; margin-bottom: 4px;">ข้าพเจ้าได้รับสินค้าคืนในสภาพเรียบร้อย</div>
-          <div class="signature-line"></div>
-          <div class="value" style="font-size: 11px;">Sign: ...........................................</div>
+        <!-- RIGHT COLUMN -->
+        <div>
+          <div class="f-label">Items Returned (อุปกรณ์ที่ส่งคืนลูกค้า)</div>
+          <ul class="acc-list" style="margin-top: 4px;">
+            <li style="font-weight: 600; color: #1d1d1f;">Main Unit — ${item.productModel}</li>
+            ${item.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
+          </ul>
         </div>
       </div>
+      ${getImagesHTML(item)}
+    </div>
+    `;
+  }).join('');
+
+  return `
+    ${getCommonStyles()}
+    <div class="print-doc">
+
+      <!-- HEADER BAR -->
+      <div class="doc-header-bar">
+        <div class="doc-header-left">
+          <img src="${settings.logoUrl || '/logo.png'}" class="doc-header-logo" alt="logo" />
+          <div>
+            <div class="doc-header-title">ใบรับคืนสินค้าเคลม / บริการ</div>
+            <div class="doc-header-subtitle">Customer Service Return Note · ${settings.nameEn}</div>
+          </div>
+        </div>
+        <div class="doc-header-right">
+          <div class="doc-ref-label">Service Ref No.</div>
+          <div class="doc-ref-no">${rma.id}</div>
+          <div class="doc-ref-date">${today}</div>
+        </div>
+      </div>
+
+      <!-- COMPANY BANNER -->
+      <div class="company-banner">
+        <div>
+          <div class="co-name">${settings.nameEn}</div>
+          <div>${settings.nameTh} &nbsp;|&nbsp; ${settings.address}</div>
+        </div>
+        <div style="text-align: right; font-size: 10px; color: #555;">
+          Tel: ${settings.tel} &nbsp;|&nbsp; TAX ID: ${settings.taxId}
+        </div>
+      </div>
+
+      <!-- PARTIES -->
+      <div class="parties-grid">
+        <div class="party-box">
+          <div class="party-box-label">Customer (ลูกค้า)</div>
+          <div class="party-name">${rma.customerName}</div>
+          <div class="party-detail">
+            ${rma.customerPhone ? `Tel: ${rma.customerPhone}<br/>` : ''}
+            ${rma.customerEmail ? `Email: ${rma.customerEmail}<br/>` : ''}
+            ${rma.customerLineId ? `Line ID: ${rma.customerLineId}` : ''}
+          </div>
+        </div>
+        <div class="party-box" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="party-box-label">Service Status (สถานะงาน)</div>
+            <div style="margin-top: 6px;">
+              <span class="status-badge ${statusText.cls}">${statusText.label} ${statusText.en ? '(' + statusText.en + ')' : ''}</span>
+            </div>
+          </div>
+          <div style="margin-top: 10px;">
+            <div class="f-label">Total Items (จำนวนรายการ)</div>
+            <div class="f-value" style="font-size: 16px; font-weight: 700;">${rmas.length} ชิ้น</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEMS -->
+      <div class="section-title">
+        Service Item Details <span class="count-badge">${rmas.length} Items</span>
+      </div>
+      ${itemsHTML}
+
+      <!-- SIGNATURES -->
+      <div class="footer-section">
+        <div class="sig-box">
+          <div class="sig-title">ผู้ส่งคืน / Delivered By</div>
+          <div class="sig-subtitle">${settings.nameEn} · Technical Support Team</div>
+          <div class="sig-line" style="margin-bottom: 5px;"></div>
+          <div style="display: flex; justify-content: space-between;">
+            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
+            <div class="sig-name-label">วันที่: ____________</div>
+          </div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-title">ผู้รับสินค้า / Received By (ลูกค้า)</div>
+          <div class="sig-subtitle">ข้าพเจ้าได้รับสินค้าคืนในสภาพเรียบร้อยครบถ้วน</div>
+          <div class="sig-line" style="margin-bottom: 5px;"></div>
+          <div style="display: flex; justify-content: space-between;">
+            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
+            <div class="sig-name-label">วันที่: ____________</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   `;
 };
@@ -425,7 +641,23 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
 export const printDistributorDocuments = async (rmas: RMA[]) => {
   try {
     if (!rmas || rmas.length === 0) return;
-    const combinedHTML = await getImporterFormHTML(rmas);
+
+    // Group RMAs by distributor name
+    const grouped: Record<string, RMA[]> = {};
+    for (const rma of rmas) {
+      const key = rma.distributor || 'Unknown';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(rma);
+    }
+
+    // Generate a separate document per distributor, combine with page breaks
+    const pages: string[] = [];
+    for (const distName of Object.keys(grouped)) {
+      const html = await getImporterFormHTML(grouped[distName]);
+      pages.push(html);
+    }
+    const combinedHTML = pages.join('<div style="page-break-after: always;"></div>');
+
     executePrint(combinedHTML, rmas[0].quotationNumber || rmas[0].groupRequestId || rmas[0].id || 'Distributor_Forms');
   } catch (err) {
     console.error("Error generating print documents:", err);
@@ -460,7 +692,6 @@ const executePrint = (html: string, titleName: string) => {
 
   setTimeout(() => {
     iframe.contentWindow?.print();
-    // Cleanup after short delay to ensure print dialog opened
     setTimeout(() => {
       if (document.body.contains(iframe)) {
         document.body.removeChild(iframe);
