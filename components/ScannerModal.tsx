@@ -24,11 +24,33 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ onClose, onScan }) =
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
                 setCameras(devices);
-                // Try to find a back camera by default, or just use the last one (often the main back camera on phones)
-                const backCamera = devices.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'));
-                const defaultCameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
-                setSelectedCameraId(defaultCameraId);
-                startScanner(defaultCameraId);
+
+                // Advanced Heuristic to find the main 1x back camera
+                // 1. Filter to only Back / Rear cameras
+                const backCameras = devices.filter(c =>
+                    c.label.toLowerCase().includes('back') ||
+                    c.label.toLowerCase().includes('rear') ||
+                    c.label.toLowerCase().includes('environment')
+                );
+
+                let selectedId = devices[devices.length - 1].id; // Fallback to last device
+
+                if (backCameras.length > 0) {
+                    // 2. Try to avoid Ultra-Wide and Telephoto
+                    const standardBack = backCameras.find(c => {
+                        const lbl = c.label.toLowerCase();
+                        const isWide = lbl.includes('wide') && !lbl.includes('ultra'); // Sometimes main is just "Wide"
+                        const isUltraWide = lbl.includes('ultra-wide') || lbl.includes('ultrawide');
+                        const isTele = lbl.includes('tele') || lbl.includes('depth');
+                        return !isUltraWide && !isTele && (isWide || lbl.includes('lens 0') || lbl.includes('0'));
+                    });
+
+                    // 3. Fallback to first back camera if no clear "standard" label is found
+                    selectedId = standardBack ? standardBack.id : backCameras[0].id;
+                }
+
+                setSelectedCameraId(selectedId);
+                startScanner(selectedId);
             } else {
                 setPermissionError(true);
             }
@@ -100,9 +122,13 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ onClose, onScan }) =
                     {cameras.length > 1 && (
                         <button
                             onClick={switchCamera}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-sm max-w-[200px]"
+                            title="สลับกล้อง"
                         >
-                            <RefreshCcw className="w-3.5 h-3.5" /> สลับกล้อง
+                            <RefreshCcw className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">
+                                {cameras.find(c => c.id === selectedCameraId)?.label?.replace(/camera|lens|facing|back|rear/gi, '').trim() || `เลนส์ ${cameras.findIndex(c => c.id === selectedCameraId) + 1}`}
+                            </span>
                         </button>
                     )}
                 </div>

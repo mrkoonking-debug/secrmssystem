@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -7,6 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Loader2 } from 'lucide-react';
+import { MockDb } from './services/mockDb';
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const ClaimsList = lazy(() => import('./pages/ClaimsList').then(m => ({ default: m.ClaimsList })));
@@ -40,7 +41,15 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
 
-  // --- DEBUG: Test Firebase Connection REMOVED ---
+  useEffect(() => {
+    MockDb.getSettings().then(settings => {
+      if (settings?.performanceMode) {
+        document.documentElement.classList.add('performance-mode');
+      } else {
+        document.documentElement.classList.remove('performance-mode');
+      }
+    }).catch(err => console.error("Could not fetch performance mode setting:", err));
+  }, []);
 
 
   return (

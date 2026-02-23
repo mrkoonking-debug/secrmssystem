@@ -68,19 +68,19 @@ export const HddBulkModal: React.FC<HddBulkModalProps> = ({
                 </div>
 
                 {/* Quantity selector (Fixed top) */}
-                <div className="px-6 py-4 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-black/10 border-b border-gray-100 dark:border-[#333] flex-shrink-0 z-10 shadow-sm">
-                    <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider font-bold">จำนวนฮาร์ดดิสก์</p>
-                    <div className="flex items-center gap-8">
-                        <button onClick={() => updateQty(quantity - 1)} className="w-12 h-12 rounded-full bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#3a3a3c] transition-all shadow-sm group active:scale-95">
-                            <Minus className="w-5 h-5 text-gray-500 group-hover:text-red-500 transition-colors" />
+                <div className="px-6 py-4 flex items-center justify-between bg-gray-50/50 dark:bg-black/10 border-b border-gray-100 dark:border-[#333] flex-shrink-0 z-10 shadow-sm">
+                    <p className="text-sm text-[#1d1d1f] dark:text-gray-300 font-bold">จำนวนฮาร์ดดิสก์</p>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => updateQty(quantity - 1)} className="w-10 h-10 rounded-full bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#3a3a3c] transition-all shadow-sm group active:scale-95">
+                            <Minus className="w-4 h-4 text-gray-500 group-hover:text-red-500 transition-colors" />
                         </button>
 
-                        <div className="w-16 flex justify-center">
-                            <span className="text-4xl font-black text-[#1d1d1f] dark:text-white tabular-nums tracking-tight">{quantity}</span>
+                        <div className="w-10 flex justify-center">
+                            <span className="text-2xl font-black text-[#1d1d1f] dark:text-white tabular-nums tracking-tight">{quantity}</span>
                         </div>
 
-                        <button onClick={() => updateQty(quantity + 1)} className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all shadow-sm group active:scale-95">
-                            <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                        <button onClick={() => updateQty(quantity + 1)} className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all shadow-sm group active:scale-95">
+                            <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
                         </button>
                     </div>
                 </div>

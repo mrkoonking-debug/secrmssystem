@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Settings, Save, Check, Loader2, Globe, Building } from 'lucide-react';
+import { Settings, Save, Check, Loader2, Globe, Building, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export const SettingsPage: React.FC = () => {
@@ -45,6 +45,14 @@ export const SettingsPage: React.FC = () => {
     await MockDb.updateSettings(settings);
     setSuccess('Settings Saved!');
     setIsSaving(false);
+
+    // Apply layout change immediately for this browser
+    if (settings.performanceMode) {
+      document.documentElement.classList.add('performance-mode');
+    } else {
+      document.documentElement.classList.remove('performance-mode');
+    }
+
     setTimeout(() => setSuccess(''), 3000);
   };
 
@@ -112,7 +120,25 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="glass-panel p-8 rounded-[2rem] space-y-6 mt-6">
+          <h3 className="text-lg font-bold flex items-center gap-2"><Zap className="w-5 h-5 text-yellow-500" /> การแสดงผลและประสิทธิภาพ (Performance)</h3>
 
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-xl flex-wrap gap-4">
+            <div className="flex-1">
+              <h4 className="font-bold text-sm text-[#1d1d1f] dark:text-white mb-1">Performance Mode (ลด Effect กราฟิก)</h4>
+              <p className="text-xs text-gray-500">ปิดการทำงานของลูกเล่นพื้นหลังเบลอ (Glassmorphism / Blur) ทั้งโปรแกรม เพื่อให้ทำงานได้ลื่นไหลขึ้นบนคอมพิวเตอร์และมือถือสเปคต่ำ</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSettings({ ...settings, performanceMode: !settings.performanceMode })}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.performanceMode ? 'bg-green-500' : 'bg-gray-200 dark:bg-[#424245]'}`}
+              role="switch"
+              aria-checked={settings.performanceMode}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${settings.performanceMode ? 'translate-x-5' : 'translate-x-0'}`}></span>
+            </button>
+          </div>
+        </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-[#1c1c1e] p-6 rounded-[2rem] border border-gray-100 dark:border-[#333]">
           <div className="flex items-center gap-2 text-sm text-gray-500">

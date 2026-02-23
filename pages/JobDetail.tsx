@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus } from '../types';
-import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3 } from 'lucide-react';
+import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3, Save, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 
@@ -16,6 +16,18 @@ export const JobDetail: React.FC = () => {
     const [jobInfo, setJobInfo] = useState<{ id: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
+
+    // Customer edit state
+    const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+    const [isSavingCustomer, setIsSavingCustomer] = useState(false);
+    const [customerForm, setCustomerForm] = useState({
+        customerName: '',
+        contactPerson: '',
+        customerPhone: '',
+        customerLineId: '',
+        customerEmail: '',
+        customerReturnAddress: ''
+    });
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -66,6 +78,16 @@ export const JobDetail: React.FC = () => {
                         type: first.quotationNumber ? 'QUOTATION' : first.groupRequestId ? 'GROUP' : 'SINGLE'
                     });
 
+                    // Initialize customer form
+                    setCustomerForm({
+                        customerName: first.customerName || '',
+                        contactPerson: first.contactPerson || '',
+                        customerPhone: first.customerPhone || '',
+                        customerLineId: first.customerLineId || '',
+                        customerEmail: first.customerEmail || '',
+                        customerReturnAddress: first.customerReturnAddress || ''
+                    });
+
                     const editRmaId = searchParams.get('editRmaId');
                     if (editRmaId) {
                         navigate(`/admin/rma/${editRmaId}/edit`);
@@ -97,6 +119,48 @@ export const JobDetail: React.FC = () => {
         navigate(`/admin/rma/${rma.id}/edit`);
     };
 
+    const handleSaveCustomer = async () => {
+        setIsSavingCustomer(true);
+        try {
+            const updates: Partial<RMA> = {
+                customerName: customerForm.customerName,
+                contactPerson: customerForm.contactPerson,
+                customerPhone: customerForm.customerPhone,
+                customerLineId: customerForm.customerLineId,
+                customerEmail: customerForm.customerEmail,
+                customerReturnAddress: customerForm.customerReturnAddress
+            };
+            // Update all RMAs in this job
+            for (const rma of rmas) {
+                await MockDb.updateRMA(rma.id, updates);
+            }
+            // Update local state
+            setJobInfo(prev => prev ? { ...prev, customerName: customerForm.customerName } : null);
+            await refreshRMAs();
+            setIsEditingCustomer(false);
+        } catch (error) {
+            console.error('Failed to update customer info', error);
+        } finally {
+            setIsSavingCustomer(false);
+        }
+    };
+
+    const handleCancelCustomerEdit = () => {
+        // Reset form to current data
+        if (rmas.length > 0) {
+            const first = rmas[0];
+            setCustomerForm({
+                customerName: first.customerName || '',
+                contactPerson: first.contactPerson || '',
+                customerPhone: first.customerPhone || '',
+                customerLineId: first.customerLineId || '',
+                customerEmail: first.customerEmail || '',
+                customerReturnAddress: first.customerReturnAddress || ''
+            });
+        }
+        setIsEditingCustomer(false);
+    };
+
 
 
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
@@ -109,37 +173,131 @@ export const JobDetail: React.FC = () => {
                 <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white/50 dark:bg-white/10 rounded-full border border-gray-200 dark:border-white/10">JOB: {decodeURIComponent(jobId || '')}</div>
             </div>
 
+            {/* Unified Job Header & Customer Info Card */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-5 sm:p-8 mb-8 border border-gray-100 dark:border-[#333]">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+
+                {/* Job Header & Actions */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-8 border-b border-gray-100 dark:border-white/5">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
-                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-1">{jobInfo.id}</h1>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customerName}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} {t('claimsList.items')}</span></div>
+                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-2">{jobInfo.id}</h1>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
+                                <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span>
+                                <span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs text-[#1d1d1f] dark:text-gray-300 font-medium">{jobInfo.count} {t('claimsList.items')}</span>
+                                <div className="flex gap-2">
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 font-medium border border-green-100 dark:border-green-900/30">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        {rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length} {t('track.doneBadge')}
+                                    </div>
+                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium border border-blue-100 dark:border-blue-900/30">
+                                        <Clock className="w-3 h-3" />
+                                        {rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length} {t('track.activeBadge')}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:w-auto">
                         <button
                             onClick={() => printDistributorDocuments(rmas)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl font-medium transition-all shadow-sm"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl font-medium transition-all shadow-sm"
                             title="Print Distributor RMA Form"
                         >
                             <Printer className="w-4 h-4" />
-                            <span className="text-sm">{t('track.printDistForm')}</span>
+                            <span className="text-sm whitespace-nowrap">{t('track.printDistForm')}</span>
                         </button>
                         <button
                             onClick={() => printCustomerDocuments(rmas)}
-                            className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
                             title="Print Customer Return Note"
                         >
                             <User className="w-4 h-4" />
-                            <span className="text-sm">{t('track.printCustForm')}</span>
+                            <span className="text-sm whitespace-nowrap">{t('track.printCustForm')}</span>
                         </button>
                     </div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4">
-                    <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">{t('track.doneBadge')}</div></div>
-                    <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">{t('track.activeBadge')}</div></div>
+
+                {/* Customer Info Section */}
+                <div>
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="font-semibold text-lg flex items-center gap-3 text-[#1d1d1f] dark:text-white">
+                            <User className="w-5 h-5 text-blue-500" />
+                            {t('submit.customerDetails')}
+                        </h2>
+                        {!isEditingCustomer ? (
+                            <button onClick={() => setIsEditingCustomer(true)} className="text-[11px] text-blue-500 font-bold hover:underline">{t('track.changeBtn')}</button>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleCancelCustomerEdit} className="px-4 py-1.5 text-xs text-gray-500 hover:text-red-500 font-medium transition-colors">{t('track.cancelBtn')}</button>
+                                <button onClick={handleSaveCustomer} disabled={isSavingCustomer} className="px-5 py-1.5 text-xs font-bold text-white bg-[#0071e3] hover:bg-[#0077ed] rounded-full shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
+                                    {isSavingCustomer ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                    {isSavingCustomer ? 'กำลังบันทึก...' : 'บันทึก'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {isEditingCustomer ? (
+                        <div className="space-y-4 animate-fade-in">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.companyName')}</label>
+                                    <input type="text" value={customerForm.customerName} onChange={e => setCustomerForm(p => ({ ...p, customerName: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อลูกค้า / บริษัท" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.contactName')}</label>
+                                    <input type="text" value={customerForm.contactPerson} onChange={e => setCustomerForm(p => ({ ...p, contactPerson: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อผู้ติดต่อ" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.phone')}</label>
+                                    <input type="text" value={customerForm.customerPhone} onChange={e => setCustomerForm(p => ({ ...p, customerPhone: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="เบอร์โทรศัพท์" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.lineId')}</label>
+                                    <input type="text" value={customerForm.customerLineId} onChange={e => setCustomerForm(p => ({ ...p, customerLineId: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="LINE ID" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">Email</label>
+                                <input type="text" value={customerForm.customerEmail} onChange={e => setCustomerForm(p => ({ ...p, customerEmail: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="อีเมล (ถ้ามี)" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.returnAddress')}</label>
+                                <textarea value={customerForm.customerReturnAddress} onChange={e => setCustomerForm(p => ({ ...p, customerReturnAddress: e.target.value }))} rows={2} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ที่อยู่สำหรับจัดส่งคืน" />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5 text-sm">
+                            <div className="grid grid-cols-[130px_1fr] flex-1 gap-2 items-start">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.companyName')}</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerName || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-[100px_1fr] flex-1 gap-2 items-start">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.contactName')}</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.contactPerson || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.phone')}</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerPhone || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-[100px_1fr] gap-2 items-start">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('submit.lineId')}</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerLineId || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start md:col-span-2">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">Email</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerEmail || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start md:col-span-2">
+                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('submit.returnAddress')}</span>
+                                <span className="text-[#1d1d1f] dark:text-white font-medium leading-relaxed">{customerForm.customerReturnAddress || '-'}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

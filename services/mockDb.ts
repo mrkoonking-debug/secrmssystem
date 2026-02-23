@@ -39,7 +39,8 @@ let OFFLINE_SETTINGS = {
   taxId: '012555XXXXXXX',
   tel: '02-999-8888',
   logoUrl: '/logo.png',
-  website: 'www.sec-technology.com'
+  website: 'www.sec-technology.com',
+  performanceMode: false
 };
 
 // Auth ready promise — resolves once onAuthStateChanged fires for the first time

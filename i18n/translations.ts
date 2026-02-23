@@ -680,8 +680,8 @@ export const translations = {
       newValue: 'ค่าใหม่',
       noChangesMsg: 'ไม่พบการเปลี่ยนแปลง กรุณาปิดหน้าต่างหรือแก้ไขข้อมูล',
       cancelEdit: 'ยกเลิกการแก้ไข',
-      printDistForm: 'พิมพ์ใบส่งศูนย์',
-      printCustForm: 'พิมพ์ใบรับคืน',
+      printDistForm: 'พิมพ์ใบส่งเคลม',
+      printCustForm: 'พิมพ์ใบส่งคืนสินค้า',
       doneBadge: 'เสร็จสิ้น',
       activeBadge: 'กำลังดำเนินการ',
       noHistory: 'ไม่มีประวัติ'
