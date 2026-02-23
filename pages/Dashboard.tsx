@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { DashboardStats, Team, RMAStatus } from '../types';
 import { MockDb } from '../services/mockDb';
-import { Clock, CheckCircle2, AlertTriangle, Truck, TrendingUp, AlertOctagon, Timer, ChevronRight, Layers, Box, Wifi, Zap, ShoppingBag, ChevronDown } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, Truck, TrendingUp, AlertOctagon, Timer, ChevronRight, Layers, Box, Wifi, Zap, ShoppingBag, ChevronDown, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
@@ -11,25 +11,20 @@ export const Dashboard: React.FC = () => {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [selectedTeam, setSelectedTeam] = useState<Team | 'ALL' | 'GROUP_C'>('ALL');
     const [isGroupCActive, setIsGroupCActive] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { t } = useLanguage();
 
     useEffect(() => {
         const fetchData = async () => {
-            const teamFilter = selectedTeam === 'ALL' ? undefined : selectedTeam;
-            const data = await MockDb.getStats(teamFilter);
-
-            // Recalculate "Revenue Pipeline" to act as "Pending Vendor Count" for this view
-            const allRMAs = await MockDb.getRMAs();
-            const rmasAtVendor = allRMAs.filter(c => {
-                const isWaiting = c.status === RMAStatus.WAITING_PARTS;
-                if (!teamFilter) return isWaiting;
-                const isTeamMatch = teamFilter === 'GROUP_C'
-                    ? [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team)
-                    : c.team === teamFilter;
-                return isWaiting && isTeamMatch;
-            }).length;
-
-            setStats({ ...data, revenuePipeline: rmasAtVendor });
+            try {
+                setError(null);
+                const teamFilter = selectedTeam === 'ALL' ? undefined : selectedTeam;
+                const data = await MockDb.getStats(teamFilter);
+                setStats(data);
+            } catch (err: any) {
+                console.error('Dashboard fetch failed:', err);
+                setError(err.message || 'ไม่สามารถโหลดข้อมูลได้');
+            }
         };
         fetchData();
 
@@ -55,6 +50,15 @@ export const Dashboard: React.FC = () => {
             { name: t('dashboard.stale'), value: stats.agingBuckets.bucket7plus },
         ];
     }, [stats, t]);
+
+    if (error) return (
+        <div className="max-w-md mx-auto mt-20 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8" /></div>
+            <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white mb-2">โหลดข้อมูลไม่สำเร็จ</h2>
+            <p className="text-sm text-gray-500 mb-4">{error}</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[#0071e3] text-white rounded-xl font-bold flex items-center gap-2 mx-auto"><RefreshCw className="w-4 h-4" /> ลองใหม่</button>
+        </div>
+    );
 
     if (!stats) return <div className="p-20 text-center text-gray-400">Loading Data...</div>;
 

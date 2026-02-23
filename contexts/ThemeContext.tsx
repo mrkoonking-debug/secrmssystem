@@ -13,12 +13,19 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('light');
 
-  // ตรวจสอบ System Preference แค่ครั้งเดียวตอนโหลด แต่ไม่เก็บลง LocalStorage
-  // ตรวจสอบ System Preference แค่ครั้งเดียวตอนโหลด แต่ไม่เก็บลง LocalStorage
   useEffect(() => {
-    // Force Light Mode as default regardless of system preference
-    setTheme('light');
-    document.documentElement.classList.remove('dark');
+    // 1. Check localStorage first
+    const savedTheme = localStorage.getItem('theme') as Theme | null;
+
+    if (savedTheme === 'dark') {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    } else {
+      // Default to light if nothing saved
+      setTheme('light');
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   }, []);
 
   const toggleTheme = () => {
@@ -29,6 +36,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         document.documentElement.classList.remove('dark');
       }
+      localStorage.setItem('theme', newTheme);
       return newTheme;
     });
   };

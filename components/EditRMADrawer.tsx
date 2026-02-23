@@ -420,11 +420,11 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     {mainGroup === 'C' && (
                                         <div className="grid grid-cols-1 gap-1.5 pl-3 border-l-2 border-blue-500/20">
                                             {[
-                                                { val: Team.TEAM_C, label: 'Network', icon: Wifi },
-                                                { val: Team.TEAM_E, label: 'UPS', icon: Zap },
-                                                { val: Team.TEAM_G, label: 'Online', icon: ShoppingBag }
+                                                { val: Team.TEAM_C, label: 'Network', icon: Wifi, colorClass: 'text-blue-500', activeBg: 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300' },
+                                                { val: Team.TEAM_E, label: 'UPS', icon: Zap, colorClass: 'text-yellow-500', activeBg: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300' },
+                                                { val: Team.TEAM_G, label: 'Online', icon: ShoppingBag, colorClass: 'text-fuchsia-500', activeBg: 'bg-fuchsia-50 dark:bg-fuchsia-900/30 border-fuchsia-500 text-fuchsia-700 dark:text-fuchsia-300' }
                                             ].map(sub => (
-                                                <button key={sub.val} onClick={() => setTempTeam(sub.val)} className={`p-2 rounded-lg border text-xs flex items-center gap-2 transition-all ${tempTeam === sub.val ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300 shadow-sm' : 'bg-white dark:bg-[#1c1c1e] border-transparent text-gray-700 dark:text-gray-300'}`}><sub.icon className="w-3 h-3" /> {sub.label}</button>
+                                                <button key={sub.val} onClick={() => setTempTeam(sub.val)} className={`p-2 rounded-lg border text-xs flex items-center gap-2 transition-all ${tempTeam === sub.val ? `${sub.activeBg} shadow-sm` : 'bg-white dark:bg-[#1c1c1e] border-transparent text-gray-700 dark:text-gray-300'}`}><sub.icon className={`w-3 h-3 ${sub.colorClass}`} /> {sub.label}</button>
                                             ))}
                                         </div>
                                     )}

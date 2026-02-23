@@ -3,6 +3,7 @@ import React, { Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Loader2 } from 'lucide-react';
@@ -71,7 +72,7 @@ const AppContent: React.FC = () => {
           </main>
         </div>
       ) : (
-        <main className="flex-1 overflow-y-auto custom-scrollbar pt-10 pb-10">
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<CustomerSearch />} />
@@ -88,13 +89,15 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <LanguageProvider>
-    <ThemeProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </ThemeProvider>
-  </LanguageProvider>
+  <ErrorBoundary>
+    <LanguageProvider>
+      <ThemeProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ThemeProvider>
+    </LanguageProvider>
+  </ErrorBoundary>
 );
 
 export default App;

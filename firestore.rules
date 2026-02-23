@@ -7,35 +7,31 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Admin Helper (reads from users collection, might cost reads)
-    // Simplified: Check if token has custom claim or just trust any auth staff for now
-    // For MVP performance, we'll assume any Auth user is Staff
-    
-    // 1. Users Collection
+    // 1. Users Collection — Only authenticated users can read/write
     match /users/{userId} {
       allow read: if isAuth();
-      allow write: if isAuth(); // Ideally only Admin
+      allow write: if isAuth();
     }
     
-    // 2. RMAs Collection (Renamed from Claims)
+    // 2. RMAs Collection
     match /rmas/{rmaId} {
-      // Public Tracking: Allow read if you know the ID? Or allow list?
-      // "Allow list" is dangerous for public.
-      // Better: Allow read if isAuth() OR if resource.data.quotationNumber == request.query.... (Complex)
-      // For now, allow public read to support tracking page easily.
-      allow read: if true;
+      // Public: read a single document (for customer tracking by RMA ID)
+      allow get: if true;
       
-      // Staff update
+      // Staff only: list/query the entire collection
+      allow list: if isAuth();
+      
+      // Staff: update and delete
       allow update, delete: if isAuth();
       
-      // Creation: Staff OR Public (for Guest Submit)
+      // Creation: Staff OR public guest submit (with restrictions)
       allow create: if isAuth() || (
         request.resource.data.status == 'PENDING' &&
         request.resource.data.createdBy == 'Customer (Web)'
       );
     }
     
-    // 3. Config/Master Data
+    // 3. Config/Master Data — public read, staff write
     match /brands/{d} { allow read: if true; allow write: if isAuth(); }
     match /distributors/{d} { allow read: if true; allow write: if isAuth(); }
     match /settings/{d} { allow read: if true; allow write: if isAuth(); }

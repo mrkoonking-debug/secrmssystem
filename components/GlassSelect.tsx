@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
 
 interface Option {
@@ -35,19 +36,62 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [frequencies, setFrequencies] = useState<Record<string, number>>({});
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Close on click outside (check both button and portal dropdown)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Position dropdown below button using Portal
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+  }, [isOpen]);
+
+  // Reposition on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+    const updatePos = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownStyle(prev => ({
+          ...prev,
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: rect.width,
+        }));
+      }
+    };
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+    return () => {
+      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener('resize', updatePos);
+    };
+  }, [isOpen]);
 
   // Load frequent items from localStorage
   useEffect(() => {
@@ -117,11 +161,57 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
     </button>
   );
 
+  const dropdownPanel = isOpen ? createPortal(
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-xl shadow-2xl overflow-hidden animate-fade-in origin-top"
+    >
+      {searchable && (
+        <div className="p-2 border-b border-gray-200 dark:border-[#333] sticky top-0 bg-white dark:bg-[#2c2c2e] z-10">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="Search..."
+              className="w-full bg-gray-100 dark:bg-[#3a3a3c] border-none rounded-lg py-2 pl-9 pr-3 text-sm text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]/50 placeholder-gray-400"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar">
+        {filteredOptions.length === 0 ? (
+          <div className="p-4 text-center text-sm text-gray-400">No results found</div>
+        ) : (
+          <>
+            {frequentOptions.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Frequently / Recently Used
+                </div>
+                {frequentOptions.map(renderOption)}
+                <div className="h-px bg-gray-200 dark:bg-gray-800 my-1.5 mx-2" />
+              </>
+            )}
+            {normalOptions.map(renderOption)}
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2 tracking-wide">{label}</label>}
 
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
@@ -145,46 +235,7 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-xl shadow-xl overflow-hidden animate-fade-in origin-top">
-
-          {searchable && (
-            <div className="p-2 border-b border-gray-200 dark:border-[#333] sticky top-0 bg-white dark:bg-[#2c2c2e] z-10">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Search..."
-                  className="w-full bg-gray-100 dark:bg-[#3a3a3c] border-none rounded-lg py-2 pl-9 pr-3 text-sm text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]/50 placeholder-gray-400"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="max-h-60 overflow-y-auto p-1.5 custom-scrollbar" ref={listRef}>
-            {filteredOptions.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-400">No results found</div>
-            ) : (
-              <>
-                {frequentOptions.length > 0 && (
-                  <>
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      Frequently / Recently Used
-                    </div>
-                    {frequentOptions.map(renderOption)}
-                    <div className="h-px bg-gray-200 dark:bg-gray-800 my-1.5 mx-2" />
-                  </>
-                )}
-                {normalOptions.map(renderOption)}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {dropdownPanel}
     </div>
   );
 };

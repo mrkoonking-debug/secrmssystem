@@ -430,7 +430,7 @@ export const translations = {
       teamC: 'ทีม C: Network & UNV',
       teamE: 'ทีม E: UPS',
       teamG: 'ทีม G: Online Platform',
-      all: 'ทุกทีมช่าง',
+      all: 'ภาพรวมทุกทีม',
       unassigned: 'รอรับเข้าทีม'
     },
     status: {
@@ -480,7 +480,7 @@ export const translations = {
     dashboard: {
       title: 'ศูนย์จัดการงานเคลม',
       welcome: 'ติดตามสถานะสินค้าเคลมและงานค้างส่งศูนย์',
-      allTeams: 'ทุกทีมช่าง',
+      allTeams: 'ภาพรวมทุกทีม',
       totalClaims: 'งานทั้งหมด',
       pendingAction: 'รอตรวจสอบที่ร้าน',
       resolvedMonth: 'จบงาน (เดือนนี้)',

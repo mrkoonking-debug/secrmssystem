@@ -21,7 +21,9 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
   const { t } = useLanguage();
 
   useEffect(() => {
-    setUser(MockDb.getCurrentUser());
+    MockDb.waitForAuth().then(() => {
+      setUser(MockDb.getCurrentUser());
+    });
 
     const checkIncoming = async () => {
       try {

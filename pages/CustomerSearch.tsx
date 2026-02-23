@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Search, ArrowRight, PlusCircle, ShieldCheck, ChevronRight } from 'lucide-react';
 import { MockDb } from '../services/mockDb';
@@ -10,9 +10,17 @@ import { LanguageToggle } from '../components/LanguageToggle';
 export const CustomerSearch: React.FC = () => {
     const [query, setQuery] = useState('');
     const [isFocused, setIsFocused] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate();
     const { t } = useLanguage();
     const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Wait for Firebase Auth to initialize before checking login state
+    useEffect(() => {
+        MockDb.waitForAuth().then(() => {
+            setIsLoggedIn(MockDb.isAuthenticated());
+        });
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,7 +116,7 @@ export const CustomerSearch: React.FC = () => {
             <footer className="text-center py-10 text-[11px] text-[#86868b] mt-auto z-10">
                 <div className="flex items-center justify-center gap-6">
                     <span>{t('public.copyright')}</span>
-                    {MockDb.isAuthenticated() ? (
+                    {isLoggedIn ? (
                         <Link to="/admin/dashboard" className="text-[#0071e3] hover:underline font-bold transition-colors flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3" /> BACK TO DASHBOARD
                         </Link>

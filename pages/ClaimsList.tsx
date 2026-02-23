@@ -2,13 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus, Team } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
-import { Search, Plus, ChevronRight, ChevronDown, Box, Layers, Wifi, Zap, ShoppingBag, Package, User, ChevronsUpDown } from 'lucide-react';
+import { Search, Plus, ChevronRight, ChevronDown, Box, Layers, Wifi, Zap, ShoppingBag, Package, User, ChevronsUpDown, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+
+const PAGE_SIZE = 50;
 
 export const ClaimsList: React.FC = () => {
     const [rmas, setRMAs] = useState<RMA[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [lastDoc, setLastDoc] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'DONE'>('ALL');
     const [teamFilter, setTeamFilter] = useState<'ALL' | 'GROUP_C' | Team>('ALL');
@@ -19,14 +25,33 @@ export const ClaimsList: React.FC = () => {
 
     useEffect(() => {
         const fetch = async () => {
-            const allRMAs = await MockDb.getRMAs();
-            // Filter out unassigned rmas AND invalid data
-            const assignedRMAs = allRMAs.filter(c => c && c.id && c.team && (c.team as any) !== 'UNASSIGNED');
-            setRMAs(assignedRMAs);
-            setLoading(false);
+            try {
+                const result = await MockDb.getRMAsPaginated(PAGE_SIZE);
+                const assignedRMAs = result.rmas.filter(c => c && c.id && c.team && (c.team as any) !== 'UNASSIGNED');
+                setRMAs(assignedRMAs);
+                setLastDoc(result.lastDoc);
+                setHasMore(result.hasMore);
+            } catch (err: any) {
+                console.error('ClaimsList fetch failed:', err);
+                setError(err.message || 'ไม่สามารถโหลดข้อมูลได้');
+            } finally {
+                setLoading(false);
+            }
         };
         fetch();
     }, []);
+
+    const loadMore = async () => {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+        const result = await MockDb.getRMAsPaginated(PAGE_SIZE, lastDoc);
+        const assignedRMAs = result.rmas.filter(c => c && c.id && c.team && (c.team as any) !== 'UNASSIGNED');
+        setRMAs(prev => [...prev, ...assignedRMAs]);
+        setLastDoc(result.lastDoc);
+        setHasMore(result.hasMore);
+        setLoadingMore(false);
+    };
+
 
     const toggleDateGroup = (dateLabel: string) => {
         const newSet = new Set(expandedDates);
@@ -106,6 +131,15 @@ export const ClaimsList: React.FC = () => {
     const isRMAOverdue = (c: RMA) => ![RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.SHIPPED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 7);
 
     if (loading) return <div className="p-12 text-center">Loading RMAs...</div>;
+
+    if (error) return (
+        <div className="max-w-md mx-auto mt-20 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8" /></div>
+            <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white mb-2">โหลดข้อมูลไม่สำเร็จ</h2>
+            <p className="text-sm text-gray-500 mb-4">{error}</p>
+            <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[#0071e3] text-white rounded-xl font-bold flex items-center gap-2 mx-auto"><RefreshCw className="w-4 h-4" /> ลองใหม่</button>
+        </div>
+    );
 
     return (
         <div className="max-w-6xl mx-auto px-2 md:px-6 pb-20">
@@ -196,6 +230,20 @@ export const ClaimsList: React.FC = () => {
                     })
                 )}
             </div>
+
+            {/* Load More */}
+            {hasMore && (
+                <div className="flex justify-center mt-8">
+                    <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="px-8 py-3 bg-white dark:bg-[#1c1c1e] border border-gray-200 dark:border-[#333] rounded-full text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2c2c2e] transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {loadingMore ? 'กำลังโหลด...' : `โหลดเพิ่ม (แสดง ${rmas.length} รายการ)`}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

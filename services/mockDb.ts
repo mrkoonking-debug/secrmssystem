@@ -4,7 +4,8 @@ import { db, auth, isConfigured, firebaseConfig } from './firebaseConfig';
 import { initializeApp, deleteApp } from 'firebase/app';
 import {
   collection, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
-  query, where, orderBy, Timestamp, limit, serverTimestamp
+  query, where, orderBy, Timestamp, limit, serverTimestamp, startAfter, QueryDocumentSnapshot,
+  getCountFromServer
 } from 'firebase/firestore';
 import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -41,16 +42,9 @@ let OFFLINE_SETTINGS = {
   website: 'www.sec-technology.com'
 };
 
-// ... (Auth/LocalStorage logic remains the same)
-
-try {
-  const savedUser = localStorage.getItem('mock_user');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-  }
-} catch (e) {
-  console.error("Failed to restore session", e);
-}
+// Auth ready promise — resolves once onAuthStateChanged fires for the first time
+let _authReadyResolve: () => void;
+const authReadyPromise = new Promise<void>((resolve) => { _authReadyResolve = resolve; });
 
 if (isConfigured && auth) {
   onAuthStateChanged(auth, async (user) => {
@@ -64,13 +58,14 @@ if (isConfigured && auth) {
         role: (user.email === 'support@sectechnology.co.th' || user.email === 'admin@sec-claim.com') ? 'admin' : (userData.role || 'staff'),
         team: userData.team || 'ALL'
       };
-      // Also sync to local storage just in case mixed mode is used
-      localStorage.setItem('mock_user', JSON.stringify(currentUser));
     } else {
       currentUser = null;
-      localStorage.removeItem('mock_user');
     }
+    _authReadyResolve();
   });
+} else {
+  // If Firebase is not configured, resolve immediately
+  _authReadyResolve!();
 }
 
 const mapDocToRMA = (d: any): RMA => {
@@ -113,24 +108,17 @@ export const MockDb = {
     }
   },
 
-  registerAdmin: async () => {
-    if (!isConfigured || !auth) return { success: false, error: "Firebase not configured" };
-    try {
-      await createUserWithEmailAndPassword(auth, 'admin@sec-claim.com', 'Sec@1065152');
-      return { success: true };
-    } catch (e: any) {
-      return { success: false, error: e.message };
-    }
-  },
+  // registerAdmin removed — create admin accounts via Firebase Console only
+
 
   logout: async () => {
     if (isConfigured && auth) await signOut(auth);
     currentUser = null;
-    localStorage.removeItem('mock_user');
   },
 
   isAuthenticated: () => !!currentUser,
   getCurrentUser: () => currentUser,
+  waitForAuth: () => authReadyPromise,
 
   // --- Dynamic Brands Management ---
   getBrands: async (): Promise<Brand[]> => {
@@ -284,6 +272,26 @@ export const MockDb = {
       return snap.docs.map(mapDocToRMA);
     } catch (e) {
       console.error("getRMAs failed:", e);
+      throw e;
+    }
+  },
+
+  // Paginated version — returns { rmas, lastDoc, hasMore }
+  getRMAsPaginated: async (pageSize: number = 50, lastDocSnapshot?: any): Promise<{ rmas: RMA[], lastDoc: any, hasMore: boolean }> => {
+    if (!isConfigured || !db) throw new Error('Firebase Not Configured');
+    try {
+      let q;
+      if (lastDocSnapshot) {
+        q = query(collection(db, 'rmas'), orderBy('createdAt', 'desc'), startAfter(lastDocSnapshot), limit(pageSize));
+      } else {
+        q = query(collection(db, 'rmas'), orderBy('createdAt', 'desc'), limit(pageSize));
+      }
+      const snap = await getDocs(q);
+      const rmas = snap.docs.map(mapDocToRMA);
+      const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+      return { rmas, lastDoc, hasMore: snap.docs.length === pageSize };
+    } catch (e) {
+      console.error('getRMAsPaginated failed:', e);
       throw e;
     }
   },
@@ -451,29 +459,50 @@ export const MockDb = {
     if (_statsCache && _statsCache.key === cacheKey && cacheNow - _statsCache.ts < 30000) {
       return _statsCache.data;
     }
-    const all = await MockDb.getRMAs();
-    let filtered = all.filter(c => !!c.team); // Filter out unassigned from main stats
-    if (teamFilter) filtered = teamFilter === 'GROUP_C' ? all.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team)) : all.filter(c => c.team === teamFilter);
+    if (!isConfigured || !db) throw new Error('Firebase Not Configured');
+
+    const rmasRef = collection(db, 'rmas');
+
+    // Strategy: use single-field query (no composite index needed)
+    // then count statuses client-side from loaded docs
+    let teamDocs: RMA[];
+
+    if (teamFilter === 'GROUP_C') {
+      const snap = await getDocs(query(rmasRef, where('team', 'in', [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G])));
+      teamDocs = snap.docs.map(mapDocToRMA);
+    } else if (teamFilter) {
+      const snap = await getDocs(query(rmasRef, where('team', '==', teamFilter)));
+      teamDocs = snap.docs.map(mapDocToRMA);
+    } else {
+      // No filter — use getCountFromServer for total (single field, no composite)
+      // But still need docs for aging, so load all assigned
+      const snap = await getDocs(query(rmasRef, where('team', '!=', '')));
+      teamDocs = snap.docs.map(mapDocToRMA);
+    }
+
+    // Client-side counting from loaded docs (no composite index needed)
     const now = new Date();
+    const activeDocs = teamDocs.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status));
     const aging = { bucket0_3: 0, bucket4_7: 0, bucket7plus: 0 };
-    filtered.forEach(c => {
-      if (![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) {
-        const diff = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
-        if (diff <= 3) aging.bucket0_3++; else if (diff <= 7) aging.bucket4_7++; else aging.bucket7plus++;
-      }
+    activeDocs.forEach(c => {
+      const diff = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
+      if (diff <= 3) aging.bucket0_3++; else if (diff <= 7) aging.bucket4_7++; else aging.bucket7plus++;
     });
+
+    const urgentRMAs = activeDocs
+      .filter(c => Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000) > 7)
+      .slice(0, 10);
+
     const result: DashboardStats = {
-      totalRMAs: filtered.length,
-      pendingRMAs: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).length,
-      resolvedThisMonth: filtered.filter(c => c.status === RMAStatus.CLOSED).length,
+      totalRMAs: teamDocs.length,
+      pendingRMAs: activeDocs.length,
+      resolvedThisMonth: teamDocs.filter(c => c.status === RMAStatus.CLOSED).length,
       criticalIssues: aging.bucket7plus,
-      revenuePipeline: filtered.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
-      avgTurnaroundHours: 48, overdueCount: aging.bucket7plus, agingBuckets: aging,
-      urgentRMAs: filtered.filter(c => {
-        if ([RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) return false;
-        const daysOpen = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
-        return daysOpen > 7;
-      }).slice(0, 10)
+      revenuePipeline: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
+      avgTurnaroundHours: 48,
+      overdueCount: aging.bucket7plus,
+      agingBuckets: aging,
+      urgentRMAs
     };
     _statsCache = { key: cacheKey, data: result, ts: cacheNow };
     return result;
