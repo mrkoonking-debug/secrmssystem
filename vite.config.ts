@@ -15,7 +15,10 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-router-dom'],
             charts: ['recharts'],
-            utils: ['html5-qrcode', 'html2canvas', 'lucide-react']
+            icons: ['lucide-react'],
+            scanner: ['html5-qrcode'],
+            canvas: ['html2canvas'],
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
           }
         }
       }

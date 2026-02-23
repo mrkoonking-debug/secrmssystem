@@ -113,7 +113,7 @@ export const IncomingClaims: React.FC = () => {
     if (loading) return <div className="p-20 text-center"><Loader2 className="w-10 h-10 animate-spin mx-auto text-[#0071e3]" /></div>;
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
             <div className="mb-10">
                 <h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-2">{t('incoming.title')}</h1>
                 <p className="text-gray-500">{t('incoming.subtitle')}</p>
@@ -134,9 +134,9 @@ export const IncomingClaims: React.FC = () => {
 
                         return (
                             <div key={job.groupId} className={`glass-panel overflow-hidden transition-all duration-300 ${isSelected ? 'ring-2 ring-[#0071e3] scale-[1.01] shadow-2xl' : 'hover:scale-[1.005]'}`}>
-                                <div className="p-8 flex flex-col gap-6">
+                                <div className="p-5 sm:p-8 flex flex-col gap-4 sm:gap-6">
                                     {/* Summary Row */}
-                                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                                    <div className="flex flex-col gap-5 sm:gap-6">
                                         <div className="flex-1 space-y-4 cursor-pointer" onClick={() => toggleExpand(job.groupId)}>
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -172,11 +172,11 @@ export const IncomingClaims: React.FC = () => {
                                             </button>
                                         </div>
 
-                                        <div className="w-full md:w-64 flex-shrink-0">
+                                        <div className="w-full sm:w-auto flex-shrink-0">
                                             {!isSelected && (
                                                 <button
                                                     onClick={() => { setSelectedGroupId(job.groupId); setExpandedGroupId(job.groupId); }}
-                                                    className="w-full py-6 bg-[#1d1d1f] dark:bg-white text-white dark:text-black rounded-2xl font-bold flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                                                    className="w-full sm:w-auto py-4 sm:py-6 px-6 bg-[#1d1d1f] dark:bg-white text-white dark:text-black rounded-2xl font-bold flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl"
                                                 >
                                                     {t('incoming.assignBtn')}
                                                     <ChevronRight className="w-5 h-5" />
@@ -219,7 +219,7 @@ export const IncomingClaims: React.FC = () => {
                                         <div className="border-t border-gray-100 dark:border-white/5 pt-8 animate-slide-up">
                                             <div className="mb-6">
                                                 <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">{t('incoming.selectTeamTitle')}</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                                                     <button
                                                         onClick={() => handleMainGroupSelect('A')}
                                                         className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-4 ${selectedMainGroup === 'A' ? 'bg-white dark:bg-[#2c2c2e] border-red-500 ring-2 ring-red-500/20 shadow-lg' : 'bg-gray-50 dark:bg-white/5 border-transparent hover:bg-white dark:hover:bg-[#2c2c2e]'}`}
@@ -271,7 +271,7 @@ export const IncomingClaims: React.FC = () => {
 
 
 
-                                            <div className="flex justify-end items-center gap-3 pt-4">
+                                            <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-4">
                                                 <button
                                                     onClick={resetSelection}
                                                     className="px-8 py-3 bg-gray-100 dark:bg-white/10 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
@@ -281,7 +281,7 @@ export const IncomingClaims: React.FC = () => {
                                                 <button
                                                     disabled={!finalTeam || isAssigning}
                                                     onClick={() => handleAssignGroup(job)}
-                                                    className="px-10 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95"
+                                                    className="flex-1 sm:flex-none px-8 sm:px-10 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-500/30 flex items-center justify-center gap-3 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95"
                                                 >
                                                     {isAssigning ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-5 h-5" /> {t('incoming.assignBtn')} ({job.rmas.length} items)</>}
                                                 </button>

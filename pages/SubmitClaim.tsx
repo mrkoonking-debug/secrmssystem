@@ -33,7 +33,7 @@ export const SubmitClaim: React.FC = () => {
   const validateField = (name: string, value: any) => {
     let error = '';
     if (typeof value === 'string' && !value.trim()) {
-      if (['name', 'contactPerson', 'phone', 'quotationNumber'].includes(name)) error = t('validation.required');
+      if (['name', 'contactPerson', 'phone'].includes(name)) error = t('validation.required');
     }
     return error;
   };
@@ -51,7 +51,7 @@ export const SubmitClaim: React.FC = () => {
 
   const handleSubmitAll = async () => {
     const newErrors: Record<string, string> = {};
-    if (!customer.quotationNumber) newErrors.quotationNumber = t('validation.quotationRequired');
+
     if (!customer.name) newErrors.name = t('validation.nameRequired');
     if (!customer.contactPerson) newErrors.contactPerson = t('validation.required');
     if (!customer.phone) newErrors.phone = t('validation.phoneRequired');
@@ -160,7 +160,7 @@ export const SubmitClaim: React.FC = () => {
             {/* Row 1: Quotation (Ref) & Company Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.quotationNo')} <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.quotationNo')}</label>
                 <input
                   value={customer.quotationNumber}
                   onChange={e => setCustomer({ ...customer, quotationNumber: e.target.value })}

@@ -6,7 +6,7 @@ import { RMA, RMAStatus } from '../types';
 import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
-import { EditRMADrawer } from '../components/EditRMADrawer';
+
 import { printDistributorDocuments, printCustomerDocuments } from '../services/printService';
 import { Printer } from 'lucide-react'; // Added import or ensure it is already there
 
@@ -16,8 +16,7 @@ export const JobDetail: React.FC = () => {
     const [jobInfo, setJobInfo] = useState<{ id: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
-    const [editingRMA, setEditingRMA] = useState<RMA | null>(null);
-    const [isEditOpen, setIsEditOpen] = useState(false);
+
     const [searchParams, setSearchParams] = useSearchParams();
 
     const { t } = useLanguage();
@@ -25,21 +24,7 @@ export const JobDetail: React.FC = () => {
 
     // ... (rest of useEffects)
 
-    const handleSaveChanges = async (rmaId: string, updates: Partial<RMA>, diffs: { field: string, old: string, new: string }[]) => {
-        await MockDb.updateRMA(rmaId, { ...updates, updatedAt: new Date().toISOString() });
 
-        // Add single system event summarizing changes
-        const changeDesc = diffs.map(d => `${d.field}: ${d.old} -> ${d.new}`).join(', ');
-        await MockDb.addTimelineEvent(rmaId, {
-            type: 'SYSTEM',
-            description: `Edited: ${changeDesc}`,
-            user: MockDb.getCurrentUser()?.name || 'Staff'
-        });
-
-        await refreshRMAs();
-        setEditingRMA(null);
-        setIsEditOpen(false); // Close drawer after saving
-    };
 
     const refreshRMAs = async () => {
         const allRMAs = await MockDb.getRMAs();
@@ -81,14 +66,9 @@ export const JobDetail: React.FC = () => {
                         type: first.quotationNumber ? 'QUOTATION' : first.groupRequestId ? 'GROUP' : 'SINGLE'
                     });
 
-                    // Check for auto-open query param
                     const editRmaId = searchParams.get('editRmaId');
-                    if (editRmaId && !isEditOpen) {
-                        const targetRMA = jobRMAs.find(r => r.id === editRmaId);
-                        if (targetRMA) {
-                            setEditingRMA(targetRMA);
-                            setIsEditOpen(true);
-                        }
+                    if (editRmaId) {
+                        navigate(`/admin/rma/${editRmaId}/edit`);
                     }
                 } else {
                     // navigate('/admin/rmas'); // Optional redirect
@@ -114,21 +94,10 @@ export const JobDetail: React.FC = () => {
     };
 
     const handleEditClick = (rma: RMA) => {
-        setEditingRMA(rma);
-        setIsEditOpen(true);
-        // Optional: Update URL to reflect state?
-        // setSearchParams({ editRmaId: rma.id });
-        // Might be annoying if user just wants quick edit.
+        navigate(`/admin/rma/${rma.id}/edit`);
     };
 
-    const handleCloseEdit = () => {
-        setIsEditOpen(false);
-        setEditingRMA(null);
-        // Clear param if it exists
-        if (searchParams.get('editRmaId')) {
-            setSearchParams({}, { replace: true });
-        }
-    };
+
 
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
     if (!jobInfo) return null;
@@ -140,7 +109,7 @@ export const JobDetail: React.FC = () => {
                 <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white/50 dark:bg-white/10 rounded-full border border-gray-200 dark:border-white/10">JOB: {decodeURIComponent(jobId || '')}</div>
             </div>
 
-            <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-8 border border-gray-100 dark:border-[#333]">
+            <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-5 sm:p-8 mb-8 border border-gray-100 dark:border-[#333]">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
@@ -149,7 +118,7 @@ export const JobDetail: React.FC = () => {
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500"><span className="flex items-center gap-1"><User className="w-4 h-4" /> {jobInfo.customerName}</span><span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span><span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs">{jobInfo.count} {t('claimsList.items')}</span></div>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => printDistributorDocuments(rmas)}
                             className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl font-medium transition-all shadow-sm"
@@ -168,7 +137,7 @@ export const JobDetail: React.FC = () => {
                         </button>
                     </div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4 md:mt-0">
+                <div className="flex gap-2 justify-end mt-4">
                     <div className="text-center px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl"><div className="text-xl font-bold text-green-600 dark:text-green-400">{rmas.filter(c => c.status === RMAStatus.CLOSED || c.status === RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-green-600/70 font-bold">{t('track.doneBadge')}</div></div>
                     <div className="text-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl"><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{rmas.filter(c => c.status !== RMAStatus.CLOSED && c.status !== RMAStatus.REPAIRED).length}</div><div className="text-[10px] uppercase text-blue-600/70 font-bold">{t('track.activeBadge')}</div></div>
                 </div>
@@ -284,15 +253,7 @@ export const JobDetail: React.FC = () => {
                 })}
             </div>
 
-            {/* Edit Slide-over */}
-            {editingRMA && (
-                <EditRMADrawer
-                    isOpen={isEditOpen}
-                    onClose={handleCloseEdit}
-                    rma={editingRMA}
-                    onSave={handleSaveChanges}
-                />
-            )}
+
         </div>
     );
 };

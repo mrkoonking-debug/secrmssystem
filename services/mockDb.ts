@@ -15,7 +15,9 @@ import { BRAND_OPTIONS, DISTRIBUTOR_OPTIONS } from '../constants/options';
 import { SEED_CLAIMS } from './seedData';
 
 let currentUser: any = null;
-let OFFLINE_STORAGE: RMA[] = SEED_CLAIMS as any; // Cast for now, should update seedData too
+let OFFLINE_STORAGE: RMA[] = SEED_CLAIMS as any;
+// In-memory stats cache (30 second TTL)
+let _statsCache: { key: string; data: any; ts: number } | null = null;
 let OFFLINE_USERS: any[] = [
   {
     uid: 'offline-admin',
@@ -286,10 +288,37 @@ export const MockDb = {
     }
   },
 
-  // NEW: Get Unassigned RMAs (Self-registered)
+  // Get Unassigned RMAs (Self-registered)
   getUnassignedRMAs: async (): Promise<RMA[]> => {
     const all = await MockDb.getRMAs();
     return all.filter(c => !c.team || (c.team as any) === 'UNASSIGNED');
+  },
+
+  // Get overdue RMAs (open for more than 7 days, not closed/shipped)
+  getOverdueRMAs: async (): Promise<RMA[]> => {
+    const all = await MockDb.getRMAs();
+    const now = Date.now();
+    return all.filter(c => {
+      if ([RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) return false;
+      const daysOpen = Math.floor((now - new Date(c.createdAt).getTime()) / 86400000);
+      return daysOpen > 7;
+    });
+  },
+
+  // Combined Navbar counts — single Firestore read for both badges
+  getNavCounts: async (): Promise<{ unassigned: number; overdue: number }> => {
+    const all = await MockDb.getRMAs();
+    const now = Date.now();
+    let unassigned = 0;
+    let overdue = 0;
+    for (const c of all) {
+      if (!c.team || (c.team as any) === 'UNASSIGNED') unassigned++;
+      if (![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) {
+        const daysOpen = Math.floor((now - new Date(c.createdAt).getTime()) / 86400000);
+        if (daysOpen > 7) overdue++;
+      }
+    }
+    return { unassigned, overdue };
   },
 
   // NEW: Get All Logs from all RMAs for Admin
@@ -417,6 +446,11 @@ export const MockDb = {
   },
 
   getStats: async (teamFilter?: Team | 'GROUP_C'): Promise<DashboardStats> => {
+    const cacheKey = teamFilter || 'ALL';
+    const cacheNow = Date.now();
+    if (_statsCache && _statsCache.key === cacheKey && cacheNow - _statsCache.ts < 30000) {
+      return _statsCache.data;
+    }
     const all = await MockDb.getRMAs();
     let filtered = all.filter(c => !!c.team); // Filter out unassigned from main stats
     if (teamFilter) filtered = teamFilter === 'GROUP_C' ? all.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team)) : all.filter(c => c.team === teamFilter);
@@ -428,14 +462,20 @@ export const MockDb = {
         if (diff <= 3) aging.bucket0_3++; else if (diff <= 7) aging.bucket4_7++; else aging.bucket7plus++;
       }
     });
-    return {
+    const result: DashboardStats = {
       totalRMAs: filtered.length,
       pendingRMAs: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).length,
       resolvedThisMonth: filtered.filter(c => c.status === RMAStatus.CLOSED).length,
       criticalIssues: aging.bucket7plus,
       revenuePipeline: filtered.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
       avgTurnaroundHours: 48, overdueCount: aging.bucket7plus, agingBuckets: aging,
-      urgentRMAs: filtered.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)).slice(0, 5)
+      urgentRMAs: filtered.filter(c => {
+        if ([RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) return false;
+        const daysOpen = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
+        return daysOpen > 7;
+      }).slice(0, 10)
     };
+    _statsCache = { key: cacheKey, data: result, ts: cacheNow };
+    return result;
   }
 };

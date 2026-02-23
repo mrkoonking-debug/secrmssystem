@@ -24,6 +24,7 @@ const DistributorManagement = lazy(() => import('./pages/DistributorManagement')
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const IncomingClaims = lazy(() => import('./pages/IncomingClaims').then(m => ({ default: m.IncomingClaims })));
+const EditRMA = lazy(() => import('./pages/EditRMA').then(m => ({ default: m.EditRMA })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-full w-full">
@@ -54,6 +55,7 @@ const AppContent: React.FC = () => {
                   <Route path="/admin/rmas" element={<ProtectedRoute><ClaimsList /></ProtectedRoute>} />
                   <Route path="/admin/incoming" element={<ProtectedRoute><IncomingClaims /></ProtectedRoute>} />
                   <Route path="/admin/job/:jobId" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+                  <Route path="/admin/rma/:rmaId/edit" element={<ProtectedRoute><EditRMA /></ProtectedRoute>} />
                   <Route path="/admin/submit" element={<ProtectedRoute><SubmitClaim /></ProtectedRoute>} />
 
                   <Route path="/admin/document/:type/:id" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />

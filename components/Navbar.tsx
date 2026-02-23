@@ -14,6 +14,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
   const [user, setUser] = useState<any>(null);
   const [unassignedCount, setUnassignedCount] = useState(0);
+  const [overdueCount, setOverdueCount] = useState(0);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,13 +23,13 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
   useEffect(() => {
     setUser(MockDb.getCurrentUser());
 
-    // Function to update the count of unassigned rmas
     const checkIncoming = async () => {
       try {
-        const incoming = await MockDb.getUnassignedRMAs();
-        setUnassignedCount(incoming.length);
+        const { unassigned, overdue } = await MockDb.getNavCounts();
+        setUnassignedCount(unassigned);
+        setOverdueCount(overdue);
       } catch (err) {
-        console.error("Failed to fetch unassigned count", err);
+        console.error("Failed to fetch counts", err);
       }
     };
 
@@ -77,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
       {user ? (
         <>
           <div className="text-[10px] font-bold text-[#86868b] uppercase tracking-widest mb-2 mt-2 pl-4">Management</div>
-          <NavLink to="/admin/dashboard" label={t('nav.overview')} icon={LayoutGrid} />
+          <NavLink to="/admin/dashboard" label={t('nav.overview')} icon={LayoutGrid} badgeCount={overdueCount} />
           <NavLink to="/admin/incoming" label={t('nav.incoming')} icon={Bell} badgeCount={unassignedCount} />
           <NavLink to="/admin/rmas" label={t('nav.claims')} icon={List} />
           <NavLink to="/admin/submit" label={t('nav.newRequest')} icon={PlusCircle} />

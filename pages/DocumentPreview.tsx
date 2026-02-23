@@ -120,22 +120,27 @@ export const DocumentPreview: React.FC = () => {
     if (!rma) return <div className="flex items-center justify-center min-h-[60vh] text-gray-500"><Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading Document...</div>;
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-8 px-2">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 px-2 gap-3">
                 <Link to={`/admin/job/${encodeURIComponent(id || '')}`} className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> Back to RMA</Link>
-                <div className="flex items-center gap-3"><h1 className="text-xl font-bold text-[#1d1d1f] dark:text-white capitalize">{type === 'importer' ? 'Distributor RMA' : 'Customer Return'} Form</h1><div className="text-xs font-mono text-gray-400 px-2 py-1 bg-white/50 dark:bg-white/10 rounded-lg border border-gray-200 dark:border-white/10">{id}</div></div>
-            </div>
-
-            <div className="glass-panel rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 sticky top-24 z-30 shadow-sm">
-                <div className="flex items-center gap-2 text-sm text-gray-500 pl-2"><span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> A4 Ready (210mm x 297mm)</span></div>
-                <div className="flex items-center gap-3">
-                    <button onClick={handleGenerateImage} className="px-5 py-2.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors"><ImageIcon className="w-4 h-4" /> Create Image</button>
-                    <button onClick={handlePrint} className="px-6 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-transform hover:scale-105"><Printer className="w-4 h-4" /> Print Document</button>
+                <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="text-base sm:text-xl font-bold text-[#1d1d1f] dark:text-white capitalize truncate">{type === 'importer' ? 'Distributor RMA' : 'Customer Return'} Form</h1>
+                    <div className="text-xs font-mono text-gray-400 px-2 py-1 bg-white/50 dark:bg-white/10 rounded-lg border border-gray-200 dark:border-white/10 flex-shrink-0">{id}</div>
                 </div>
             </div>
 
-            <div className="glass-panel rounded-[2rem] p-8 md:p-12 flex justify-center bg-gray-50/50 dark:bg-[#1c1c1e]/50 overflow-auto">
-                <div className="relative shadow-2xl" style={{ width: '210mm', height: '297mm', background: 'white' }}><div className="w-full h-full" dangerouslySetInnerHTML={{ __html: htmlContent }} /></div>
+            <div className="glass-panel rounded-2xl p-3 sm:p-4 mb-6 flex flex-wrap items-center justify-between gap-3 sticky top-24 z-30 shadow-sm">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 pl-2"><span className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500" /> A4 Ready (210mm x 297mm)</span></div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <button onClick={handleGenerateImage} className="px-3 sm:px-5 py-2 sm:py-2.5 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors"><ImageIcon className="w-4 h-4" /> <span className="hidden sm:inline">Create Image</span></button>
+                    <button onClick={handlePrint} className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30"><Printer className="w-4 h-4" /> Print</button>
+                </div>
+            </div>
+
+            <div className="glass-panel rounded-[2rem] p-4 sm:p-8 md:p-12 flex justify-center bg-gray-50/50 dark:bg-[#1c1c1e]/50">
+                <div className="overflow-x-auto w-full flex justify-center">
+                    <div className="relative shadow-2xl flex-shrink-0" style={{ width: '210mm', height: '297mm', background: 'white' }}><div className="w-full h-full" dangerouslySetInnerHTML={{ __html: htmlContent }} /></div>
+                </div>
             </div>
             <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -100, opacity: 0, pointerEvents: 'none' }}><div ref={hiddenRenderRef} style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: 0, margin: 0, boxSizing: 'border-box' }} dangerouslySetInnerHTML={{ __html: htmlContent }} /></div>
 

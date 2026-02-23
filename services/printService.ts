@@ -334,7 +334,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
           <div class="item-no">${index + 1}</div>
           <div>
             <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
-            <div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType}</div>
+            ${item.productType && item.productType !== 'OTHER' ? `<div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType.replace(/_/g, ' ')}</div>` : ''}
           </div>
         </div>
         <div class="item-sn">S/N: ${item.serialNumber}</div>
@@ -489,7 +489,7 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
           <div class="item-no">${index + 1}</div>
           <div>
             <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
-            <div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType}</div>
+            ${item.productType && item.productType !== 'OTHER' ? `<div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType.replace(/_/g, ' ')}</div>` : ''}
           </div>
         </div>
         <div style="text-align: right;">

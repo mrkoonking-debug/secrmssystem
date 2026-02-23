@@ -65,7 +65,7 @@ export const CustomerSubmit: React.FC = () => {
     const handleSubmit = () => {
         const newErrors: Record<string, string> = {};
         if (!customer.lineAccount) newErrors.lineAccount = t('publicSubmit.lineAccountRequired');
-        if (!customer.quotationNumber) newErrors.quotationNumber = t('validation.quotationRequired');
+
         if (!customer.companyName) newErrors.companyName = t('validation.companyRequired');
         if (!customer.contactName) newErrors.contactName = t('validation.contactRequired');
         if (!customer.phone) newErrors.phone = t('validation.phoneRequired');
@@ -383,7 +383,7 @@ export const CustomerSubmit: React.FC = () => {
                             {/* Row 1: Quotation (Ref) & Company Name */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.quotationNo')} <span className="text-red-500">*</span></label>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.quotationNo')}</label>
                                     <input
                                         value={customer.quotationNumber}
                                         onChange={e => setCustomer({ ...customer, quotationNumber: e.target.value })}
