@@ -1,8 +1,8 @@
-
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { HardDrive, Minus, Plus, Check, X } from 'lucide-react';
+import { HardDrive, Minus, Plus, Check, X, ScanBarcode } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ScannerModal } from './ScannerModal';
 
 interface HddBulkModalProps {
     initialSerials?: string[];
@@ -24,6 +24,7 @@ export const HddBulkModal: React.FC<HddBulkModalProps> = ({
     const [serials, setSerials] = useState<string[]>(
         initialSerials.length > 0 ? initialSerials : ['']
     );
+    const [scanningIndex, setScanningIndex] = useState<number | null>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
     const updateQty = (newQ: number) => {
@@ -51,14 +52,14 @@ export const HddBulkModal: React.FC<HddBulkModalProps> = ({
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white dark:bg-[#1c1c1e] w-full max-w-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-[#333] overflow-hidden">
-                {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-[#333] flex items-center justify-between">
+            <div className="bg-white dark:bg-[#1c1c1e] w-full max-w-lg min-h-[400px] h-[80vh] max-h-[600px] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#333] flex flex-col overflow-hidden">
+                {/* Header (Fixed) */}
+                <div className="p-5 border-b border-gray-100 dark:border-[#333] flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        <HardDrive className="w-7 h-7 text-[#0071e3]" />
+                        <HardDrive className="w-6 h-6 text-[#0071e3]" />
                         <div>
-                            <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{t('modals.hddTitle')}</h3>
-                            <p className="text-xs text-gray-400">{t('modals.hddInstruction')}</p>
+                            <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white leading-tight">{t('modals.hddTitle')}</h3>
+                            <p className="text-xs text-gray-400 mt-0.5">{t('modals.hddInstruction')}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2c2c2e] transition-colors">
@@ -66,49 +67,76 @@ export const HddBulkModal: React.FC<HddBulkModalProps> = ({
                     </button>
                 </div>
 
-                {/* Quantity selector */}
-                <div className="px-6 pt-5 pb-2 flex items-center gap-4">
-                    <button onClick={() => updateQty(quantity - 1)} className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-[#2c2c2e] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-[#3a3a3c] transition-colors">
-                        <Minus className="w-4 h-4 dark:text-white" />
-                    </button>
-                    <span className="text-2xl font-bold dark:text-white w-10 text-center">{quantity}</span>
-                    <button onClick={() => updateQty(quantity + 1)} className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-[#2c2c2e] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-[#3a3a3c] transition-colors">
-                        <Plus className="w-4 h-4 dark:text-white" />
-                    </button>
-                    <span className="text-sm text-gray-400">ฮาร์ดดิสก์</span>
+                {/* Quantity selector (Fixed top) */}
+                <div className="px-6 py-4 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-black/10 border-b border-gray-100 dark:border-[#333] flex-shrink-0 z-10 shadow-sm">
+                    <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider font-bold">จำนวนฮาร์ดดิสก์</p>
+                    <div className="flex items-center gap-8">
+                        <button onClick={() => updateQty(quantity - 1)} className="w-12 h-12 rounded-full bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#3a3a3c] transition-all shadow-sm group active:scale-95">
+                            <Minus className="w-5 h-5 text-gray-500 group-hover:text-red-500 transition-colors" />
+                        </button>
+
+                        <div className="w-16 flex justify-center">
+                            <span className="text-4xl font-black text-[#1d1d1f] dark:text-white tabular-nums tracking-tight">{quantity}</span>
+                        </div>
+
+                        <button onClick={() => updateQty(quantity + 1)} className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all shadow-sm group active:scale-95">
+                            <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Serial number inputs */}
-                <div ref={listRef} className="px-6 pb-4 space-y-2 max-h-[40vh] overflow-y-auto">
+                {/* Serial number inputs (Scrollable middle section) */}
+                <div ref={listRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-2 scrollbar-hide relative bg-white dark:bg-[#1c1c1e]">
                     {serials.map((sn, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-[#2c2c2e] flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                        <div key={idx} className="flex items-center gap-3 animate-fade-in group">
+                            <span className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold bg-gray-50 dark:bg-[#2c2c2e] text-gray-400 border border-gray-100 dark:border-[#333] flex-shrink-0 group-focus-within:bg-[#0071e3] transition-colors group-focus-within:text-white group-focus-within:border-transparent">
                                 {idx + 1}
                             </span>
-                            <input
-                                value={sn}
-                                onChange={e => { const n = [...serials]; n[idx] = e.target.value; setSerials(n); }}
-                                className="flex-1 px-4 py-2.5 text-sm rounded-xl outline-none bg-gray-50 dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3] focus:border-transparent"
-                                placeholder={t('placeholders.hddSerial').replace('#', (idx + 1).toString())}
-                            />
+                            <div className="relative flex-1">
+                                <input
+                                    value={sn}
+                                    onChange={e => { const n = [...serials]; n[idx] = e.target.value; setSerials(n); }}
+                                    className="w-full px-4 py-3 pl-4 pr-12 text-sm rounded-xl outline-none bg-white dark:bg-[#1c1c1e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3]/30 focus:border-[#0071e3] transition-all shadow-sm"
+                                    placeholder={t('placeholders.hddSerial').replace('#', (idx + 1).toString())}
+                                />
+                                <button
+                                    onClick={() => setScanningIndex(idx)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#0071e3] transition-colors rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                                    title="สแกนบาร์โค้ด"
+                                >
+                                    <ScanBarcode className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 border-t border-gray-100 dark:border-[#333] flex gap-3">
-                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] transition-colors">
+                {/* Footer (Fixed bottom) */}
+                <div className="p-4 border-t border-gray-100 dark:border-[#333] flex gap-3 flex-shrink-0 bg-white dark:bg-[#1c1c1e] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] z-10">
+                    <button onClick={onClose} className="px-5 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] transition-colors focus:ring-2 focus:ring-gray-200">
                         {t('modals.cancel')}
                     </button>
                     <button
                         onClick={handleConfirm}
-                        className="flex-1 py-2.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-[0.99]"
+                        className="flex-1 py-3 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-[0.99] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-[#1c1c1e]"
                     >
                         <Check className="w-4 h-4" />
                         {t('modals.confirmHdd').replace('{{count}}', quantity.toString())}
                     </button>
                 </div>
             </div>
+
+            {scanningIndex !== null && (
+                <ScannerModal
+                    onClose={() => setScanningIndex(null)}
+                    onScan={(val) => {
+                        const n = [...serials];
+                        n[scanningIndex] = val;
+                        setSerials(n);
+                        setScanningIndex(null);
+                    }}
+                />
+            )}
         </div>,
         document.body
     );

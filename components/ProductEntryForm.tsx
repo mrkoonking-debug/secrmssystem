@@ -4,11 +4,11 @@ import { createPortal } from 'react-dom';
 import { Plus, Minus, ScanBarcode, X, Box, Wifi, Zap, ShoppingBag, Layers, HardDrive, Check } from 'lucide-react';
 import { ProductType, Team } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Html5Qrcode } from 'html5-qrcode';
 import { GlassSelect } from './GlassSelect';
 import { COMMON_ACCESSORIES } from '../constants/options';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
+import { ScannerModal } from './ScannerModal';
 
 const getInputClass = (hasError: boolean) => `
   w-full px-4 py-3 text-sm rounded-2xl outline-none transition-all
@@ -307,51 +307,5 @@ const TeamSelector = ({ selectedMain, onSelectMain, currentTeam, onSelectSub, t,
             )}
             {error && <p className="text-red-500 text-xs mt-2 font-medium">{error}</p>}
         </div>
-    );
-};
-
-const ScannerModal = ({ onClose, onScan }: { onClose: () => void, onScan: (val: string) => void }) => {
-    const { t } = useLanguage();
-    const [permissionError, setPermissionError] = useState(false);
-
-    useEffect(() => {
-        const html5QrCode = new Html5Qrcode("reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-        // Prefer back camera
-        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-            onScan(decodedText);
-            html5QrCode.stop().catch(err => console.error("Failed to stop scanner", err));
-        }, (errorMessage) => {
-            // parse error, ignore it.
-        }).catch(err => {
-            console.error("Error starting scanner", err);
-            setPermissionError(true);
-        });
-
-        return () => {
-            if (html5QrCode.isScanning) {
-                html5QrCode.stop().catch(err => console.error("Failed to stop scanner cleanup", err));
-            }
-        };
-    }, []);
-
-    return createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl p-6 w-full max-w-md shadow-2xl relative flex flex-col items-center">
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-[#2c2c2e] rounded-full hover:bg-gray-200 dark:hover:bg-[#3a3a3c] transition-colors z-10"><X className="w-5 h-5 dark:text-white" /></button>
-
-                <h3 className="text-xl font-bold mb-4 text-[#1d1d1f] dark:text-white">{t('modals.scanTitle')}</h3>
-
-                <div id="reader" className="w-full overflow-hidden rounded-xl border-2 border-[#0071e3] relative bg-black aspect-square"></div>
-
-                {permissionError ? (
-                    <p className="text-red-500 text-sm mt-4 text-center">{t('modals.cameraError')}</p>
-                ) : (
-                    <p className="text-center text-xs text-gray-400 mt-4">{t('modals.cameraHint')}</p>
-                )}
-            </div>
-        </div>,
-        document.body
     );
 };
