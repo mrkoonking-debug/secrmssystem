@@ -18,7 +18,7 @@ export const ClaimsList: React.FC = () => {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'DONE'>('ALL');
     const [teamFilter, setTeamFilter] = useState<'ALL' | 'GROUP_C' | Team>('ALL');
-    const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set(['Today', 'Yesterday']));
+    const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set(['Today', 'Yesterday', 'This Week']));
     const [isTeamCExpanded, setIsTeamCExpanded] = useState(false);
     const { t } = useLanguage();
     const navigate = useNavigate();
@@ -190,7 +190,12 @@ export const ClaimsList: React.FC = () => {
                             <div key={dateLabel} className="animate-fade-in">
                                 <button onClick={() => toggleDateGroup(dateLabel)} className="w-full flex items-center gap-3 mb-4 group">
                                     <div className={`p-1.5 rounded-lg transition-colors ${isDateExpanded ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500 dark:bg-[#2c2c2e]'}`}>{isDateExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</div>
-                                    <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{dateLabel === 'Today' ? t('claimsList.today') : dateLabel} <span className="text-sm font-medium text-gray-400">({rmasInDate.length})</span></h2>
+                                    <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white">
+                                        {dateLabel === 'Today' ? t('claimsList.today') :
+                                            dateLabel === 'Yesterday' ? t('claimsList.yesterday') :
+                                                dateLabel === 'This Week' ? t('claimsList.thisWeek') :
+                                                    dateLabel === 'Earlier' ? t('claimsList.earlier') : dateLabel} <span className="text-sm font-medium text-gray-400">({rmasInDate.length})</span>
+                                    </h2>
                                     <div className="flex-grow h-px bg-gray-200 dark:bg-white/10 group-hover:bg-blue-500/20"></div>
                                 </button>
 
