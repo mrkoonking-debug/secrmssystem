@@ -486,8 +486,48 @@ export const MockDb = {
   // --- Delete Functions ---
   deleteRMA: async (id: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Disconnected");
-    try { await deleteDoc(doc(db, 'rmas', id)); }
-    catch (e) { console.error("deleteRMA failed", e); throw e; }
+    try {
+      // Get the RMA first to potentially revert the Job ID counter
+      const snap = await getDoc(doc(db, 'rmas', id));
+      if (snap.exists()) {
+        const rmaData = snap.data() as RMA;
+        const groupReqId = rmaData.groupRequestId;
+
+        // If it looks like SECRMA-YYYYMM-XXXX
+        if (groupReqId && groupReqId.startsWith('SECRMA-')) {
+          const parts = groupReqId.split('-');
+          if (parts.length === 3) {
+            const yearMonth = parts[1];
+            const seqStr = parts[2];
+            const seqNum = parseInt(seqStr, 10);
+
+            // Check the counter
+            const counterRef = doc(db, 'counters', 'jobCounter');
+            const counterSnap = await getDoc(counterRef);
+
+            if (counterSnap.exists()) {
+              const counterData = counterSnap.data();
+              // If this deleted job was the absolute latest one generated for this month
+              if (counterData.currentMonth === yearMonth && counterData.sequence === seqNum) {
+                // Decrement so the next one reuses this ID
+                await setDoc(counterRef, {
+                  currentMonth: yearMonth,
+                  sequence: Math.max(0, seqNum - 1)
+                }, { merge: true });
+                console.log(`Reverted job counter for ${yearMonth} from ${seqNum} to ${seqNum - 1}`);
+              }
+            }
+          }
+        }
+      }
+
+      // Finally delete the document
+      await deleteDoc(doc(db, 'rmas', id));
+    }
+    catch (e) {
+      console.error("deleteRMA failed", e);
+      throw e;
+    }
   },
 
   clearDatabase: async () => {
