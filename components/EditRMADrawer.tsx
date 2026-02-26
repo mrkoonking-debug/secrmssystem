@@ -270,6 +270,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     <h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-1">{t('track.edit')}</h1>
                     <div className="flex items-center gap-3 text-sm text-gray-500">
                         <span className="font-mono bg-gray-200 dark:bg-gray-600 px-2.5 py-0.5 rounded-lg text-gray-700 dark:text-gray-300 font-bold">{rma.id}</span>
+                        {rma.groupRequestId && (
+                            <span className="font-mono bg-[#0071e3]/10 text-[#0071e3] px-2.5 py-0.5 rounded-lg font-bold border border-[#0071e3]/20">Job: {rma.groupRequestId}</span>
+                        )}
                         <span>{rma.brand} {rma.productModel}</span>
                         <span>•</span>
                         <span className="font-mono">{rma.serialNumber}</span>

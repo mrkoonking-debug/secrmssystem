@@ -14,7 +14,7 @@ import { ShipmentTagModal } from '../components/ShipmentTagModal';
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
     const [rmas, setRMAs] = useState<RMA[]>([]);
-    const [jobInfo, setJobInfo] = useState<{ id: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
+    const [jobInfo, setJobInfo] = useState<{ id: string, quotationNumber?: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
 
@@ -75,7 +75,8 @@ export const JobDetail: React.FC = () => {
 
                     const first = jobRMAs[0];
                     setJobInfo({
-                        id: decodedId,
+                        id: first.groupRequestId || first.quotationNumber || decodedId,
+                        quotationNumber: first.quotationNumber,
                         customerName: first.customerName,
                         count: jobRMAs.length,
                         date: first.createdAt,
@@ -203,7 +204,14 @@ export const JobDetail: React.FC = () => {
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
-                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-2">{jobInfo.id}</h1>
+                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-2">
+                                {jobInfo.id}
+                                {(jobInfo as any).quotationNumber && (
+                                    <span className="ml-3 bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-[#424245] align-middle">
+                                        Ref: {(jobInfo as any).quotationNumber}
+                                    </span>
+                                )}
+                            </h1>
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
                                 <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span>
                                 <span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs text-[#1d1d1f] dark:text-gray-300 font-medium">{jobInfo.count} {t('claimsList.items')}</span>

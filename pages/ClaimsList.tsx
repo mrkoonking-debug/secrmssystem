@@ -116,11 +116,11 @@ export const ClaimsList: React.FC = () => {
         return groups;
     }, [rmas, search, statusFilter, teamFilter]);
 
-    const getQuotesForDate = (rmasInDate: RMA[]) => {
+    const getJobsForDate = (rmasInDate: RMA[]) => {
         return rmasInDate.reduce((acc, rma) => {
-            const quoteKey = rma.quotationNumber || rma.groupRequestId || 'Unassigned';
-            if (!acc[quoteKey]) acc[quoteKey] = [];
-            acc[quoteKey].push(rma);
+            const jobKey = rma.groupRequestId || rma.quotationNumber || 'Unassigned';
+            if (!acc[jobKey]) acc[jobKey] = [];
+            acc[jobKey].push(rma);
             return acc;
         }, {} as Record<string, RMA[]>);
     };
@@ -183,8 +183,8 @@ export const ClaimsList: React.FC = () => {
                         const rmasInDate = groupedByDate[dateLabel];
                         if (!rmasInDate) return null;
                         const isDateExpanded = expandedDates.has(dateLabel);
-                        const quotesInDate = getQuotesForDate(rmasInDate);
-                        const sortedQuoteKeys = Object.keys(quotesInDate).sort((a, b) => new Date(quotesInDate[b][0].updatedAt).getTime() - new Date(quotesInDate[a][0].updatedAt).getTime());
+                        const jobsInDate = getJobsForDate(rmasInDate);
+                        const sortedJobKeys = Object.keys(jobsInDate).sort((a, b) => new Date(jobsInDate[b][0].updatedAt).getTime() - new Date(jobsInDate[a][0].updatedAt).getTime());
 
                         return (
                             <div key={dateLabel} className="animate-fade-in">
@@ -196,26 +196,31 @@ export const ClaimsList: React.FC = () => {
 
                                 {isDateExpanded && (
                                     <div className="space-y-4 pl-4 md:pl-0">
-                                        {sortedQuoteKeys.map(quoteKey => {
-                                            const quoteItems = quotesInDate[quoteKey];
-                                            const customerName = quoteItems[0]?.customerName || 'Unknown';
+                                        {sortedJobKeys.map(jobKey => {
+                                            const jobItems = jobsInDate[jobKey];
+                                            const customerName = jobItems[0]?.customerName || 'Unknown';
+                                            const quotationNumber = jobItems[0]?.quotationNumber;
 
                                             return (
-                                                <div key={quoteKey} onClick={() => handleJobClick(quoteKey)} className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] overflow-hidden border border-gray-100 dark:border-[#333] hover:shadow-md cursor-pointer transition-all group">
+                                                <div key={jobKey} onClick={() => handleJobClick(jobKey)} className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] overflow-hidden border border-gray-100 dark:border-[#333] hover:shadow-md cursor-pointer transition-all group">
                                                     <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5" /></div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">{quoteKey} {quoteItems.some(i => isRMAOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">{t('claimsList.attentionNeeded')}</span>}</h3>
-                                                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"><User className="w-3 h-3" /> {customerName} <span className="w-1 h-1 bg-gray-300 rounded-full"></span> <span className="text-gray-500 font-normal">{quoteItems.length} {t('claimsList.items')}</span></div>
+                                                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
+                                                                    {jobKey}
+                                                                    {quotationNumber && <span className="bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-[10px] px-2 py-0.5 rounded-md border border-gray-200 dark:border-[#424245]">Ref: {quotationNumber}</span>}
+                                                                    {jobItems.some(i => isRMAOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">{t('claimsList.attentionNeeded')}</span>}
+                                                                </h3>
+                                                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"><User className="w-3 h-3" /> {customerName} <span className="w-1 h-1 bg-gray-300 rounded-full"></span> <span className="text-gray-500 font-normal">{jobItems.length} {t('claimsList.items')}</span></div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3 justify-between md:justify-end">
                                                             <div className="flex -space-x-2">
-                                                                {quoteItems.slice(0, 3).map((item) => (
+                                                                {jobItems.slice(0, 3).map((item) => (
                                                                     <div key={item.id} className={`w-8 h-8 rounded-full border-2 border-white dark:border-[#1c1c1e] flex items-center justify-center text-[10px] font-bold text-white ${item.team === Team.HIKVISION ? 'bg-red-500' : 'bg-blue-500'}`}>{item.brand.substring(0, 1)}</div>
                                                                 ))}
-                                                                {quoteItems.length > 3 && <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#1c1c1e] bg-gray-200 dark:bg-[#333] text-gray-500 text-[10px] flex items-center justify-center">+{quoteItems.length - 3}</div>}
+                                                                {jobItems.length > 3 && <div className="w-8 h-8 rounded-full border-2 border-white dark:border-[#1c1c1e] bg-gray-200 dark:bg-[#333] text-gray-500 text-[10px] flex items-center justify-center">+{jobItems.length - 3}</div>}
                                                             </div>
                                                             <div className="text-xs text-gray-400 group-hover:text-[#0071e3] flex items-center gap-1">Details <ChevronRight className="w-4 h-4" /></div>
                                                         </div>

@@ -397,7 +397,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">REFERENCE NO.</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.id}</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
           <div style="font-size: 11px; color: #555; margin-top: 4px;">Date: ${today}</div>
         </div>
       </div>
@@ -542,7 +542,7 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.quotationNumber || rma.id}</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
           <div style="font-size: 11px; color: #555; margin-top: 4px;">RMA ID: ${rma.id}</div>
         </div>
       </div>

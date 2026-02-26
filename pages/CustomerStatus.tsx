@@ -75,8 +75,15 @@ export const CustomerStatus: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <div className="mb-12 animate-slide-up">
           <div className="text-[11px] font-bold text-[#0071e3] uppercase tracking-wider mb-1">{t('track.reference')}</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">{rmas[0].quotationNumber || rmas[0].id}</h1>
-          <p className="text-[#86868b] text-lg mt-1">{rmas[0].customerName}</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">
+            {rmas[0].groupRequestId || rmas[0].id}
+            {rmas[0].quotationNumber && (
+              <span className="ml-3 bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-sm px-3 py-1 rounded-lg border border-gray-200 dark:border-[#424245] align-middle">
+                Ref: {rmas[0].quotationNumber}
+              </span>
+            )}
+          </h1>
+          <p className="text-[#86868b] text-lg mt-2">{rmas[0].customerName}</p>
         </div>
 
         <div className="space-y-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
