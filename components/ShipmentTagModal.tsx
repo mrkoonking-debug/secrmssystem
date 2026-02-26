@@ -160,8 +160,8 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                         <h3 className="text-sm font-semibold text-[#0071e3] mb-4">ข้อมูลงานเคลม</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/10 text-sm">
                             <div>
-                                <span className="text-gray-500 dark:text-gray-400">รหัสงานเคลม (RMA ID):</span>
-                                <div className="font-medium mt-1 text-[#1d1d1f] dark:text-white">{rma.id}</div>
+                                <span className="text-gray-500 dark:text-gray-400">รหัสงานเคลม (Job ID):</span>
+                                <div className="font-medium mt-1 text-[#1d1d1f] dark:text-white">{rma.groupRequestId || rma.id}</div>
                             </div>
                             <div>
                                 <span className="text-gray-500 dark:text-gray-400">เลขอ้างอิง/ใบเสนอราคา:</span>

@@ -77,7 +77,7 @@ export const CustomerSubmit: React.FC = () => {
 
     const processSubmission = async (items: any[]) => {
         setIsSubmitting(true);
-        const groupRequestId = `SECRMA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const groupRequestId = await MockDb.generateNextGroupRequestId();
 
         try {
             // Create a promise that rejects after 15 seconds

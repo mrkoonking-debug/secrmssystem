@@ -398,7 +398,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">REFERENCE NO.</div>
           <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
-          <div style="font-size: 11px; color: #555; margin-top: 4px;">Date: ${today}</div>
+          <div style="font-size: 11px; color: #555; margin-top: 2px;">Date: ${today}</div>
         </div>
       </div>
 
@@ -543,7 +543,6 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
           <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
-          <div style="font-size: 11px; color: #555; margin-top: 4px;">RMA ID: ${rma.id}</div>
         </div>
       </div>
 
@@ -642,7 +641,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
     const { rma, receiverName, contactPerson, receiverPhone, receiverAddress, trackingId, currentBox, totalBoxes } = payload;
 
     // Determine Job ID to show in the pink box
-    const displayId = rma.quotationNumber || rma.id;
+    const displayId = rma.groupRequestId || rma.quotationNumber || rma.id;
     const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(displayId)}&margin=0`;
     const qrTrackingUrl = trackingId && trackingId.trim() !== ''
       ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackingId)}&margin=0`
@@ -669,8 +668,10 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         <!-- ROW 1 -->
         <div class="st-row-1">
           <div class="st-pink-box">
-            <div class="st-pink-label">Quotation No.</div>
-            <div class="st-pink-value">${displayId.length > 12 ? displayId.substring(0, 10) + '...' : displayId}</div>
+            <div class="st-pink-label">JOB ID</div>
+            <div class="st-pink-value" style="font-size: ${displayId.length > 12 ? '14px' : '18px'}; line-height: 1.2;">
+                ${displayId}
+            </div>
             <img src="${qrDataUrl}" class="st-pink-qr" alt="QR" />
           </div>
           <div class="st-sender-box">

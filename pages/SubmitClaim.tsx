@@ -63,7 +63,7 @@ export const SubmitClaim: React.FC = () => {
     if (basket.length === 0) return;
 
     setIsSubmitting(true);
-    const groupRequestId = `SECRMA-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const groupRequestId = await MockDb.generateNextGroupRequestId();
     let firstId = '';
 
     try {

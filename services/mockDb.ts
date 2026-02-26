@@ -437,6 +437,52 @@ export const MockDb = {
     }
   },
 
+  // --- Dynamic Sequential Job ID ---
+  generateNextGroupRequestId: async (): Promise<string> => {
+    if (!isConfigured || !db) {
+      // Fallback for offline mode: SECRMA-YYYYMM-RAND
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return `SECRMA-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`; // e.g., "202602"
+
+    const counterRef = doc(db, 'counters', 'jobCounter');
+
+    try {
+      const snap = await getDoc(counterRef);
+      let currentSequence = 1;
+
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.currentMonth === yearMonth) {
+          // Same month, increment
+          currentSequence = (data.sequence || 0) + 1;
+        } else {
+          // New month, reset counter
+          currentSequence = 1;
+        }
+      }
+
+      // Update the counter
+      await setDoc(counterRef, {
+        currentMonth: yearMonth,
+        sequence: currentSequence
+      }, { merge: true });
+
+      // Format to 4 digits: e.g., 0001
+      const formattedSeq = String(currentSequence).padStart(4, '0');
+      return `SECRMA-${yearMonth}-${formattedSeq}`;
+
+    } catch (e) {
+      console.error("Failed to generate sequence ID, falling back to random:", e);
+      // Safe fallback in case of permission or connection issues
+      return `SECRMA-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+  },
+
   // --- Delete Functions ---
   deleteRMA: async (id: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Disconnected");

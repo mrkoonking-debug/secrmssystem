@@ -193,7 +193,6 @@ export const JobDetail: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8">
                 <Link to="/admin/rmas" className="flex items-center text-sm font-medium text-gray-500 hover:text-[#0071e3] transition-colors"><ArrowLeft className="h-4 w-4 mr-1" /> {t('track.backToList')}</Link>
-                <div className="text-xs font-mono text-gray-400 px-3 py-1.5 bg-white/50 dark:bg-white/10 rounded-full border border-gray-200 dark:border-white/10">JOB: {decodeURIComponent(jobId || '')}</div>
             </div>
 
             {/* Unified Job Header & Customer Info Card */}
@@ -204,14 +203,17 @@ export const JobDetail: React.FC = () => {
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
-                            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-2">
-                                {jobInfo.id}
+                            <div className="flex items-center flex-wrap gap-3 mb-2">
+                                <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white leading-none">
+                                    {jobInfo.id}
+                                </h1>
                                 {(jobInfo as any).quotationNumber && (
-                                    <span className="ml-3 bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-[#424245] align-middle">
-                                        Ref: {(jobInfo as any).quotationNumber}
+                                    <span className="bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 text-xs px-2.5 py-1 rounded border border-gray-200 dark:border-[#424245] flex items-center gap-1 font-medium">
+                                        <span className="uppercase text-[10px] font-bold opacity-60">Ref:</span>
+                                        {(jobInfo as any).quotationNumber}
                                     </span>
                                 )}
-                            </h1>
+                            </div>
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
                                 <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span>
                                 <span className="bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-xs text-[#1d1d1f] dark:text-gray-300 font-medium">{jobInfo.count} {t('claimsList.items')}</span>
