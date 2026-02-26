@@ -22,6 +22,21 @@ const formatAction = (action: string) => {
   return map[action] || action;
 }
 
+const getLogoHTML = (settings: any) => `
+  <div style="display: flex; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #0b57d0; padding-bottom: 6px;">
+    <div style="margin-right: 12px;">
+      <img src="${settings.logoUrl || '/logo.png'}" alt="Company Logo" style="height: 35px; width: auto; object-fit: contain;" />
+    </div>
+    <div style="flex-grow: 1; text-align: right;">
+      <h2 style="margin: 0; color: #000; font-family: 'Prompt', sans-serif; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">${settings.nameEn}</h2>
+      <div style="font-size: 11px; color: #333; margin-top: 1px;">${settings.nameTh}</div>
+      <div style="font-size: 9px; color: #666; margin-top: 1px;">
+        ${settings.address} | TAX ID: ${settings.taxId} | Tel: ${settings.tel}
+      </div>
+    </div>
+  </div>
+`;
+
 const getImagesHTML = (rma: RMA) => {
   if (!rma.attachments || rma.attachments.length === 0) return '';
   const images = rma.attachments.map(att => `
@@ -233,26 +248,26 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
       font-size: 11px;
     }
     .items-table th {
-      background-color: #f7f9fc;
+      background-color: #fff;
       color: ${primary};
       font-weight: 700;
       text-align: center;
       padding: 6px 8px;
-      border: 1px solid #e5e5ea;
+      border-top: 2px solid ${primary};
       border-bottom: 2px solid ${primary};
     }
     .items-table th.align-left { text-align: left; }
     .items-table td {
-      padding: 8px;
+      padding: 10px 8px;
       border-bottom: 1px solid #e5e5ea;
       vertical-align: top;
     }
     .items-table td.align-center { text-align: center; }
     .items-table td.align-right { text-align: right; }
     
-    .item-brand-model { font-weight: 700; color: #1d1d1f; margin-bottom: 2px; }
+    .item-brand-model { font-weight: 700; color: #1d1d1f; margin-bottom: 4px; font-size: 12px; }
     .item-desc { color: #555; font-size: 10px; line-height: 1.4; }
-    .item-sn { font-family: 'Inter', monospace; margin-top: 2px; font-size: 10px; }
+    .item-sn { font-family: 'Inter', monospace; margin-top: 4px; font-size: 10px; color: #333; }
     
     .table-summary {
       width: 100%;
@@ -271,11 +286,12 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
     .table-summary td:nth-child(2) {
       width: 80px;
       color: #1d1d1f;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 13px;
     }
     
     .remarks-section {
-      margin-top: 30px;
+      margin-top: 40px;
       font-size: 10px;
       color: #1d1d1f;
       line-height: 1.5;
@@ -283,46 +299,38 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
     .remarks-label {
       color: ${dark};
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-
-    /* ── STATUS BADGE ── */
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .status-badge.ok { background: #e6f4ea; color: #137333; }
-    .status-badge.warn { background: #fff3e0; color: #b45309; }
-    .status-badge.info { background: ${bgLight}; color: ${dark}; }
 
     /* ── FOOTER / SIGNATURES ── */
     .footer-section {
-      margin-top: 20px;
+      margin-top: 40px;
       padding-top: 14px;
       border-top: 2px solid #e5e5ea;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 30px;
       page-break-inside: avoid;
     }
     .sig-box {
       border: 1px dashed ${border};
       border-radius: 8px;
-      padding: 14px 16px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 120px;
     }
     .sig-title {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: ${dark};
-      margin-bottom: 3px;
+      letter-spacing: 0.05em;
+      color: ${primary};
+      margin-bottom: 30px;
     }
     .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
-    .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 5px; }
+    .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 6px; }
     .sig-name-label { font-size: 9px; color: #86868b; }
 
     @media print {
@@ -343,136 +351,128 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   const settings = await MockDb.getSettings();
   const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const itemsHTML = rmas.map((item, index) => {
+  const tableRows = rmas.map((item, index) => {
     const accList = item.distributorSentItems && item.distributorSentItems.length > 0
       ? item.distributorSentItems
       : item.accessories;
+    const accString = accList.length > 0 ? accList.map(a => formatAccessory(a)).join(', ') : 'Unit Only (เฉพาะเครื่อง)';
 
     return `
-    <div class="item-card">
-      <div class="item-card-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div class="item-no">${index + 1}</div>
-          <div>
-            <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
-            ${item.productType && item.productType !== 'OTHER' ? `<div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType.replace(/_/g, ' ')}</div>` : ''}
-          </div>
-        </div>
-        <div class="item-sn">S/N: ${item.serialNumber}</div>
-      </div>
-      <div class="item-body">
-        <div>
-          <div class="f-label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
-          <div class="f-value">${item.resolution?.rootCause || '—'}</div>
-          ${item.deviceUsername || item.devicePassword ? `
-          <div class="f-highlight-box" style="margin-top: 8px;">
-            <div class="f-label" style="color: #c2410c; margin-bottom: 6px;">⚠ Device Credentials</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div>
-                <div class="f-label">Username</div>
-                <div class="f-value-mono">${item.deviceUsername || '—'}</div>
-              </div>
-              <div>
-                <div class="f-label">Password</div>
-                <div class="f-value-mono">${item.devicePassword || '—'}</div>
-              </div>
-            </div>
-          </div>` : ''}
-        </div>
-        <div>
-          <div class="f-label">Included Accessories (อุปกรณ์ที่ส่งไปด้วย)</div>
-          ${accList.length > 0
-        ? `<ul class="acc-list">${accList.map(a => `<li>${formatAccessory(a)}</li>`).join('')}</ul>`
-        : `<div class="f-value" style="color:#86868b;">Unit Only</div>`}
-        </div>
-      </div>
-      ${getImagesHTML(item)}
-    </div>
+      <tr>
+        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
+        <td style="padding-top: 16px; padding-left: 12px;">
+          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
+          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc" style="color: #666;">อุปกรณ์ที่ส่ง: ${accString}</div>
+          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c; margin-top: 2px;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
+          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
+        </td>
+        <td></td>
+      </tr>
     `;
   }).join('');
 
   return `
-    ${getCommonStyles('orange')}
+    ${getCommonStyles('blue')}
     <div class="print-doc">
 
       <!-- HEADER BAR -->
-      <div class="doc-header-bar">
-        <div class="doc-header-left">
-          <img src="${settings.logoUrl || '/logo.png'}" class="doc-header-logo" alt="logo" />
-          <div>
-            <div class="doc-header-title">ใบส่งเคลมสินค้า</div>
-            <div class="doc-header-subtitle">Distributor RMA Request Form · ${settings.nameEn}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px;">
+        <img src="${settings.logoUrl || '/logo.png'}" style="height: 60px; width: auto;" alt="logo" />
+        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #333;">${settings.nameTh}</div>
+          <div style="font-size: 11px; color: #666; margin-top: 6px; line-height: 1.5;">
+            ${settings.address} | TAX ID: ${settings.taxId}<br/>
+            Tel: ${settings.tel} | Web: www.sectechnology.co.th
           </div>
         </div>
-        <div class="doc-header-right">
-          <div class="doc-ref-label">Reference No.</div>
-          <div class="doc-ref-no">${rma.id}</div>
-          <div class="doc-ref-date">${today}</div>
-        </div>
       </div>
-
-      <!-- COMPANY BANNER -->
-      <div class="company-banner">
+      
+      <div style="height: 2px; background-color: #2563eb; margin-bottom: 20px;"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
         <div>
-          <div class="co-name">${settings.nameEn}</div>
-          <div>${settings.nameTh}</div>
+          <div style="font-size: 24px; font-weight: 700; color: #2563eb;">ใบส่งเคลมสินค้า</div>
+          <div style="font-size: 14px; color: #555; margin-top: 4px; text-transform: uppercase;">DISTRIBUTOR RMA REQUEST FORM</div>
         </div>
-        <div style="text-align: right; font-size: 10px; color: #555;">
-          <div>${settings.address}</div>
-          <div>TAX ID: ${settings.taxId} &nbsp;|&nbsp; Tel: ${settings.tel}</div>
+        <div style="text-align: right;">
+          <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">REFERENCE NO.</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.id}</div>
+          <div style="font-size: 11px; color: #555; margin-top: 4px;">Date: ${today}</div>
         </div>
       </div>
 
       <!-- PARTIES -->
       <div class="parties-grid">
         <div class="party-box">
-          <div class="party-box-label">To: Distributor (เรียน ผู้นำเข้า)</div>
+          <div class="party-box-label">TO: DISTRIBUTOR (เรียน ผู้นำเข้า)</div>
           <div class="party-name">${rma.distributor}</div>
           <div class="party-detail">RMA / Service Department</div>
         </div>
         <div class="party-box">
-          <div class="party-box-label">From: Our Company (จาก)</div>
+          <div class="party-box-label">FROM: OUR COMPANY (จาก)</div>
           <div class="party-name">${settings.nameEn}</div>
           <div class="party-detail">Attn: Technical Support Dept.</div>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e5ea;">
-            <div class="f-label">End User Reference (ลูกค้าผู้ใช้งาน)</div>
-            <div class="f-value">${rma.customerName}</div>
+          <div class="party-divider"></div>
+          <div>
+            <div style="font-size:9px; font-weight:700; color:#9ca3af; margin-bottom:4px;">End User Reference (ลูกค้าผู้ใช้งาน)</div>
+            <div style="font-size:12px; font-weight:700; color:#1d1d1f;">${rma.customerName}</div>
           </div>
         </div>
       </div>
 
-      <!-- ITEMS -->
+      <!-- ITEMS (TABLE) -->
       <div class="section-title">
-        Product Information <span class="count-badge">${rmas.length} Items</span>
+        PRODUCT INFORMATION <span class="count-badge">${rmas.length} ITEMS</span>
       </div>
-      ${itemsHTML}
+
+      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+        <thead>
+          <tr>
+            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
+            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
+            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+      
+      <table class="table-summary">
+        <tr>
+          <td>รวมจำนวนสินค้าเคลม</td>
+          <td>${rmas.length} ชิ้น</td>
+        </tr>
+      </table>
+      
+      <div class="remarks-section">
+        <div class="remarks-label">หมายเหตุ</div>
+        <div>- กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
+        <div>- หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
+      </div>
 
       <!-- SIGNATURES -->
       <div class="footer-section">
         <div class="sig-box">
-          <div class="sig-title">ผู้ส่ง / Sent By</div>
-          <div class="sig-subtitle">${settings.nameEn} · Technical Support</div>
-          <div class="sig-line"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
-            <div class="sig-name-label">วันที่: ____________</div>
+          <div class="sig-title">ผู้ส่ง / SENT BY</div>
+          <div>
+            <div class="sig-line"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <div class="sig-name-label">ลงชื่อ / Signature</div>
+              <div class="sig-name-label">วันที่ / Date: ____________</div>
+            </div>
           </div>
         </div>
         <div class="sig-box">
-          <div class="sig-title">ผู้รับ / Received By (${rma.distributor})</div>
-          <div class="sig-subtitle">RMA No. ที่ผู้นำเข้าออกให้</div>
-          <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 12px; align-items: center;">
-            <div>
-              <div class="f-label">RMA No. (Vendor Ref)</div>
-              <div style="border-bottom: 1px solid #1d1d1f; height: 22px;"></div>
-            </div>
-            <div>
-              <div class="f-label">วันที่รับ</div>
-              <div style="border-bottom: 1px solid #1d1d1f; height: 22px; width: 80px;"></div>
+          <div class="sig-title">ผู้รับ / RECEIVED BY</div>
+          <div>
+            <div class="sig-line"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <div class="sig-name-label">ลงชื่อ / Signature</div>
+              <div class="sig-name-label">วันที่ / Date: ____________</div>
             </div>
           </div>
-          <div class="sig-line"></div>
-          <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
         </div>
       </div>
 
@@ -480,9 +480,6 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   `;
 };
 
-/* ─────────────────────────────────────────────
-   CUSTOMER FORM (ใบรับคืนสินค้า → Customer)
-───────────────────────────────────────────── */
 export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
   if (!rmas || rmas.length === 0) return '';
   const rma = rmas[0];
@@ -495,162 +492,130 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
       ? { label: 'ส่งคืน / ปฏิเสธ', en: 'Returned/Rejected', cls: 'warn' }
       : { label: rma.status.replace('_', ' '), en: '', cls: 'info' };
 
-  const itemsHTML = rmas.map((item, index) => {
-    const warrantyText = item.repairCosts?.warrantyStatus
-      ? (translations.th.warranty as any)[item.repairCosts.warrantyStatus]
-      : '—';
+  const tableRows = rmas.map((item, index) => {
+    const accList = item.accessories || [];
+    const accString = accList.length > 0 ? accList.map(a => formatAccessory(a)).join(', ') : 'Unit Only';
+
     const actionText = item.resolution?.actionTaken
       ? formatAction(item.resolution.actionTaken)
       : (item.status === 'REPAIRED' ? 'Completed / Replaced' : 'Checked');
 
     return `
-    <div class="item-card">
-      <div class="item-card-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div class="item-no">${index + 1}</div>
-          <div>
-            <div class="item-brand">${item.brand} &nbsp;<span style="font-weight:400; font-size:12px; color:#555;">${item.productModel}</span></div>
-            ${item.productType && item.productType !== 'OTHER' ? `<div style="font-size: 10px; color: #666; margin-top: 1px;">${item.productType.replace(/_/g, ' ')}</div>` : ''}
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div class="item-sn">S/N: ${item.serialNumber}</div>
+      <tr>
+        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
+        <td style="padding-top: 16px; padding-left: 12px;">
+          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
+          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc" style="color: #666;">อุปกรณ์ที่คืน: ${accString}</div>
+          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
           ${item.resolution?.replacedSerialNumber
-        ? `<div style="font-family: 'Inter', monospace; font-size: 10px; color: #137333; font-weight: 600; margin-top: 3px;">New S/N: ${item.resolution.replacedSerialNumber}</div>`
+        ? `<div class="item-sn" style="color:#137333;">New S/N: ${item.resolution.replacedSerialNumber}</div>`
         : ''}
-        </div>
-      </div>
-      <div class="item-body">
-
-        <!-- LEFT COLUMN -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-          <div>
-            <div class="f-label">Warranty Status (การรับประกัน)</div>
-            <div class="f-chip">${warrantyText}</div>
-          </div>
-          <div>
-            <div class="f-label">Action Taken (วิธีการดำเนินการ)</div>
-            <div class="f-value-accent">${actionText}</div>
-          </div>
-          <div>
-            <div class="f-label">Root Cause / Issue Found (สาเหตุ/อาการที่พบ)</div>
-            <div class="f-value">${item.resolution?.rootCause || '—'}</div>
-          </div>
-          ${item.resolution?.technicalNotes ? `
-          <div class="f-highlight-box">
-            <div class="f-label" style="margin-bottom: 4px;">Technical Note (หมายเหตุช่าง)</div>
-            <div class="f-value" style="font-size: 11px; color: #444;">${item.resolution.technicalNotes}</div>
-          </div>` : ''}
-          ${item.deviceUsername || item.devicePassword ? `
-          <div class="f-highlight-box" style="border-color: #f5a623;">
-            <div class="f-label" style="color: #c2410c; margin-bottom: 5px;">⚠ Device Credentials</div>
-            <div style="display: flex; gap: 20px;">
-              <div>
-                <div class="f-label">Username</div>
-                <div class="f-value-mono">${item.deviceUsername || '—'}</div>
-              </div>
-              <div>
-                <div class="f-label">Password</div>
-                <div class="f-value-mono">${item.devicePassword || '—'}</div>
-              </div>
-            </div>
-          </div>` : ''}
-        </div>
-
-        <!-- RIGHT COLUMN -->
-        <div>
-          <div class="f-label">Items Returned (อุปกรณ์ที่ส่งคืนลูกค้า)</div>
-          <ul class="acc-list" style="margin-top: 4px;">
-            <li style="font-weight: 600; color: #1d1d1f;">Main Unit — ${item.productModel}</li>
-            ${item.accessories.map(acc => `<li>${formatAccessory(acc)}</li>`).join('')}
-          </ul>
-        </div>
-      </div>
-      ${getImagesHTML(item)}
-    </div>
+        </td>
+        <td></td>
+      </tr>
     `;
   }).join('');
 
   return `
-    ${getCommonStyles()}
+    ${getCommonStyles('blue')}
     <div class="print-doc">
 
       <!-- HEADER BAR -->
-      <div class="doc-header-bar">
-        <div class="doc-header-left">
-          <img src="${settings.logoUrl || '/logo.png'}" class="doc-header-logo" alt="logo" />
-          <div>
-            <div class="doc-header-title">ใบรับคืนสินค้าเคลม / บริการ</div>
-            <div class="doc-header-subtitle">Customer Service Return Note · ${settings.nameEn}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px;">
+        <img src="${settings.logoUrl || '/logo.png'}" style="height: 60px; width: auto;" alt="logo" />
+        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 20px; font-weight: 700; color: #333;">${settings.nameTh}</div>
+          <div style="font-size: 11px; color: #666; margin-top: 6px; line-height: 1.5;">
+            ${settings.address} | TAX ID: ${settings.taxId}<br/>
+            Tel: ${settings.tel} | Web: www.sectechnology.co.th
           </div>
         </div>
-        <div class="doc-header-right">
-          <div class="doc-ref-label">Service Ref No.</div>
-          <div class="doc-ref-no">${rma.id}</div>
-          <div class="doc-ref-date">${today}</div>
-        </div>
       </div>
-
-      <!-- COMPANY BANNER -->
-      <div class="company-banner">
+      
+      <div style="height: 2px; background-color: #2563eb; margin-bottom: 20px;"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
         <div>
-          <div class="co-name">${settings.nameEn}</div>
-          <div>${settings.nameTh} &nbsp;|&nbsp; ${settings.address}</div>
+          <div style="font-size: 24px; font-weight: 700; color: #2563eb;">ใบส่งคืนสินค้าเคลม</div>
+          <div style="font-size: 14px; color: #555; margin-top: 4px;">Product Return Note</div>
         </div>
-        <div style="text-align: right; font-size: 10px; color: #555;">
-          Tel: ${settings.tel} &nbsp;|&nbsp; TAX ID: ${settings.taxId}
+        <div style="text-align: right;">
+          <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.quotationNumber || rma.id}</div>
+          <div style="font-size: 11px; color: #555; margin-top: 4px;">RMA ID: ${rma.id}</div>
         </div>
       </div>
 
       <!-- PARTIES -->
       <div class="parties-grid">
-        <div class="party-box">
-          <div class="party-box-label">Customer (ลูกค้า)</div>
+        <div class="party-box" style="padding: 12px 16px;">
+          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">CUSTOMER DETAILS (ลูกค้า)</div>
           <div class="party-name">${rma.customerName}</div>
-          <div class="party-detail">
+          <div class="party-detail" style="margin-top: 4px;">
             ${rma.customerPhone ? `Tel: ${rma.customerPhone}<br/>` : ''}
             ${rma.customerEmail ? `Email: ${rma.customerEmail}<br/>` : ''}
-            ${rma.customerLineId ? `Line ID: ${rma.customerLineId}` : ''}
           </div>
         </div>
-        <div class="party-box" style="display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <div class="party-box-label">Service Status (สถานะงาน)</div>
-            <div style="margin-top: 6px;">
-              <span class="status-badge ${statusText.cls}">${statusText.label} ${statusText.en ? '(' + statusText.en + ')' : ''}</span>
-            </div>
-          </div>
-          <div style="margin-top: 10px;">
-            <div class="f-label">Total Items (จำนวนรายการ)</div>
-            <div class="f-value" style="font-size: 16px; font-weight: 700;">${rmas.length} ชิ้น</div>
+        <div class="party-box" style="padding: 12px 16px;">
+          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">SERVICE STATUS (สถานะ)</div>
+          <div style="font-size: 14px; font-weight: 700; color: #1d1d1f; text-transform: uppercase;">
+             ${rma.status.replace('_', ' ')}
           </div>
         </div>
       </div>
 
-      <!-- ITEMS -->
+      <!-- ITEMS (TABLE) -->
       <div class="section-title">
-        Service Item Details <span class="count-badge">${rmas.length} Items</span>
+        SERVICE ITEM DETAILS
       </div>
-      ${itemsHTML}
+
+      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+        <thead>
+          <tr>
+            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
+            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
+            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+      
+      <table class="table-summary">
+        <tr>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+      
+      <div class="remarks-section">
+        <div class="remarks-label">หมายเหตุ</div>
+        <div>- การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
+        <div>- สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
+      </div>
 
       <!-- SIGNATURES -->
       <div class="footer-section">
         <div class="sig-box">
-          <div class="sig-title">ผู้ส่งคืน / Delivered By</div>
-          <div class="sig-subtitle">${settings.nameEn} · Technical Support Team</div>
-          <div class="sig-line" style="margin-bottom: 5px;"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
-            <div class="sig-name-label">วันที่: ____________</div>
+          <div class="sig-title" style="color: #0b57d0;">ผู้ส่ง / SENT BY</div>
+          <div>
+            <div class="sig-line"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <div class="sig-name-label">ลงชื่อ / Signature</div>
+              <div class="sig-name-label">วันที่ / Date: ____________</div>
+            </div>
           </div>
         </div>
         <div class="sig-box">
-          <div class="sig-title">ผู้รับสินค้า / Received By (ลูกค้า)</div>
-          <div class="sig-subtitle">ข้าพเจ้าได้รับสินค้าคืนในสภาพเรียบร้อยครบถ้วน</div>
-          <div class="sig-line" style="margin-bottom: 5px;"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <div class="sig-name-label">ลงชื่อ / Signature: ____________________</div>
-            <div class="sig-name-label">วันที่: ____________</div>
+          <div class="sig-title" style="color: #0b57d0;">ผู้รับ / RECEIVED BY</div>
+          <div>
+            <div class="sig-line"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <div class="sig-name-label">ลงชื่อ / Signature</div>
+              <div class="sig-name-label">วันที่ / Date: ____________</div>
+            </div>
           </div>
         </div>
       </div>
@@ -658,7 +623,6 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
     </div>
   `;
 };
-
 export interface ShippingLabelPayload {
   rma: RMA;
   receiverName: string;
