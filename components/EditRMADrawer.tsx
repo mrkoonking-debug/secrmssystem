@@ -217,15 +217,32 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             team: tempTeam as Team,
             brand: formData.brand === 'Other' ? customBrand : formData.brand,
             distributor: formData.distributor === 'Other' ? customDist : formData.distributor,
-            resolution: formData.resolution ? {
-                ...formData.resolution,
-                actionTaken: formData.resolution.actionTaken === 'Other' ? customAction : formData.resolution.actionTaken
-            } : undefined
         };
 
-        await onSave(rma.id, updates, diffs);
-        setIsSaving(false);
-        onClose();
+        if (formData.resolution) {
+            updates.resolution = {
+                ...formData.resolution,
+                actionTaken: formData.resolution.actionTaken === 'Other' ? customAction : formData.resolution.actionTaken
+            };
+        }
+
+        // Firebase Firestore does not accept 'undefined' values.
+        // We strip them out cleanly.
+        Object.keys(updates).forEach(key => {
+            if (updates[key as keyof Partial<RMA>] === undefined) {
+                delete updates[key as keyof Partial<RMA>];
+            }
+        });
+
+        try {
+            await onSave(rma.id, updates, diffs);
+            onClose();
+        } catch (error) {
+            console.error("Failed to save RMA updates:", error);
+            alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const warrantyOptions = [
@@ -486,7 +503,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
             {/* REVIEW MODAL OVERLAY */}
             {isReviewing && createPortal(
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4 animate-fade-in font-sans">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-fade-in font-sans">
                     <div className="bg-white dark:bg-[#1e1e20] w-full max-w-3xl rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-hidden">
                         <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between bg-gray-50/50 dark:bg-white/5">
                             <div>

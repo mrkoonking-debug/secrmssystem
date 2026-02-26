@@ -12,7 +12,7 @@ export const StatusBadge: React.FC<Props> = ({ status, isOverdue }) => {
   const { t } = useLanguage();
 
   const getStyles = () => {
-    if (isOverdue && ![RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.REJECTED, RMAStatus.SHIPPED].includes(status)) {
+    if (isOverdue && ![RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.REJECTED].includes(status)) {
       return 'bg-red-500 text-white shadow-md shadow-red-500/20';
     }
 
@@ -25,7 +25,6 @@ export const StatusBadge: React.FC<Props> = ({ status, isOverdue }) => {
         return 'bg-orange-50 text-orange-600 border border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-500/20';
       case RMAStatus.REPAIRED:
       case RMAStatus.CLOSED:
-      case RMAStatus.SHIPPED:
         return 'bg-green-500 text-white shadow-md shadow-green-500/20';
       case RMAStatus.REJECTED:
         return 'bg-gray-800 text-white';

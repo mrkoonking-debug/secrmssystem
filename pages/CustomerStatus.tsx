@@ -34,7 +34,6 @@ export const CustomerStatus: React.FC = () => {
       case RMAStatus.DIAGNOSING: return 1;
       case RMAStatus.WAITING_PARTS: return 2;
       case RMAStatus.REPAIRED: return 3;
-      case RMAStatus.SHIPPED: return 3;
       case RMAStatus.CLOSED: return 3;
       case RMAStatus.REJECTED: return 3;
       default: return 0;

@@ -308,7 +308,7 @@ export const MockDb = {
     const all = await MockDb.getRMAs();
     const now = Date.now();
     return all.filter(c => {
-      if ([RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) return false;
+      if ([RMAStatus.CLOSED].includes(c.status)) return false;
       const daysOpen = Math.floor((now - new Date(c.createdAt).getTime()) / 86400000);
       return daysOpen > 7;
     });
@@ -322,7 +322,7 @@ export const MockDb = {
     let overdue = 0;
     for (const c of all) {
       if (!c.team || (c.team as any) === 'UNASSIGNED') unassigned++;
-      if (![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status)) {
+      if (![RMAStatus.CLOSED].includes(c.status)) {
         const daysOpen = Math.floor((now - new Date(c.createdAt).getTime()) / 86400000);
         if (daysOpen > 7) overdue++;
       }
@@ -466,24 +466,30 @@ export const MockDb = {
 
     // Strategy: use single-field query (no composite index needed)
     // then count statuses client-side from loaded docs
-    let teamDocs: RMA[];
+    let teamDocs: RMA[] = [];
 
-    if (teamFilter === 'GROUP_C') {
-      const snap = await getDocs(query(rmasRef, where('team', 'in', [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G])));
-      teamDocs = snap.docs.map(mapDocToRMA);
-    } else if (teamFilter) {
-      const snap = await getDocs(query(rmasRef, where('team', '==', teamFilter)));
-      teamDocs = snap.docs.map(mapDocToRMA);
-    } else {
-      // No filter — use getCountFromServer for total (single field, no composite)
-      // But still need docs for aging, so load all assigned
-      const snap = await getDocs(query(rmasRef, where('team', '!=', '')));
-      teamDocs = snap.docs.map(mapDocToRMA);
+    try {
+      if (teamFilter === 'GROUP_C') {
+        const snap = await getDocs(query(rmasRef, where('team', 'in', [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G])));
+        teamDocs = snap.docs.map(mapDocToRMA);
+        // @ts-ignore
+      } else if (teamFilter && teamFilter !== 'ALL') {
+        const snap = await getDocs(query(rmasRef, where('team', '==', teamFilter)));
+        teamDocs = snap.docs.map(mapDocToRMA);
+      } else {
+        // Load all RMAs if no specific team is filtered, bypassing complex where clauses 
+        // that could cause missing index errors or hang operations without composite indexes
+        const snap = await getDocs(rmasRef);
+        teamDocs = snap.docs.map(mapDocToRMA);
+      }
+    } catch (dbErr) {
+      console.error("getStats query failed:", dbErr);
+      throw new Error("Cannot fetch Dashboard stats. Please check your internet connection or reload the page.");
     }
 
     // Client-side counting from loaded docs (no composite index needed)
     const now = new Date();
-    const activeDocs = teamDocs.filter(c => ![RMAStatus.CLOSED, RMAStatus.SHIPPED].includes(c.status));
+    const activeDocs = teamDocs.filter(c => ![RMAStatus.CLOSED].includes(c.status));
     const aging = { bucket0_3: 0, bucket4_7: 0, bucket7plus: 0 };
     activeDocs.forEach(c => {
       const diff = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);

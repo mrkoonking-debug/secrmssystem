@@ -109,7 +109,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({ onClose, onScan }) =
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 p-4 animate-fade-in">
             <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl p-6 w-full max-w-md shadow-2xl relative flex flex-col items-center border border-gray-100 dark:border-[#333]">
                 <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-[#2c2c2e] rounded-full hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 transition-colors z-10"><X className="w-5 h-5 dark:text-white" /></button>
 

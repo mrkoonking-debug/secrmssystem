@@ -108,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
   return (
     <>
       {/* ===== Mobile Top Bar ===== */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#f5f5f7]/95 dark:bg-[#161617]/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-[#333] flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#f5f5f7] dark:bg-[#161617] border-b border-gray-200/50 dark:border-[#333] flex items-center justify-between px-4">
         <Link to={user ? "/admin/dashboard" : "/"} className="flex items-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           <span className="font-bold text-base text-[#1d1d1f] dark:text-white tracking-tighter">SEC RMS SYSTEM</span>
@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
       {isMobileOpen && (
         <div className="md:hidden fixed inset-0 z-40 animate-fade-in">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileOpen(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileOpen(false)} />
 
           {/* Panel */}
           <div className="absolute top-14 right-0 bottom-0 w-[280px] bg-[#f5f5f7] dark:bg-[#161617] border-l border-gray-200/50 dark:border-[#333] flex flex-col overflow-hidden animate-slide-up">

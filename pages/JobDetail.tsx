@@ -9,6 +9,7 @@ import { StatusBadge } from '../components/StatusBadge';
 
 import { printDistributorDocuments, printCustomerDocuments } from '../services/printService';
 import { Printer } from 'lucide-react'; // Added import or ensure it is already there
+import { ShipmentTagModal } from '../components/ShipmentTagModal';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -16,6 +17,10 @@ export const JobDetail: React.FC = () => {
     const [jobInfo, setJobInfo] = useState<{ id: string, customerName: string, count: number, date: string, status: string, type: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedRMAs, setExpandedRMAs] = useState<Set<string>>(new Set());
+
+    // Shipment Tag Modal state
+    const [isShipmentTagModalOpen, setIsShipmentTagModalOpen] = useState(false);
+    const [shipmentTagTarget, setShipmentTagTarget] = useState<'CUSTOMER' | 'DISTRIBUTOR'>('CUSTOMER');
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -145,6 +150,20 @@ export const JobDetail: React.FC = () => {
         }
     };
 
+    const handleSaveShipmentTagData = async (customerData: any) => {
+        if (!jobInfo || rmas.length === 0) return;
+        try {
+            // Update all RMAs in this job
+            for (const rma of rmas) {
+                await MockDb.updateRMA(rma.id, customerData);
+            }
+            await refreshRMAs();
+        } catch (error) {
+            console.error("Failed to save shipment tag data", error);
+            alert("Failed to save data");
+        }
+    };
+
     const handleCancelCustomerEdit = () => {
         // Reset form to current data
         if (rmas.length > 0) {
@@ -166,6 +185,9 @@ export const JobDetail: React.FC = () => {
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
     if (!jobInfo) return null;
 
+    const finishedRMAs = rmas.filter(rma => rma.status === RMAStatus.REPAIRED || rma.status === RMAStatus.REJECTED || rma.status === RMAStatus.CLOSED);
+    const hasFinishedRMAs = finishedRMAs.length > 0;
+
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-8">
@@ -174,10 +196,10 @@ export const JobDetail: React.FC = () => {
             </div>
 
             {/* Unified Job Header & Customer Info Card */}
-            <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-5 sm:p-8 mb-8 border border-gray-100 dark:border-[#333]">
+            <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-6 sm:p-8 mb-8 border border-gray-100 dark:border-[#333] shadow-sm">
 
-                {/* Job Header & Actions */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 pb-8 border-b border-gray-100 dark:border-white/5">
+                {/* --- TOP HEADER SECTION --- */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-6">
                     <div className="flex items-center gap-5">
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
@@ -199,39 +221,78 @@ export const JobDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:w-auto">
-                        <button
-                            onClick={() => printDistributorDocuments(rmas)}
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 rounded-xl font-medium transition-all shadow-sm"
-                            title="Print Distributor RMA Form"
-                        >
-                            <Printer className="w-4 h-4" />
-                            <span className="text-sm whitespace-nowrap">{t('track.printDistForm')}</span>
-                        </button>
-                        <button
-                            onClick={() => printCustomerDocuments(rmas)}
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl font-medium shadow-md shadow-blue-500/20 transition-transform hover:scale-105 active:scale-95"
-                            title="Print Customer Return Note"
-                        >
-                            <User className="w-4 h-4" />
-                            <span className="text-sm whitespace-nowrap">{t('track.printCustForm')}</span>
-                        </button>
+                    {/* PRINT ACTION GROUPS */}
+                    <div className="flex flex-col xl:flex-row flex-wrap gap-3 w-full xl:w-auto xl:justify-end">
+                        {/* Distributor Group */}
+                        <div className="flex flex-col sm:flex-row items-stretch border border-gray-200 dark:border-[#424245] rounded-xl overflow-hidden shrink-0 w-full sm:w-auto">
+                            <div className="flex items-center justify-center px-4 py-2 sm:py-0 bg-gray-50/80 dark:bg-black/20 sm:border-r border-b sm:border-b-0 border-gray-200 dark:border-[#424245] text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                โซนผู้นำเข้า
+                            </div>
+                            <div className="flex flex-1 items-center bg-transparent">
+                                <button
+                                    onClick={() => printDistributorDocuments(rmas)}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium transition-colors text-sm border-r border-gray-200 dark:border-[#424245] whitespace-nowrap"
+                                    title="พิมพ์ใบส่งเคลม"
+                                >
+                                    <Printer className="w-4 h-4 text-gray-400" strokeWidth={2.5} />
+                                    ใบส่งเคลม
+                                </button>
+                                <button
+                                    onClick={() => { setShipmentTagTarget('DISTRIBUTOR'); setIsShipmentTagModalOpen(true); }}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium transition-colors text-sm whitespace-nowrap"
+                                    title="ปะหน้ากล่อง (ผู้นำเข้า)"
+                                >
+                                    <Truck className="w-4 h-4 text-orange-500" strokeWidth={2.5} />
+                                    ใบปะหน้า
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Customer Group - Same Neutral Style */}
+                        <div className="flex flex-col sm:flex-row items-stretch border border-gray-200 dark:border-[#424245] rounded-xl overflow-hidden shrink-0 w-full sm:w-auto">
+                            <div className="flex items-center justify-center px-4 py-2 sm:py-0 bg-gray-50/80 dark:bg-black/20 sm:border-r border-b sm:border-b-0 border-gray-200 dark:border-[#424245] text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                โซนลูกค้า
+                            </div>
+                            <div className="flex flex-1 items-center bg-transparent">
+                                <button
+                                    onClick={() => printCustomerDocuments(finishedRMAs)}
+                                    disabled={!hasFinishedRMAs}
+                                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border-r border-gray-200 dark:border-[#424245] transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
+                                    title={!hasFinishedRMAs ? "ต้องมีงานที่ปิดแล้วหรือเสร็จสิ้นอย่างน้อย 1 ชิ้น" : "พิมพ์ใบส่งคืนลูกค้า (เฉพาะเครื่องที่เสร็จแล้ว)"}
+                                >
+                                    <User className="w-4 h-4 text-blue-500" strokeWidth={2.5} />
+                                    ใบส่งคืน
+                                </button>
+                                <button
+                                    onClick={() => { setShipmentTagTarget('CUSTOMER'); setIsShipmentTagModalOpen(true); }}
+                                    disabled={!hasFinishedRMAs}
+                                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
+                                    title={!hasFinishedRMAs ? "ต้องมีงานที่ปิดแล้วหรือเสร็จสิ้นอย่างน้อย 1 ชิ้น" : "ปะหน้ากล่อง (ลูกค้า)"}
+                                >
+                                    <Truck className="w-4 h-4 text-orange-500" strokeWidth={2.5} />
+                                    ใบปะหน้า
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Customer Info Section */}
+                {/* SEC DIVIDER */}
+                <div className="w-full h-px bg-gray-200 dark:bg-[#333] mb-6"></div>
+
+                {/* --- CUSTOMER INFO SECTION --- */}
                 <div>
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="font-semibold text-lg flex items-center gap-3 text-[#1d1d1f] dark:text-white">
-                            <User className="w-5 h-5 text-blue-500" />
+                        <h2 className="font-semibold text-base flex items-center gap-3 text-[#1d1d1f] dark:text-white">
+                            <User className="w-5 h-5 text-gray-400" />
                             {t('submit.customerDetails')}
                         </h2>
                         {!isEditingCustomer ? (
-                            <button onClick={() => setIsEditingCustomer(true)} className="text-[11px] text-blue-500 font-bold hover:underline">{t('track.changeBtn')}</button>
+                            <button onClick={() => setIsEditingCustomer(true)} className="text-xs text-blue-500 font-medium hover:text-blue-600 transition-colors flex items-center gap-1"><Edit3 className="w-3 h-3" /> {t('track.changeBtn')}</button>
                         ) : (
                             <div className="flex items-center gap-2">
                                 <button onClick={handleCancelCustomerEdit} className="px-4 py-1.5 text-xs text-gray-500 hover:text-red-500 font-medium transition-colors">{t('track.cancelBtn')}</button>
-                                <button onClick={handleSaveCustomer} disabled={isSavingCustomer} className="px-5 py-1.5 text-xs font-bold text-white bg-[#0071e3] hover:bg-[#0077ed] rounded-full shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
+                                <button onClick={handleSaveCustomer} disabled={isSavingCustomer} className="px-5 py-1.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 rounded-full shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50">
                                     {isSavingCustomer ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                                     {isSavingCustomer ? 'กำลังบันทึก...' : 'บันทึก'}
                                 </button>
@@ -240,61 +301,63 @@ export const JobDetail: React.FC = () => {
                     </div>
 
                     {isEditingCustomer ? (
-                        <div className="space-y-4 animate-fade-in">
+                        <div className="space-y-4 animate-fade-in bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-gray-100 dark:border-[#333]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.companyName')}</label>
-                                    <input type="text" value={customerForm.customerName} onChange={e => setCustomerForm(p => ({ ...p, customerName: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อลูกค้า / บริษัท" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.companyName')}</label>
+                                    <input type="text" value={customerForm.customerName} onChange={e => setCustomerForm(p => ({ ...p, customerName: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อลูกค้า / บริษัท" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.contactName')}</label>
-                                    <input type="text" value={customerForm.contactPerson} onChange={e => setCustomerForm(p => ({ ...p, contactPerson: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อผู้ติดต่อ" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.contactName')}</label>
+                                    <input type="text" value={customerForm.contactPerson} onChange={e => setCustomerForm(p => ({ ...p, contactPerson: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อผู้ติดต่อ" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.phone')}</label>
-                                    <input type="text" value={customerForm.customerPhone} onChange={e => setCustomerForm(p => ({ ...p, customerPhone: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="เบอร์โทรศัพท์" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.phone')}</label>
+                                    <input type="text" value={customerForm.customerPhone} onChange={e => setCustomerForm(p => ({ ...p, customerPhone: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="เบอร์โทรศัพท์" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.lineId')}</label>
-                                    <input type="text" value={customerForm.customerLineId} onChange={e => setCustomerForm(p => ({ ...p, customerLineId: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="LINE ID" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('submit.lineId')}</label>
+                                    <input type="text" value={customerForm.customerLineId} onChange={e => setCustomerForm(p => ({ ...p, customerLineId: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="LINE ID" />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">Email</label>
-                                <input type="text" value={customerForm.customerEmail} onChange={e => setCustomerForm(p => ({ ...p, customerEmail: e.target.value }))} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="อีเมล (ถ้ามี)" />
+                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">Email</label>
+                                <input type="text" value={customerForm.customerEmail} onChange={e => setCustomerForm(p => ({ ...p, customerEmail: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="อีเมล (ถ้ามี)" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.returnAddress')}</label>
-                                <textarea value={customerForm.customerReturnAddress} onChange={e => setCustomerForm(p => ({ ...p, customerReturnAddress: e.target.value }))} rows={2} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ที่อยู่สำหรับจัดส่งคืน" />
+                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('submit.returnAddress')}</label>
+                                <textarea value={customerForm.customerReturnAddress} onChange={e => setCustomerForm(p => ({ ...p, customerReturnAddress: e.target.value }))} rows={2} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ที่อยู่สำหรับจัดส่งคืน" />
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5 text-sm">
-                            <div className="grid grid-cols-[130px_1fr] flex-1 gap-2 items-start">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.companyName')}</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerName || '-'}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">{t('publicSubmit.companyName')}</span>
+                                <span className="text-[#1d1d1f] dark:text-gray-200 font-medium">{customerForm.customerName || '-'}</span>
                             </div>
-                            <div className="grid grid-cols-[100px_1fr] flex-1 gap-2 items-start">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.contactName')}</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.contactPerson || '-'}</span>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">{t('publicSubmit.contactName')}</span>
+                                <span className="text-[#1d1d1f] dark:text-gray-200 font-medium">{customerForm.contactPerson || '-'}</span>
                             </div>
-                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('publicSubmit.phone')}</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerPhone || '-'}</span>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">{t('publicSubmit.phone')}</span>
+                                <span className="text-[#1d1d1f] dark:text-gray-200 font-medium">{customerForm.customerPhone || '-'}</span>
                             </div>
-                            <div className="grid grid-cols-[100px_1fr] gap-2 items-start">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('submit.lineId')}</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerLineId || '-'}</span>
+                            <div className="flex flex-col gap-1">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">{t('submit.lineId')}</span>
+                                <span className="text-[#1d1d1f] dark:text-gray-200 font-medium">{customerForm.customerLineId || '-'}</span>
                             </div>
-                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start md:col-span-2">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">Email</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium">{customerForm.customerEmail || '-'}</span>
+                            <div className="flex flex-col gap-1 md:col-span-2">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">Email</span>
+                                <span className="text-[#1d1d1f] dark:text-gray-200 font-medium">{customerForm.customerEmail || '-'}</span>
                             </div>
-                            <div className="grid grid-cols-[130px_1fr] gap-2 items-start md:col-span-2">
-                                <span className="text-gray-400 font-semibold text-xs uppercase pt-0.5">{t('submit.returnAddress')}</span>
-                                <span className="text-[#1d1d1f] dark:text-white font-medium leading-relaxed">{customerForm.customerReturnAddress || '-'}</span>
+                            <div className="flex flex-col gap-1 md:col-span-2">
+                                <span className="text-gray-400 font-semibold text-[11px] tracking-wider uppercase">{t('submit.returnAddress')}</span>
+                                <div className="text-[#1d1d1f] dark:text-gray-200 font-medium leading-relaxed bg-gray-50 dark:bg-black/10 p-3 rounded-xl border border-gray-100 dark:border-white/5 whitespace-pre-line mt-1">
+                                    {customerForm.customerReturnAddress || '-'}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -304,7 +367,7 @@ export const JobDetail: React.FC = () => {
             <div className="space-y-4">
                 <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white ml-2 mb-4">{t('claimsList.items')}</h2>
                 {rmas.map((item, index) => {
-                    const isClosed = [RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.SHIPPED, RMAStatus.REJECTED].includes(item.status);
+                    const isClosed = [RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.REJECTED].includes(item.status);
                     const isExpanded = expandedRMAs.has(item.id);
 
                     // เรียงลำดับประวัติให้ล่าสุดอยู่บนสุด
@@ -411,7 +474,16 @@ export const JobDetail: React.FC = () => {
                 })}
             </div>
 
-
+            {/* Shipment Tag Modal - Appears when "Print Shipping Label" is clicked */}
+            {rmas.length > 0 && (
+                <ShipmentTagModal
+                    isOpen={isShipmentTagModalOpen}
+                    onClose={() => setIsShipmentTagModalOpen(false)}
+                    rma={rmas[0]}
+                    onSave={handleSaveShipmentTagData}
+                    targetType={shipmentTagTarget}
+                />
+            )}
         </div>
     );
 };

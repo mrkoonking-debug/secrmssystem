@@ -11,7 +11,6 @@ export enum RMAStatus {
   WAITING_PARTS = 'WAITING_PARTS', // รออะไหล่มาส่ง
   REPAIRED = 'REPAIRED',           // ซ่อมเสร็จแล้ว พร้อมคืน
   REJECTED = 'REJECTED',           // ปฏิเสธการเคลม (เช่น ผิดเงื่อนไข)
-  SHIPPED = 'SHIPPED',             // ส่งคืนลูกค้า/ขนส่งแล้ว
   CLOSED = 'CLOSED'                // ปิดงานสมบูรณ์ (ลูกค้าได้รับของแล้ว)
 }
 
@@ -78,6 +77,7 @@ export interface RMA {
   customerLineId?: string;
   customerAddress?: string;       // ที่อยู่ลูกค้า
   customerReturnAddress?: string; // ที่อยู่สำหรับส่งของคืน
+  trackingIds?: string[]; // Array of tracking IDs for multi-box shipments
   createdBy?: string;             // ใครเป็นคนสร้างรายการนี้ (Admin คนไหน)
 
   // ข้อมูลสินค้า

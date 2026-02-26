@@ -84,7 +84,7 @@ export const ClaimsList: React.FC = () => {
             if (statusFilter === 'ALL') return true;
             if (statusFilter === 'PENDING') return c.status === RMAStatus.PENDING;
             if (statusFilter === 'IN_PROGRESS') return [RMAStatus.DIAGNOSING, RMAStatus.WAITING_PARTS].includes(c.status);
-            if (statusFilter === 'DONE') return [RMAStatus.REPAIRED, RMAStatus.SHIPPED, RMAStatus.CLOSED, RMAStatus.REJECTED].includes(c.status);
+            if (statusFilter === 'DONE') return [RMAStatus.REPAIRED, RMAStatus.CLOSED, RMAStatus.REJECTED].includes(c.status);
             return true;
         };
 
@@ -128,7 +128,7 @@ export const ClaimsList: React.FC = () => {
     const getTeamCount = (team: Team) => rmas.filter(c => c.team === team && ![RMAStatus.CLOSED].includes(c.status)).length;
     const getGroupCCount = () => rmas.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team) && ![RMAStatus.CLOSED].includes(c.status)).length;
     const handleGroupCClick = () => { setIsTeamCExpanded(!isTeamCExpanded); setTeamFilter('GROUP_C'); };
-    const isRMAOverdue = (c: RMA) => ![RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.SHIPPED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 7);
+    const isRMAOverdue = (c: RMA) => ![RMAStatus.CLOSED, RMAStatus.REPAIRED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 7);
 
     if (loading) return <div className="p-12 text-center">Loading RMAs...</div>;
 

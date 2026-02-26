@@ -41,11 +41,26 @@ const getImagesHTML = (rma: RMA) => {
 /* ─────────────────────────────────────────────
    SHARED STYLES
 ───────────────────────────────────────────── */
-const getCommonStyles = () => `
-  <style>
+const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
+  const isOrange = theme === 'orange';
+  const primary = isOrange ? '#ea580c' : '#2563eb';
+  const dark = isOrange ? '#9a3412' : '#0b57d0';
+  const light = isOrange ? '#fed7aa' : '#d1ddf0';
+  const bgLight = isOrange ? '#ffedd5' : '#e8f0fe';
+  const border = isOrange ? '#fdba74' : '#c5d5f0';
+
+  return `
+    <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
 
     body { background: #f0f0f0; }
 
@@ -61,81 +76,133 @@ const getCommonStyles = () => `
       position: relative;
     }
 
-    /* ── HEADER ── */
-    .doc-header-bar {
-      background: linear-gradient(135deg, #0b57d0 0%, #1a73e8 100%);
-      border-radius: 10px;
-      padding: 14px 18px;
+    /* ── COMBINED HEADER ── */
+    .doc-header-wrapper {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-      color: white;
+      align-items: flex-end;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 3px solid #1d1d1f;
     }
-    .doc-header-left { display: flex; align-items: center; gap: 12px; }
-    .doc-header-logo { height: 36px; width: auto; object-fit: contain; }
-    .doc-header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-    .doc-header-subtitle { font-size: 10px; opacity: 0.8; margin-top: 2px; }
-    .doc-header-right { text-align: right; }
-    .doc-ref-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
-    .doc-ref-no { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; }
-    .doc-ref-date { font-size: 11px; opacity: 0.85; margin-top: 2px; }
-
-    /* ── COMPANY INFO BANNER ── */
-    .company-banner {
-      background: #f7f9fc;
-      border: 1px solid #e8edf5;
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 12px;
-      font-size: 10px;
-      color: #444;
+    .doc-header-left {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1;
     }
-    .company-banner .co-name { font-size: 12px; font-weight: 700; color: #1d1d1f; }
+    .doc-header-logo {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+    }
+    .doc-header-company {
+      margin-top: 4px;
+    }
+    .co-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1d1d1f;
+      margin-bottom: 2px;
+    }
+    .co-details {
+      font-size: 11px;
+      color: #1d1d1f;
+      line-height: 1.6;
+    }
+    
+    .doc-header-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0;
+      color: ${primary}; /* Bright blue matching reference */
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      margin-bottom: 24px;
+    }
+    .doc-header-subtitle {
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
 
-    /* ── PARTIES BLOCK ── */
+    .doc-header-right {
+      text-align: right;
+      flex: 1;
+      padding-bottom: 8px;
+    }
+    .doc-ref-label {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .doc-ref-no {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-family: 'Inter', sans-serif;
+      color: #1d1d1f;
+      margin: 4px 0 8px;
+      line-height: 1;
+    }
+    .doc-ref-date {
+      font-size: 12px;
+      color: #555;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
     .parties-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 14px;
+      gap: 16px;
+      margin-bottom: 24px;
     }
     .party-box {
       border: 1px solid #e5e5ea;
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 16px;
       background: #fff;
     }
     .party-box-label {
-      font-size: 8px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #0b57d0;
-      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      color: ${primary};
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
     .party-box-label::before {
       content: '';
       display: inline-block;
-      width: 3px;
-      height: 10px;
-      background: #0b57d0;
-      border-radius: 2px;
+      width: 4px;
+      height: 14px;
+      background: ${primary};
+      border-radius: 4px;
     }
     .party-name { font-size: 14px; font-weight: 700; color: #1d1d1f; margin-bottom: 2px; }
     .party-detail { font-size: 10px; color: #666; line-height: 1.6; }
+    .party-divider {
+      margin: 12px 0;
+      border-top: 1px dashed #e5e5ea;
+    }
 
     /* ── SECTION TITLE ── */
     .section-title {
       font-size: 11px;
       font-weight: 700;
-      color: #0b57d0;
+      color: ${primary};
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-bottom: 10px;
@@ -147,123 +214,76 @@ const getCommonStyles = () => `
       content: '';
       flex: 1;
       height: 1px;
-      background: linear-gradient(to right, #d1ddf0, transparent);
+      background: linear-gradient(to right, ${light}, transparent);
     }
     .section-title .count-badge {
-      background: #0b57d0;
+      background: ${primary};
       color: white;
       font-size: 9px;
       padding: 1px 6px;
       border-radius: 10px;
     }
 
-    /* ── ITEM CARD ── */
-    .item-card {
+
+    /* ── ITEMS TABLE ── */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 11px;
+    }
+    .items-table th {
+      background-color: #f7f9fc;
+      color: ${primary};
+      font-weight: 700;
+      text-align: center;
+      padding: 6px 8px;
       border: 1px solid #e5e5ea;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      overflow: hidden;
-      page-break-inside: avoid;
+      border-bottom: 2px solid ${primary};
     }
-    .item-card-header {
-      background: linear-gradient(to right, #f5f8ff, #eef3fd);
+    .items-table th.align-left { text-align: left; }
+    .items-table td {
+      padding: 8px;
       border-bottom: 1px solid #e5e5ea;
-      padding: 10px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      vertical-align: top;
     }
-    .item-no {
-      font-size: 10px;
-      font-weight: 700;
-      color: #fff;
-      background: #0b57d0;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .item-brand { font-size: 14px; font-weight: 700; color: #1d1d1f; }
-    .item-model { font-size: 11px; color: #555; }
-    .item-sn {
-      font-family: 'Inter', ui-monospace, Menlo, Monaco, monospace;
+    .items-table td.align-center { text-align: center; }
+    .items-table td.align-right { text-align: right; }
+    
+    .item-brand-model { font-weight: 700; color: #1d1d1f; margin-bottom: 2px; }
+    .item-desc { color: #555; font-size: 10px; line-height: 1.4; }
+    .item-sn { font-family: 'Inter', monospace; margin-top: 2px; font-size: 10px; }
+    
+    .table-summary {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 11px;
-      color: #333;
-      background: #edf1fa;
-      border-radius: 4px;
-      padding: 3px 8px;
+      margin-top: 10px;
     }
-    .item-body {
-      padding: 12px 14px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
+    .table-summary td {
+      padding: 4px 8px;
+      text-align: right;
     }
-    .item-body-full {
-      padding: 12px 14px;
-    }
-
-    /* ── FIELD LABEL / VALUE ── */
-    .f-label {
-      font-size: 8px;
+    .table-summary td:nth-child(1) {
+      color: ${dark};
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #86868b;
-      margin-bottom: 3px;
     }
-    .f-value {
-      font-size: 12px;
-      font-weight: 500;
+    .table-summary td:nth-child(2) {
+      width: 80px;
       color: #1d1d1f;
-      line-height: 1.4;
-    }
-    .f-value-mono {
-      font-family: 'Inter', ui-monospace, Menlo, Monaco, monospace;
-      font-size: 11px;
-      color: #333;
-    }
-    .f-value-accent {
-      font-size: 12px;
       font-weight: 600;
-      color: #0b57d0;
     }
-    .f-chip {
-      display: inline-block;
-      background: #edf1fa;
-      color: #0b57d0;
+    
+    .remarks-section {
+      margin-top: 30px;
       font-size: 10px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-top: 2px;
-    }
-    .f-highlight-box {
-      background: #f7f9fc;
-      border: 1px dashed #c5d5f0;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-top: 6px;
-    }
-
-    /* ── ACCESSORY LIST ── */
-    .acc-list { list-style: none; padding: 0; margin: 0; }
-    .acc-list li {
-      font-size: 11px;
-      color: #444;
-      padding: 2px 0 2px 12px;
-      position: relative;
+      color: #1d1d1f;
       line-height: 1.5;
     }
-    .acc-list li::before {
-      content: '·';
-      position: absolute;
-      left: 0;
-      color: #0b57d0;
+    .remarks-label {
+      color: ${dark};
       font-weight: 700;
+      margin-bottom: 4px;
     }
 
     /* ── STATUS BADGE ── */
@@ -276,7 +296,7 @@ const getCommonStyles = () => `
     }
     .status-badge.ok { background: #e6f4ea; color: #137333; }
     .status-badge.warn { background: #fff3e0; color: #b45309; }
-    .status-badge.info { background: #e8f0fe; color: #0b57d0; }
+    .status-badge.info { background: ${bgLight}; color: ${dark}; }
 
     /* ── FOOTER / SIGNATURES ── */
     .footer-section {
@@ -289,7 +309,7 @@ const getCommonStyles = () => `
       page-break-inside: avoid;
     }
     .sig-box {
-      border: 1px dashed #c5d5f0;
+      border: 1px dashed ${border};
       border-radius: 8px;
       padding: 14px 16px;
     }
@@ -298,7 +318,7 @@ const getCommonStyles = () => `
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #0b57d0;
+      color: ${dark};
       margin-bottom: 3px;
     }
     .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
@@ -312,6 +332,7 @@ const getCommonStyles = () => `
     }
   </style>
 `;
+};
 
 /* ─────────────────────────────────────────────
    IMPORTER FORM  (ใบส่งเคลมสินค้า → Distributor)
@@ -371,7 +392,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   }).join('');
 
   return `
-    ${getCommonStyles()}
+    ${getCommonStyles('orange')}
     <div class="print-doc">
 
       <!-- HEADER BAR -->
@@ -638,6 +659,367 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
   `;
 };
 
+export interface ShippingLabelPayload {
+  rma: RMA;
+  receiverName: string;
+  contactPerson: string;
+  receiverPhone: string;
+  receiverAddress: string;
+  trackingId: string;
+  currentBox: number;
+  totalBoxes: number;
+}
+
+export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayload[]): Promise<string> => {
+  if (!payloads || payloads.length === 0) return '';
+  const settings = await MockDb.getSettings();
+
+  const labelsHTML = payloads.map((payload, index) => {
+    const { rma, receiverName, contactPerson, receiverPhone, receiverAddress, trackingId, currentBox, totalBoxes } = payload;
+
+    // Determine Job ID to show in the pink box
+    const displayId = rma.quotationNumber || rma.id;
+    const qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(displayId)}&margin=0`;
+    const qrTrackingUrl = trackingId && trackingId.trim() !== ''
+      ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackingId)}&margin=0`
+      : `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('NO_TRACKING')}&margin=0`;
+
+    // Format the assigned team to be displayed with the sender name
+    let teamName = '';
+    let teamPhone = '092-273-xxxx'; // Default/Mock team phone
+    if (rma.team) {
+      if (rma.team === 'HIKVISION') { teamName = 'Team A: Hikvision'; teamPhone = '061-111-2222'; }
+      else if (rma.team === 'DAHUA') { teamName = 'Team B: Dahua'; teamPhone = '061-333-4444'; }
+      else if (rma.team === 'TEAM_C') { teamName = 'Team C: Network & UNV'; teamPhone = '061-555-6666'; }
+      else if (rma.team === 'TEAM_E') { teamName = 'Team E: UPS'; teamPhone = '061-777-8888'; }
+      else if (rma.team === 'TEAM_G') { teamName = 'Team G: Online Platform'; teamPhone = '061-999-0000'; }
+      else { teamName = `Team ${rma.team}`; }
+    }
+
+    const pageBreak = index < payloads.length - 1 ? 'page-break-after: always;' : '';
+
+    return `
+    <div class="shipping-label" style="${pageBreak}">
+      <div class="st-container">
+        
+        <!-- ROW 1 -->
+        <div class="st-row-1">
+          <div class="st-pink-box">
+            <div class="st-pink-label">Quotation No.</div>
+            <div class="st-pink-value">${displayId.length > 12 ? displayId.substring(0, 10) + '...' : displayId}</div>
+            <img src="${qrDataUrl}" class="st-pink-qr" alt="QR" />
+          </div>
+          <div class="st-sender-box">
+            ${settings.logoUrl ? `<img src="${settings.logoUrl}" class="st-sender-logo" alt="Logo" />` : ''}
+            <div class="st-sender-info">
+              <div class="st-sender-name">${settings.nameTh}</div>
+              <div class="st-sender-team">ฝ่ายเคลม: ${teamName}</div>
+              <div class="st-sender-details">
+                ${settings.address}<br/>
+                โทร: ${settings.tel}
+              </div>
+            </div>
+            <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
+          </div>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="st-row-2">
+          <div class="st-track-left">
+            <div class="st-track-label">Tracking ID</div>
+            <div class="st-track-val">${trackingId || '-'}</div>
+          </div>
+          <div class="st-track-center">
+            <div class="st-track-placeholder">ติด Tracking Label ที่นี่</div>
+          </div>
+          <div class="st-track-right">
+            <img src="${qrTrackingUrl}" alt="QR Tracking" />
+          </div>
+        </div>
+
+        <!-- ROW 3 -->
+        <div class="st-row-3">
+          <div class="st-deliver-badge">กรุณานำส่ง</div>
+          <div class="st-receiver-box">
+            <div class="st-receiver-name">${receiverName || '________________________________'}</div>
+            <div class="st-receiver-contact">ผู้ติดต่อ: ${contactPerson || '_________________'}</div>
+            <div class="st-receiver-phone">โทร. ${receiverPhone || '_________________'}</div>
+            <div class="st-receiver-address">
+              ${receiverAddress
+        ? receiverAddress.replace(/\\n/g, '<br/>')
+        : '________________________________________________<br/>________________________________________________'}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+      
+      * { 
+        box-sizing: border-box; 
+        margin: 0; 
+        padding: 0; 
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      body { background: #fff; padding: 0; margin: 0; display: block; }
+      
+      .shipping-label {
+        font-family: 'Sarabun', 'Inter', sans-serif;
+        color: #000;
+        width: 210mm;        /* A4 Width */
+        height: 297mm;       /* Full A4 Height */
+        padding: 10mm;       /* Outer padding */
+        margin: 0;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      
+      /* --- HALF PAGE GUIDE --- */
+      .st-half-page-guide {
+        display: none; /* Removed */
+      }
+      
+      .st-container {
+        border: 2px solid #000;
+        width: 100%;
+        height: 100%; /* Fill the 297mm minus padding */
+        display: block; 
+        box-sizing: border-box;
+      }
+
+      /* --- ROW 1: HEADER --- */
+      .st-row-1 {
+        display: flex;
+        border-bottom: 2px solid #000;
+        height: 40mm;
+        box-sizing: border-box;
+      }
+      .st-pink-box {
+        background-color: #e83a8b;
+        color: #fff;
+        width: 45mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        border-right: 2px solid #000;
+      }
+      .st-pink-label {
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .st-pink-value {
+        background: #fff;
+        color: #000;
+        font-size: 16px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'Inter', monospace;
+        margin-bottom: 5px;
+        width: 90%;
+        text-align: center;
+      }
+      .st-pink-qr {
+        width: 18mm;
+        height: 18mm;
+        background: #fff;
+        padding: 2px;
+      }
+      
+      .st-sender-box {
+        flex: 1;
+        padding: 10px;
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      .st-sender-logo {
+        height: 50px;
+        object-fit: contain;
+      }
+      .st-page-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #000;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      .st-sender-info {
+        flex: 1;
+      }
+      .st-sender-name {
+        font-size: 20px;
+        font-weight: 700;
+        margin-top: 5px;
+        margin-bottom: 4px;
+      }
+      .st-sender-team {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 2px;
+      }
+      .st-sender-details {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      /* --- ROW 2: TRACKING --- */
+      .st-row-2 {
+        display: flex;
+        border-bottom: 2px solid #000;
+        height: 50mm; /* Fixed height, increased for A4 */
+        box-sizing: border-box;
+      }
+      .st-track-left {
+        width: 50mm; /* Prevent long tracking IDs from wrapping */
+        padding: 5px 5px 5px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      .st-track-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #555;
+      }
+      .st-track-val {
+        font-size: 22px;
+        font-weight: 700;
+        font-family: 'Inter', monospace;
+      }
+      .st-track-center {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .st-track-placeholder {
+        border: 2px dashed #999;
+        width: 130mm; /* Trimmed slightly */
+        height: 40mm; /* Trimmed slightly */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 16px;
+      }
+      .st-track-right {
+        width: 35mm; /* Fixed width to prevent shrinking box */
+        border-left: 2px solid #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px;
+        box-sizing: border-box;
+      }
+      .st-track-right img {
+        width: 100%;
+        height: auto;
+        max-width: 30mm;
+      }
+
+      /* --- ROW 3: RECEIVER --- */
+      .st-row-3 {
+        padding: 12px;
+        position: relative;
+        height: calc(100% - 90mm); /* Rest of container */
+        display: block;
+        box-sizing: border-box;
+      }
+      .st-deliver-badge {
+        display: inline-block;
+        border: 1px solid #000;
+        padding: 6px 14px;
+        font-size: 18px;
+        font-weight: 700;
+        border-radius: 4px;
+        margin-bottom: 12px;
+      }
+      .st-receiver-box {
+        border: 1px solid #000;
+        border-radius: 8px;
+        padding: 15px 15px; 
+        height: calc(100% - 50px); /* Fill space minus badge */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .st-receiver-name {
+        font-size: 24px; 
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .st-receiver-contact {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .st-receiver-phone {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .st-receiver-address {
+        font-size: 20px;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 6;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      @media print {
+        @page { size: A4 portrait; margin: 0; }
+        html, body { padding: 0; margin: 0; background: #fff; }
+        .shipping-label { 
+          width: 210mm; 
+          height: 297mm; /* Full A4 height */
+          padding: 10mm; 
+          margin: 0;
+          page-break-after: always;
+        }
+        /* Use exact background colors when printing */
+        .st-pink-box { background-color: #e83a8b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-opt-blue { background-color: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-opt-purple { background-color: #faf5ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-opt-orange { background-color: #fff7ed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+    </style>
+    ${labelsHTML}
+  `;
+};
+
+export const printCustomerShippingLabel = async (payloads: ShippingLabelPayload[]) => {
+  try {
+    if (!payloads || payloads.length === 0) return;
+    const html = await getCustomerShippingLabelHTML(payloads);
+    executePrint(html, payloads[0].rma.id + '_Shipping_Label');
+  } catch (err) {
+    console.error("Error generating shipping label:", err);
+    alert("Error generating document. Please try again.");
+  }
+};
+
 export const printDistributorDocuments = async (rmas: RMA[]) => {
   try {
     if (!rmas || rmas.length === 0) return;
@@ -686,7 +1068,6 @@ const executePrint = (html: string, titleName: string) => {
     console.error("Failed to access iframe document for printing.");
     return;
   }
-
   doc.write(`<html><head><title>Print - ${titleName}</title></head><body><div id="print-content">${html}</div></body></html>`);
   doc.close();
 

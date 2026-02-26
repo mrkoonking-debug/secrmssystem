@@ -53,7 +53,7 @@ export const EditRMA: React.FC = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[60vh]">
-                <div className="flex items-center gap-3 bg-white/50 dark:bg-black/50 backdrop-blur-md px-6 py-3 rounded-full border border-gray-200 dark:border-white/10 shadow-sm">
+                <div className="flex items-center gap-3 bg-white dark:bg-[#1c1c1e] px-6 py-3 rounded-full border border-gray-200 dark:border-[#333] shadow-sm">
                     <Loader2 className="w-5 h-5 animate-spin text-[#0071e3]" />
                     <span className="text-sm font-medium text-gray-500">Loading...</span>
                 </div>

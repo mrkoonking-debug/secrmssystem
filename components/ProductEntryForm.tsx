@@ -12,13 +12,13 @@ import { ScannerModal } from './ScannerModal';
 
 const getInputClass = (hasError: boolean) => `
   w-full px-4 py-3 text-sm rounded-2xl outline-none transition-all
-  bg-white dark:bg-white/5 
-  border border-gray-200 dark:border-white/10
+  bg-white dark:bg-[#1c1c1e] 
+  border border-gray-200 dark:border-[#333]
   text-[#1d1d1f] dark:text-white
-  placeholder-gray-500 dark:placeholder-gray-500
-  focus:bg-white dark:focus:bg-black/40
-  focus:ring-2 focus:ring-[#0071e3] focus:border-transparent
-  hover:bg-white/80 dark:hover:bg-white/5
+  placeholder-gray-400 dark:placeholder-gray-500
+  focus:bg-white dark:focus:bg-[#1c1c1e]
+  focus:ring-2 focus:ring-[#0071e3] focus:border-[#0071e3]
+  hover:bg-gray-50 dark:hover:bg-[#2c2c2e]
   hover:border-blue-400/50 dark:hover:border-white/30
   ${hasError ? 'border-red-500 focus:ring-red-500' : ''}
 `;

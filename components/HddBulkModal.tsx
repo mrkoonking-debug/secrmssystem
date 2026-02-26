@@ -51,7 +51,7 @@ export const HddBulkModal: React.FC<HddBulkModalProps> = ({
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 animate-fade-in">
             <div className="bg-white dark:bg-[#1c1c1e] w-full max-w-lg min-h-[400px] h-[80vh] max-h-[600px] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#333] flex flex-col overflow-hidden">
                 {/* Header (Fixed) */}
                 <div className="p-5 border-b border-gray-100 dark:border-[#333] flex items-center justify-between flex-shrink-0">
