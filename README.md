@@ -25,3 +25,4 @@ npm run dev   # รันเว็บทดสอบในเครื่อง
 | [04_CODE_STRUCTURE.md](./docs/04_CODE_STRUCTURE.md) | โครงสร้างโค้ด, แต่ละไฟล์ทำอะไร | นักพัฒนา |
 | [05_HOW_TO_EDIT.md](./docs/05_HOW_TO_EDIT.md) | แก้ไขเรื่องต่างๆ พร้อม interconnection | นักพัฒนา |
 | [06_OWNER_GUIDE.md](./docs/06_OWNER_GUIDE.md) | จัดการพื้นฐานโดยไม่ต้องรู้โค้ด | เจ้าของระบบ |
+| [07_GIT_GUIDE.md](./docs/07_GIT_GUIDE.md) | บันทึกและย้อนกลับโค้ดด้วย Git | ทุกคน |
