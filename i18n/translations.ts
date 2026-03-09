@@ -115,8 +115,8 @@ export const translations = {
       caughtUp: 'All caught up!'
     },
     public: {
-      heroTitle: 'SEC RMS SYSTEM',
-      heroTitleSuffix: 'System.',
+      heroTitle: 'SEC RMS',
+      heroTitleSuffix: 'SYSTEM.',
       heroSubtitle: 'Track status and register your claims.',
       checkStatusLabel: 'Check Status',
       checkStatusTitle: 'Check RMA Status.',
@@ -500,8 +500,8 @@ export const translations = {
       caughtUp: 'เคลียร์งานครบแล้ว!'
     },
     public: {
-      heroTitle: 'SEC RMS SYSTEM',
-      heroTitleSuffix: 'System.',
+      heroTitle: 'SEC RMS',
+      heroTitleSuffix: 'SYSTEM.',
       heroSubtitle: 'ติดตามสถานะและลงทะเบียนเคลมสินค้า',
       checkStatusLabel: 'ตรวจสอบสถานะ',
       checkStatusTitle: 'ตรวจสอบสถานะการเคลม',

@@ -1,7 +1,0 @@
-{
-  "name": "SEC Claim System",
-  "description": "ระบบจัดการและติดตามงานเคลมสินค้าไอทีและ CCTV ระดับองค์กร",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}

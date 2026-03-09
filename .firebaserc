@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "my-sec-claim-system"
-  }
+  },
+  "targets": {
+    "my-sec-claim-system": {
+      "hosting": {
+        "secrmssystem": [
+          "secrmssystem"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

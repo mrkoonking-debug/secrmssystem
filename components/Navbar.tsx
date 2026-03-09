@@ -139,25 +139,28 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
 
           {/* Panel */}
           <div className="absolute top-14 right-0 bottom-0 w-[280px] bg-[#f5f5f7] dark:bg-[#161617] border-l border-gray-200/50 dark:border-[#333] flex flex-col overflow-hidden animate-slide-up">
-            <div className="flex-1 flex flex-col gap-1 px-4 py-4 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 flex flex-col gap-1 px-4 py-4 pb-6 overflow-y-auto custom-scrollbar">
               {navContent}
             </div>
 
             {/* Bottom section */}
-            <div className="p-4 mt-auto border-t border-gray-200/50 dark:border-[#333]">
+            <div
+              className="p-4 mt-auto border-t border-gray-200/50 dark:border-[#333] shrink-0 bg-[#f5f5f7] dark:bg-[#161617]"
+              style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            >
               <div className="flex items-center justify-between mb-4 bg-white dark:bg-[#1c1c1e] p-2 rounded-full shadow-sm border border-gray-100 dark:border-[#333]">
                 <div className="flex gap-1"><ThemeToggle /><LanguageToggle /></div>
                 {user && <Link to="/" title="Go to Website" className="p-2 rounded-full text-[#86868b] hover:text-[#0071e3] transition-colors"><Globe className="h-4 w-4" /></Link>}
               </div>
 
               {user && (
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-[#2c2c2e] border border-gray-100 dark:border-[#333] shadow-sm">
-                  <div className="w-10 h-10 rounded-full bg-[#f5f5f7] dark:bg-[#3a3a3c] flex items-center justify-center font-bold text-gray-400">{user.name.charAt(0)}</div>
-                  <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-[#2c2c2e] border border-gray-100 dark:border-[#333] shadow-sm mb-1">
+                  <div className="w-10 h-10 rounded-full bg-[#f5f5f7] dark:bg-[#3a3a3c] flex items-center justify-center font-bold text-gray-400 shrink-0">{user.name.charAt(0)}</div>
+                  <div className="flex-1 min-w-0 pr-1">
                     <div className="text-sm font-bold text-[#1d1d1f] dark:text-white truncate">{user.name}</div>
                     <div className="text-[10px] text-[#86868b] truncate uppercase tracking-wider">{user.role}</div>
                   </div>
-                  <button onClick={handleLogout} className="p-2 text-[#86868b] hover:text-red-500 transition-colors" title="Logout"><LogOut className="w-4 h-4" /></button>
+                  <button onClick={handleLogout} className="p-2 text-[#86868b] hover:text-red-500 transition-colors shrink-0" title="Logout"><LogOut className="w-4 h-4" /></button>
                 </div>
               )}
             </div>

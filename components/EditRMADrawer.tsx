@@ -265,20 +265,20 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     return (
         <div className="max-w-5xl mx-auto py-6 px-4 animate-fade-in">
             {/* PAGE HEADER */}
-            <div className="flex justify-between items-end mb-8 px-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8 px-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-1">{t('track.edit')}</h1>
-                    <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span className="font-mono bg-gray-200 dark:bg-gray-600 px-2.5 py-0.5 rounded-lg text-gray-700 dark:text-gray-300 font-bold">{rma.id}</span>
+                    <h1 className="text-3xl font-bold text-[#1d1d1f] dark:text-white mb-2">{t('track.edit')}</h1>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500">
+                        <span className="font-mono bg-gray-200 dark:bg-gray-600 px-2.5 py-0.5 rounded-lg text-gray-700 dark:text-gray-300 font-bold whitespace-nowrap">{rma.id}</span>
                         {rma.groupRequestId && (
-                            <span className="font-mono bg-[#0071e3]/10 text-[#0071e3] px-2.5 py-0.5 rounded-lg font-bold border border-[#0071e3]/20">Job: {rma.groupRequestId}</span>
+                            <span className="font-mono bg-[#0071e3]/10 text-[#0071e3] px-2.5 py-0.5 rounded-lg font-bold border border-[#0071e3]/20 whitespace-nowrap">Job: {rma.groupRequestId}</span>
                         )}
-                        <span>{rma.brand} {rma.productModel}</span>
-                        <span>•</span>
-                        <span className="font-mono">{rma.serialNumber}</span>
+                        <span className="whitespace-nowrap">{rma.brand} {rma.productModel}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="font-mono whitespace-nowrap">{rma.serialNumber}</span>
                     </div>
                 </div>
-                <button onClick={onClose} className="px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors flex items-center gap-2">
+                <button onClick={onClose} className="w-fit px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors flex items-center gap-2">
                     <ArrowRight className="w-4 h-4 rotate-180" /> กลับ
                 </button>
             </div>

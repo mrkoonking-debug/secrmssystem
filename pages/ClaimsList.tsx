@@ -70,14 +70,20 @@ export const ClaimsList: React.FC = () => {
     const groupedByDate = useMemo(() => {
         const matchesSearch = (c: RMA) => {
             if (!c || !c.id) return false;
-            const term = search.toLowerCase();
-            return (
-                (c.id && c.id.toLowerCase().includes(term)) ||
-                (c.customerName && c.customerName.toLowerCase().includes(term)) ||
-                (c.serialNumber && c.serialNumber.toLowerCase().includes(term)) ||
-                (c.productModel && c.productModel.toLowerCase().includes(term)) ||
-                (c.quotationNumber && c.quotationNumber.toLowerCase().includes(term))
-            );
+
+            // If search is empty, show all (handled by other filters)
+            if (!search.trim()) return true;
+
+            const term = search.toLowerCase().trim();
+
+            const matchCustomer = c.customerName && c.customerName.toLowerCase() === term;
+            const matchSN = c.serialNumber && c.serialNumber.toLowerCase() === term;
+            const matchModel = c.productModel && c.productModel.toLowerCase() === term;
+            const matchId = c.id && c.id.toLowerCase() === term;
+            const matchQuote = c.quotationNumber && c.quotationNumber.toLowerCase() === term;
+            const matchGroup = c.groupRequestId && c.groupRequestId.toLowerCase() === term;
+
+            return matchId || matchCustomer || matchSN || matchModel || matchQuote || matchGroup;
         };
 
         const matchesStatus = (c: RMA) => {

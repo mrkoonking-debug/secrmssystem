@@ -1,20 +1,27 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🛡️ SEC RMA System
 
-# Run and deploy your AI Studio app
+ระบบบริหารจัดการงานเคลมสินค้า สำหรับ **บริษัท เอสอีซี เทคโนโลยี จำกัด**
 
-This contains everything you need to run your app locally.
+🔗 **เว็บไซต์จริง:** [https://secrmssystem.web.app](https://secrmssystem.web.app)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1laAnGHzKMnfisu2s2jEO69Dfjco8jr4U
+---
 
-## Run Locally
+## 🚀 เริ่มต้นใช้งาน
 
-**Prerequisites:**  Node.js
+```bash
+npm install   # ครั้งแรก หรือย้ายเครื่องใหม่
+npm run dev   # รันเว็บทดสอบในเครื่อง
+```
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📚 เอกสารคู่มือ (docs/)
+
+| ไฟล์ | เนื้อหา | เหมาะสำหรับ |
+| :--- | :--- | :--- |
+| [01_OVERVIEW.md](./docs/01_OVERVIEW.md) | ภาพรวมระบบ, ฟีเจอร์ทั้งหมด, Tech Stack | ทุกคน |
+| [02_FIREBASE_SETUP.md](./docs/02_FIREBASE_SETUP.md) | ตั้งค่า Firebase ตั้งแต่ต้น (7 ขั้นตอน) | ครั้งแรก / เครื่องใหม่ |
+| [03_DEPLOYMENT.md](./docs/03_DEPLOYMENT.md) | Deploy ขึ้นเว็บจริง + คำสั่งทั้งหมด | ทุกครั้งที่แก้โค้ด |
+| [04_CODE_STRUCTURE.md](./docs/04_CODE_STRUCTURE.md) | โครงสร้างโค้ด, แต่ละไฟล์ทำอะไร | นักพัฒนา |
+| [05_HOW_TO_EDIT.md](./docs/05_HOW_TO_EDIT.md) | แก้ไขเรื่องต่างๆ พร้อม interconnection | นักพัฒนา |
+| [06_OWNER_GUIDE.md](./docs/06_OWNER_GUIDE.md) | จัดการพื้นฐานโดยไม่ต้องรู้โค้ด | เจ้าของระบบ |

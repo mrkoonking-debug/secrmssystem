@@ -370,8 +370,19 @@ export const MockDb = {
   },
   searchRMAsPublic: async (text: string): Promise<RMA[]> => {
     const all = await MockDb.getRMAs();
-    const lower = text.toLowerCase().trim();
-    return all.filter(c => c.serialNumber.toLowerCase().includes(lower) || c.id.toLowerCase().includes(lower) || (c.quotationNumber && c.quotationNumber.toLowerCase().includes(lower)) || (c.groupRequestId && c.groupRequestId.toLowerCase().includes(lower)));
+
+    // Trim and handle case-insensitivity for exact match comparison
+    const searchString = text.toLowerCase().trim();
+
+    return all.filter(c => {
+      // Must exactly match ONE of the key identifiers (case-insensitive)
+      const isExactId = c.id && c.id.toLowerCase() === searchString;
+      const isExactQuote = c.quotationNumber && c.quotationNumber.toLowerCase() === searchString;
+      const isExactGroup = c.groupRequestId && c.groupRequestId.toLowerCase() === searchString;
+      const isExactSN = c.serialNumber && c.serialNumber.toLowerCase() === searchString;
+
+      return isExactId || isExactQuote || isExactGroup || isExactSN;
+    });
   },
   addRMA: async (c: Partial<RMA>): Promise<RMA> => {
     const year = new Date().getFullYear().toString().slice(-2);
