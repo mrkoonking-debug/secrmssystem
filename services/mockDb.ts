@@ -369,20 +369,47 @@ export const MockDb = {
     }
   },
   searchRMAsPublic: async (text: string): Promise<RMA[]> => {
-    const all = await MockDb.getRMAs();
-
-    // Trim and handle case-insensitivity for exact match comparison
+    if (!isConfigured || !db) return [];
     const searchString = text.toLowerCase().trim();
+    if (!searchString) return [];
 
-    return all.filter(c => {
-      // Must exactly match ONE of the key identifiers (case-insensitive)
-      const isExactId = c.id && c.id.toLowerCase() === searchString;
-      const isExactQuote = c.quotationNumber && c.quotationNumber.toLowerCase() === searchString;
-      const isExactGroup = c.groupRequestId && c.groupRequestId.toLowerCase() === searchString;
-      const isExactSN = c.serialNumber && c.serialNumber.toLowerCase() === searchString;
+    const resultsMap = new Map<string, RMA>();
 
-      return isExactId || isExactQuote || isExactGroup || isExactSN;
-    });
+    try {
+      // 1. Try direct document get by RMA ID (e.g. "RMA-261234")
+      const directSnap = await getDoc(doc(db, 'rmas', text.trim()));
+      if (directSnap.exists()) {
+        resultsMap.set(directSnap.id, mapDocToRMA(directSnap));
+      }
+
+      // 2. Try exact match on quotationNumber (e.g. "SEC00010")
+      const quoteSnap = await getDocs(query(
+        collection(db, 'rmas'),
+        where('quotationNumber', '==', text.trim())
+      ));
+      quoteSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
+
+      // 3. Try exact match on groupRequestId (e.g. "SECRMA-202603-9497")
+      const groupSnap = await getDocs(query(
+        collection(db, 'rmas'),
+        where('groupRequestId', '==', text.trim())
+      ));
+      groupSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
+
+      // 4. Try case-insensitive match on serialNumber (get requires auth, skip for public)
+      // Serial numbers are handled: direct doc GET by ID covers RMA id searches,
+      // and serial numbers must be entered exactly as text
+      const snSnap = await getDocs(query(
+        collection(db, 'rmas'),
+        where('serialNumber', '==', text.trim())
+      ));
+      snSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
+
+    } catch (e) {
+      console.error('searchRMAsPublic error:', e);
+    }
+
+    return Array.from(resultsMap.values());
   },
   addRMA: async (c: Partial<RMA>): Promise<RMA> => {
     const year = new Date().getFullYear().toString().slice(-2);

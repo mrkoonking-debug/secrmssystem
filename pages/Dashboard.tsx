@@ -135,7 +135,7 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar max-h-[400px]">
                         {stats.urgentRMAs.map(rma => (
-                            <Link key={rma.id} to={`/admin/job/${encodeURIComponent(rma.quotationNumber || rma.groupRequestId || rma.id)}?editRmaId=${rma.id}`} className="block bg-[#f5f5f7] dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-[#3a3a3c] p-5 rounded-3xl transition-all group">
+                            <Link key={rma.id} to={`/admin/job/${encodeURIComponent(rma.quotationNumber || rma.groupRequestId || rma.id)}`} className="block bg-[#f5f5f7] dark:bg-[#2c2c2e] hover:bg-gray-100 dark:hover:bg-[#3a3a3c] p-5 rounded-3xl transition-all group">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="font-bold text-[#1d1d1f] dark:text-white group-hover:text-[#0071e3] transition-colors">{rma.productModel}</div>
                                     <div className="text-[10px] font-mono text-gray-400 bg-white dark:bg-black/20 px-2 py-1 rounded-lg">{rma.id}</div>

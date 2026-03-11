@@ -96,7 +96,7 @@ export const JobDetail: React.FC = () => {
 
                     const editRmaId = searchParams.get('editRmaId');
                     if (editRmaId) {
-                        navigate(`/admin/rma/${editRmaId}/edit`);
+                        navigate(`/admin/rma/${editRmaId}/edit`, { replace: true });
                     }
                 } else {
                     // navigate('/admin/rmas'); // Optional redirect

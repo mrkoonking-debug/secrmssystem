@@ -665,54 +665,68 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
     <div class="shipping-label" style="${pageBreak}">
       <div class="st-container">
         
-        <!-- ROW 1 -->
+        <!-- ROW 1: SENDER & JOB ID -->
         <div class="st-row-1">
-          <div class="st-pink-box">
-            <div class="st-pink-label">JOB ID</div>
-            <div class="st-pink-value" style="font-size: ${displayId.length > 12 ? '14px' : '18px'}; line-height: 1.2;">
-                ${displayId}
-            </div>
-            <img src="${qrDataUrl}" class="st-pink-qr" alt="QR" />
-          </div>
           <div class="st-sender-box">
-            ${settings.logoUrl ? `<img src="${settings.logoUrl}" class="st-sender-logo" alt="Logo" />` : ''}
+            <div class="st-sender-left">
+              <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
+              ${settings.logoUrl ? `<img src="${settings.logoUrl}" class="st-sender-logo" alt="Logo" />` : ''}
+            </div>
             <div class="st-sender-info">
               <div class="st-sender-name">${settings.nameTh}</div>
-              <div class="st-sender-team">ฝ่ายเคลม: ${teamName}</div>
+              <div class="st-sender-team">แผนกเคลม: ${teamName}</div>
               <div class="st-sender-details">
                 ${settings.address}<br/>
                 โทร: ${settings.tel}
               </div>
             </div>
-            <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
+          </div>
+          <div class="st-job-box">
+            <div class="st-job-content">
+              <div class="st-job-label">JOB ID</div>
+              <div class="st-job-value" style="font-size: ${displayId.length > 15 ? '12px' : displayId.length > 12 ? '14px' : '18px'};">
+                  ${displayId}
+              </div>
+            </div>
+            <div class="st-job-qr-container">
+              <img src="${qrDataUrl}" class="st-qr-img" alt="QR" />
+              <div class="st-qr-text">สแกน JOB ID</div>
+            </div>
           </div>
         </div>
 
-        <!-- ROW 2 -->
+        <!-- ROW 2: TRACKING -->
         <div class="st-row-2">
-          <div class="st-track-left">
-            <div class="st-track-label">Tracking ID</div>
+          <div class="st-track-info">
+            <div class="st-track-label">EMS / Tracking No.</div>
             <div class="st-track-val">${trackingId || '-'}</div>
           </div>
           <div class="st-track-center">
-            <div class="st-track-placeholder">ติด Tracking Label ที่นี่</div>
+            <div class="st-track-placeholder">
+              <span style="letter-spacing: 1px;">ติด Tracking Label ที่นี่</span>
+            </div>
           </div>
-          <div class="st-track-right">
-            <img src="${qrTrackingUrl}" alt="QR Tracking" />
+          <div class="st-track-qr-container">
+            <img src="${qrTrackingUrl}" class="st-qr-img" alt="QR Tracking" />
+            <div class="st-qr-text">สแกน EMS</div>
           </div>
         </div>
 
-        <!-- ROW 3 -->
+        <!-- ROW 3: RECEIVER -->
         <div class="st-row-3">
-          <div class="st-deliver-badge">กรุณานำส่ง</div>
-          <div class="st-receiver-box">
-            <div class="st-receiver-name">${receiverName || '________________________________'}</div>
-            <div class="st-receiver-contact">ผู้ติดต่อ: ${contactPerson || '_________________'}</div>
-            <div class="st-receiver-phone">โทร. ${receiverPhone || '_________________'}</div>
-            <div class="st-receiver-address">
-              ${receiverAddress
+          <div class="st-receiver-card">
+            <div class="st-deliver-header">
+              <div class="st-deliver-badge">จัดส่งถึง (DELIVER TO)</div>
+            </div>
+            <div class="st-receiver-content">
+              <div class="st-receiver-name">${receiverName || '________________________________'}</div>
+              <div class="st-receiver-contact">ผู้ติดต่อ: ${contactPerson || '_________________'}</div>
+              <div class="st-receiver-phone">โทร. ${receiverPhone || '_________________'}</div>
+              <div class="st-receiver-address">
+                ${receiverAddress
         ? receiverAddress.replace(/\\n/g, '<br/>')
         : '________________________________________________<br/>________________________________________________'}
+              </div>
             </div>
           </div>
         </div>
@@ -723,7 +737,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
 
   return `
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
       
       * { 
         box-sizing: border-box; 
@@ -733,13 +747,13 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         print-color-adjust: exact !important;
         color-adjust: exact !important;
       }
-      body { background: #fff; padding: 0; margin: 0; display: block; }
+      body { background: #f9fafb; padding: 0; margin: 0; display: block; }
       
       .shipping-label {
-        font-family: 'Sarabun', 'Inter', sans-serif;
-        color: #000;
+        font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #1d1d1f;
         width: 210mm;        /* A4 Width */
-        height: 297mm;       /* Full A4 Height */
+        height: 148mm;       /* Half A4 Height (A5 Landscape) */
         padding: 10mm;       /* Outer padding */
         margin: 0;
         position: relative;
@@ -747,227 +761,286 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         box-sizing: border-box;
       }
       
-      /* --- HALF PAGE GUIDE --- */
-      .st-half-page-guide {
-        display: none; /* Removed */
-      }
-      
       .st-container {
-        border: 2px solid #000;
         width: 100%;
-        height: 100%; /* Fill the 297mm minus padding */
-        display: block; 
-        box-sizing: border-box;
-      }
-
-      /* --- ROW 1: HEADER --- */
-      .st-row-1 {
-        display: flex;
-        border-bottom: 2px solid #000;
-        height: 40mm;
-        box-sizing: border-box;
-      }
-      .st-pink-box {
-        background-color: #e83a8b;
-        color: #fff;
-        width: 45mm;
+        height: 100%;
+        background-color: #fff;
+        border: 2px solid #e5e5ea;
+        border-radius: 16px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 5px;
-        border-right: 2px solid #000;
+        box-sizing: border-box;
+        overflow: hidden;
+        /* Subtle shadow for preview, removed in print */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
       }
-      .st-pink-label {
-        font-size: 11px;
-        font-weight: 600;
-        margin-bottom: 2px;
-      }
-      .st-pink-value {
-        background: #fff;
-        color: #000;
-        font-size: 16px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-family: 'Inter', monospace;
-        margin-bottom: 5px;
-        width: 90%;
-        text-align: center;
-      }
-      .st-pink-qr {
-        width: 18mm;
-        height: 18mm;
-        background: #fff;
-        padding: 2px;
+
+      /* --- ROW 1: HEADER (SENDER & JOB ID) --- */
+      .st-row-1 {
+        display: flex;
+        height: 38mm;
+        border-bottom: 2px solid #e5e5ea;
+        background-color: #fff;
       }
       
       .st-sender-box {
         flex: 1;
-        padding: 10px;
-        position: relative;
+        padding: 12px 16px;
         display: flex;
-        align-items: flex-start;
-        gap: 15px;
+        align-items: center; /* Centered visually */
+        gap: 16px;
+      }
+      .st-sender-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        min-width: 50px;
       }
       .st-sender-logo {
-        height: 50px;
+        height: 40px;
+        max-width: 80px;
         object-fit: contain;
+        border-radius: 8px;
       }
       .st-page-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #000;
-        color: #fff;
-        font-size: 16px;
+        background: #f3f4f6;
+        color: #6b7280;
+        font-size: 10px;
+        line-height: 1;
         font-weight: 700;
-        padding: 4px 10px;
+        padding: 3px 6px;
         border-radius: 6px;
+        border: 1px solid #e5e7eb;
       }
       .st-sender-info {
         flex: 1;
+        padding-top: 2px;
       }
       .st-sender-name {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
-        margin-top: 5px;
-        margin-bottom: 4px;
+        color: #111827;
+        margin-bottom: 2px;
+        letter-spacing: -0.01em;
       }
       .st-sender-team {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
-        color: #333;
-        margin-bottom: 2px;
+        color: #2563eb; /* Primary blue accent */
+        margin-bottom: 3px;
       }
       .st-sender-details {
-        font-size: 14px;
+        font-size: 12px;
+        color: #4b5563;
         line-height: 1.4;
+      }
+
+      .st-job-box {
+        width: 78mm; /* Increased width to fit long IDs */
+        background-color: #fce7f3; /* Very soft pink/magenta */
+        border-left: 2px solid #e5e5ea;
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        gap: 10px;
+      }
+      .st-job-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .st-job-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #be185d; /* Deep pink */
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .st-job-value {
+        font-weight: 800;
+        color: #111827;
+        font-family: 'Inter', monospace;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        white-space: nowrap; /* Prevent ugly hypen word breaks */
+      }
+      .st-job-qr-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
       }
 
       /* --- ROW 2: TRACKING --- */
       .st-row-2 {
         display: flex;
-        border-bottom: 2px solid #000;
-        height: 50mm; /* Fixed height, increased for A4 */
-        box-sizing: border-box;
+        height: 38mm;
+        border-bottom: 2px dashed #d1d5db;
+        background-color: #f9fafb;
       }
-      .st-track-left {
-        width: 50mm; /* Prevent long tracking IDs from wrapping */
-        padding: 5px 5px 5px 10px;
+      .st-track-info {
+        width: 70mm; 
+        padding: 12px 16px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        box-sizing: border-box;
+        border-right: 2px solid #e5e5ea;
+        background-color: #fff;
       }
       .st-track-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: #555;
+        font-size: 12px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
       }
       .st-track-val {
-        font-size: 22px;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: 800;
+        color: #111827;
         font-family: 'Inter', monospace;
+        letter-spacing: 0.5px;
       }
+      
       .st-track-center {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 8px;
       }
       .st-track-placeholder {
-        border: 2px dashed #999;
-        width: 130mm; /* Trimmed slightly */
-        height: 40mm; /* Trimmed slightly */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #999;
-        font-size: 16px;
-      }
-      .st-track-right {
-        width: 35mm; /* Fixed width to prevent shrinking box */
-        border-left: 2px solid #000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5px;
-        box-sizing: border-box;
-      }
-      .st-track-right img {
+        border: 2px dashed #cbd5e1;
+        background-color: #f1f5f9;
+        border-radius: 8px;
         width: 100%;
-        height: auto;
-        max-width: 30mm;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      
+      .st-track-qr-container {
+        width: 42mm; 
+        border-left: 2px solid #e5e5ea;
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+      }
+
+      /* Shared QR Styles */
+      .st-qr-img {
+        width: 26mm;
+        height: 26mm;
+        border-radius: 4px;
+        mix-blend-mode: multiply;
+      }
+      .st-qr-text {
+        font-size: 9px;
+        font-weight: 600;
+        color: #6b7280;
+        text-align: center;
       }
 
       /* --- ROW 3: RECEIVER --- */
       .st-row-3 {
-        padding: 12px;
-        position: relative;
-        height: calc(100% - 90mm); /* Rest of container */
-        display: block;
-        box-sizing: border-box;
-      }
-      .st-deliver-badge {
-        display: inline-block;
-        border: 1px solid #000;
-        padding: 6px 14px;
-        font-size: 18px;
-        font-weight: 700;
-        border-radius: 4px;
-        margin-bottom: 12px;
-      }
-      .st-receiver-box {
-        border: 1px solid #000;
-        border-radius: 8px;
-        padding: 15px 15px; 
-        height: calc(100% - 50px); /* Fill space minus badge */
+        flex: 1;
+        padding: 14px 16px;
+        background-color: #fff;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
-        box-sizing: border-box;
+      }
+      .st-receiver-card {
+        flex: 1;
+        border: 2px solid #111827; /* Strong border for emphasis */
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
+      }
+      .st-deliver-header {
+        background-color: #111827; /* Dark header */
+        color: #fff;
+        padding: 6px 14px;
+        display: flex;
+        align-items: center;
+      }
+      .st-deliver-badge {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .st-receiver-content {
+        padding: 12px 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
       .st-receiver-name {
         font-size: 24px; 
-        font-weight: 700;
+        font-weight: 800;
+        color: #111827;
         margin-bottom: 6px;
+        line-height: 1.2;
       }
       .st-receiver-contact {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 600;
-        margin-bottom: 6px;
+        color: #374151;
+        margin-bottom: 4px;
       }
       .st-receiver-phone {
-        font-size: 22px;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: 800;
+        color: #111827;
         margin-bottom: 8px;
+        font-family: 'Inter', sans-serif;
       }
       .st-receiver-address {
-        font-size: 20px;
+        font-size: 16px;
+        color: #4b5563;
         line-height: 1.5;
         display: -webkit-box;
-        -webkit-line-clamp: 6;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
 
+      /* Print Adjustments */
       @media print {
         @page { size: A4 portrait; margin: 0; }
         html, body { padding: 0; margin: 0; background: #fff; }
         .shipping-label { 
           width: 210mm; 
-          height: 297mm; /* Full A4 height */
-          padding: 10mm; 
+          height: 148mm; /* Half A4 height (A5) for print */
+          padding: 8mm; /* Slightly smaller padding for print edge */
           margin: 0;
           page-break-after: always;
+          border-bottom: 1px dashed #ccc; /* Cut-here guide between labels */
         }
-        /* Use exact background colors when printing */
-        .st-pink-box { background-color: #e83a8b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .st-opt-blue { background-color: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .st-opt-purple { background-color: #faf5ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .st-opt-orange { background-color: #fff7ed !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-container {
+          border-color: #000; /* High contrast print border */
+          box-shadow: none;
+        }
+        .st-row-1, .st-job-box, .st-track-info, .st-track-qr-container {
+          border-color: #000;
+        }
+        .st-job-box { background-color: #fce7f3 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-deliver-header { background-color: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .st-page-badge { border-color: #000; }
+        .st-row-2 { border-bottom-color: #000; }
       }
     </style>
     ${labelsHTML}

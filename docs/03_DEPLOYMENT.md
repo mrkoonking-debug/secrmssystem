@@ -8,13 +8,23 @@
 
 ## 🔄 ขั้นตอน Deploy (ทำทุกครั้งหลังแก้โค้ด)
 
-### คำสั่งสั้น (รันทีเดียวจบ)
+### คำสั่งสั้น (รันทีเดียวจบ) — Deploy ทั้งสอง URL พร้อมกัน
 
 ```bash
-npm run build && npx firebase deploy
+npm run build && npx firebase deploy --only hosting
 ```
 
-> คำสั่งนี้จะ: **Build** ไฟล์เว็บก่อน → แล้ว **Deploy** ขึ้น Firebase อัตโนมัติ
+> ✅ คำสั่งนี้จะ build แล้ว deploy ไปทั้ง **secrmssystem.web.app** และ **my-sec-claim-system.web.app** พร้อมกัน
+
+> ⚠️ **ห้ามใช้** `--only hosting:secrmssystem` เด็ดขาด — จะ deploy แค่ site เดียว อีก site จะยังเป็นเวอร์ชั่นเก่า!
+
+---
+
+### หลัง Deploy เสร็จ — ต้องล้าง Cache เบราว์เซอร์
+
+เพราะระบบนี้เป็น PWA (มี Service Worker) เบราว์เซอร์จะ Cache เวอร์ชั่นเก่าไว้ กด Hard Refresh เสมอ:
+- **Windows/Linux:** `Ctrl + Shift + R`
+- **Mac:** `Cmd + Shift + R`
 
 ---
 
@@ -34,15 +44,12 @@ npm run build
 - สร้างโฟลเดอร์ `dist/` ที่มีไฟล์ HTML/CSS/JS พร้อม deploy
 - รอจนขึ้นว่า `✓ built in X.XXs`
 
-**ขั้นตอนที่ 3: Deploy ขึ้น Firebase**
+**ขั้นตอนที่ 3: Deploy ขึ้น Firebase (ทั้งสอง URL)**
 ```bash
-npx firebase deploy
+npx firebase deploy --only hosting
 ```
-- หรือถ้าต้องการ deploy แค่ส่วน Hosting (เร็วกว่า):
-  ```bash
-  npx firebase deploy --only hosting
-  ```
 - รอจนขึ้นว่า `✔ Deploy complete!`
+- ต้องเห็น `release complete` ทั้งสอง site
 
 ---
 

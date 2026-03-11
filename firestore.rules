@@ -15,11 +15,12 @@ service cloud.firestore {
     
     // 2. RMAs Collection
     match /rmas/{rmaId} {
-      // Public: read a single document (for customer tracking by RMA ID)
+      // Public: read a single document by ID (for customer tracking)
       allow get: if true;
       
-      // Staff only: list/query the entire collection
-      allow list: if isAuth();
+      // Public: allow limited list queries (max 10 results)
+      // App-level code enforces exact-match search — no partial queries sent
+      allow list: if isAuth() || request.query.limit <= 10;
       
       // Staff: update and delete
       allow update, delete: if isAuth();

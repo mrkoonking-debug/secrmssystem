@@ -13,16 +13,25 @@ export const CustomerStatus: React.FC = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q');
   const [rmas, setRMAs] = useState<RMA[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!query); // Start as true if query exists
+  const [searched, setSearched] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
     if (query) {
       setLoading(true);
+      setSearched(false);
       const search = async () => {
-        const results = await MockDb.searchRMAsPublic(query);
-        setRMAs(results);
-        setLoading(false);
+        try {
+          const results = await MockDb.searchRMAsPublic(query);
+          setRMAs(results);
+        } catch (err) {
+          console.error('Search error:', err);
+          setRMAs([]);
+        } finally {
+          setLoading(false);
+          setSearched(true);
+        }
       };
       search();
     }
@@ -48,7 +57,10 @@ export const CustomerStatus: React.FC = () => {
     );
   }
 
-  if (!query || rmas.length === 0) {
+  // Filter out any undefined/null items that mapDocToRMA might return
+  const validRmas = rmas.filter((r): r is RMA => r != null);
+
+  if (!query || (searched && validRmas.length === 0)) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] dark:bg-black pt-20 px-4 flex flex-col items-center">
         <h2 className="text-4xl font-bold mb-4">{t('public.notFound')}</h2>
@@ -76,18 +88,18 @@ export const CustomerStatus: React.FC = () => {
         <div className="mb-12 animate-slide-up">
           <div className="text-[11px] font-bold text-[#0071e3] uppercase tracking-wider mb-1">{t('track.reference')}</div>
           <h1 className="text-3xl md:text-4xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">
-            {rmas[0].groupRequestId || rmas[0].id}
-            {rmas[0].quotationNumber && (
+            {validRmas[0].groupRequestId || validRmas[0].id}
+            {validRmas[0].quotationNumber && (
               <span className="ml-3 bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-sm px-3 py-1 rounded-lg border border-gray-200 dark:border-[#424245] align-middle">
-                Ref: {rmas[0].quotationNumber}
+                Ref: {validRmas[0].quotationNumber}
               </span>
             )}
           </h1>
-          <p className="text-[#86868b] text-lg mt-2">{rmas[0].customerName}</p>
+          <p className="text-[#86868b] text-lg mt-2">{validRmas[0].customerName}</p>
         </div>
 
         <div className="space-y-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          {rmas.map((rma) => {
+          {validRmas.map((rma) => {
             const currentStep = getStepStatus(rma.status);
             const steps = [
               { label: t('statusSteps.received'), icon: Package },

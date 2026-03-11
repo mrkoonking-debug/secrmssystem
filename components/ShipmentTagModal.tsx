@@ -224,7 +224,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
 
                     {/* Tracking IDs Section */}
                     <div>
-                        <h3 className="text-sm font-semibold text-[#1d1d1f] dark:text-white mb-4">รายการ Tracking ID ({trackingIds.length} กล่อง)</h3>
+                        <h3 className="text-sm font-semibold text-[#1d1d1f] dark:text-white mb-4">รายการ EMS / Tracking No. ({trackingIds.length} กล่อง)</h3>
                         <div className="space-y-3">
                             {trackingIds.map((tid, index) => (
                                 <div key={index} className="flex items-center gap-3">
@@ -233,7 +233,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                                         type="text"
                                         value={tid}
                                         onChange={(e) => handleTrackingIdChange(index, e.target.value)}
-                                        placeholder="กรอก Tracking ID... (เว้นว่างไว้ได้)"
+                                        placeholder="กรอก EMS / Tracking No. (เว้นว่างไว้ได้)"
                                         className="flex-1 px-4 py-2 bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#0071e3] outline-none text-[#1d1d1f] dark:text-white text-sm"
                                     />
                                     {/* Action buttons mirroring UI */}
@@ -255,7 +255,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                             onClick={handleAddTrackingId}
                             className="mt-4 w-full py-3 border border-dashed border-gray-300 dark:border-[#444] rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#0071e3] dark:hover:text-[#2997ff] hover:border-[#0071e3] dark:hover:border-[#2997ff] transition-all flex justify-center items-center gap-2 font-medium text-sm"
                         >
-                            <Plus className="w-4 h-4" /> เพิ่ม Tracking ID (กล่องที่ {trackingIds.length + 1})
+                            <Plus className="w-4 h-4" /> เพิ่ม EMS / Tracking No. (กล่องที่ {trackingIds.length + 1})
                         </button>
                     </div>
 
