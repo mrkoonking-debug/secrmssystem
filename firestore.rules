@@ -36,5 +36,6 @@ service cloud.firestore {
     match /brands/{d} { allow read: if true; allow write: if isAuth(); }
     match /distributors/{d} { allow read: if true; allow write: if isAuth(); }
     match /settings/{d} { allow read: if true; allow write: if isAuth(); }
+    match /counters/{d} { allow read, write: if isAuth(); }
   }
 }
