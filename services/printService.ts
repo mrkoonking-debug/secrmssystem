@@ -57,286 +57,170 @@ const getImagesHTML = (rma: RMA) => {
    SHARED STYLES
 ───────────────────────────────────────────── */
 const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
-  const isOrange = theme === 'orange';
-  const primary = isOrange ? '#ea580c' : '#2563eb';
-  const dark = isOrange ? '#9a3412' : '#0b57d0';
-  const light = isOrange ? '#fed7aa' : '#d1ddf0';
-  const bgLight = isOrange ? '#ffedd5' : '#e8f0fe';
-  const border = isOrange ? '#fdba74' : '#c5d5f0';
-
   return `
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
+    * { box-sizing: border-box; margin: 0; padding: 0;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       color-adjust: exact !important;
     }
-
-    body { background: #f0f0f0; }
+    body { background: #e5e5e5; }
 
     .print-doc {
-      font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
       color: #1d1d1f;
-      line-height: 1.5;
+      line-height: 1.55;
       width: 210mm;
       min-height: 297mm;
-      padding: 12mm 14mm 14mm;
+      padding: 16mm 18mm;
       margin: 0 auto;
       background: #fff;
-      position: relative;
     }
 
-    /* ── COMBINED HEADER ── */
-    .doc-header-wrapper {
+    /* ═══  HEADER  ═══ */
+    .doc-header {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 24px;
-      padding-bottom: 24px;
-      border-bottom: 3px solid #1d1d1f;
-    }
-    .doc-header-left {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
-      flex: 1;
-    }
-    .doc-header-logo {
-      height: 48px;
-      width: auto;
-      object-fit: contain;
-    }
-    .doc-header-company {
-      margin-top: 4px;
-    }
-    .co-name {
-      font-size: 11px;
-      font-weight: 700;
-      color: #1d1d1f;
-      margin-bottom: 2px;
-    }
-    .co-details {
-      font-size: 11px;
-      color: #1d1d1f;
-      line-height: 1.6;
-    }
-    
-    .doc-header-title {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 0;
-      color: ${primary}; /* Bright blue matching reference */
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #2563eb;
       margin-bottom: 24px;
     }
-    .doc-header-subtitle {
-      font-size: 11px;
-      color: #9ca3af;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-top: 2px;
+    .doc-logo { height: 42px; width: auto; }
+    .doc-company { flex: 1; }
+    .doc-company-name {
+      font-size: 14px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.01em;
+    }
+    .doc-company-info {
+      font-size: 9.5px; color: #6e6e73; line-height: 1.5; margin-top: 2px;
     }
 
-    .doc-header-right {
-      text-align: right;
-      flex: 1;
-      padding-bottom: 8px;
-    }
-    .doc-ref-label {
-      font-size: 11px;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 700;
-    }
-    .doc-ref-no {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+    /* ═══  DOCUMENT TITLE  ═══ */
+    .doc-title-section { margin-bottom: 24px; }
+    .doc-title {
       font-family: 'Inter', sans-serif;
-      color: #1d1d1f;
-      margin: 4px 0 8px;
-      line-height: 1;
+      font-size: 28px; font-weight: 700; color: #2563eb;
+      letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px;
     }
-    .doc-ref-date {
-      font-size: 12px;
-      color: #555;
-      font-weight: 500;
-      margin-top: 4px;
+    .doc-subtitle {
+      font-size: 12px; color: #6e6e73; text-transform: uppercase;
+      letter-spacing: 0.04em; font-weight: 500;
+    }
+    .doc-meta {
+      display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .doc-meta-item { font-size: 12px; color: #6e6e73; }
+    .doc-meta-item strong { color: #1d1d1f; font-weight: 600; }
+
+    /* ═══  INFO CARDS  ═══ */
+    .info-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-bottom: 28px;
+    }
+    .info-card {
+      background: #f0f5ff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      border-left: 3px solid #2563eb;
+    }
+    .info-card-label {
+      font-size: 10px; font-weight: 600; color: #2563eb;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .info-card-name {
+      font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 2px;
+    }
+    .info-card-detail { font-size: 11px; color: #6e6e73; line-height: 1.5; }
+
+    /* ═══  TABLE  ═══ */
+    .section-label {
+      font-size: 11px; font-weight: 600; color: #2563eb;
+      text-transform: uppercase; letter-spacing: 0.03em;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, #bfdbfe, transparent);
+    }
+    .section-count {
+      background: #2563eb; color: #fff; font-size: 9px; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px;
     }
 
-    .parties-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .party-box {
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
-      padding: 16px;
-      background: #fff;
-    }
-    .party-box-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: ${primary};
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .party-box-label::before {
-      content: '';
-      display: inline-block;
-      width: 4px;
-      height: 14px;
-      background: ${primary};
-      border-radius: 4px;
-    }
-    .party-name { font-size: 14px; font-weight: 700; color: #1d1d1f; margin-bottom: 2px; }
-    .party-detail { font-size: 10px; color: #666; line-height: 1.6; }
-    .party-divider {
-      margin: 12px 0;
-      border-top: 1px dashed #e5e5ea;
-    }
-
-    /* ── SECTION TITLE ── */
-    .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: ${primary};
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(to right, ${light}, transparent);
-    }
-    .section-title .count-badge {
-      background: ${primary};
-      color: white;
-      font-size: 9px;
-      padding: 1px 6px;
-      border-radius: 10px;
-    }
-
-
-    /* ── ITEMS TABLE ── */
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 24px;
-      font-size: 11px;
-    }
+    .items-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .items-table th {
-      background-color: #fff;
-      color: ${primary};
-      font-weight: 700;
-      text-align: center;
-      padding: 6px 8px;
-      border-top: 2px solid ${primary};
-      border-bottom: 2px solid ${primary};
+      text-align: left; font-size: 10px; font-weight: 600; color: #2563eb;
+      text-transform: uppercase; letter-spacing: 0.03em; padding: 10px 12px;
+      border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;
     }
-    .items-table th.align-left { text-align: left; }
+    .items-table th.center { text-align: center; }
     .items-table td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #e5e5ea;
-      vertical-align: top;
+      padding: 14px 12px; border-bottom: 0.5px solid #e5e7eb;
+      vertical-align: top; color: #1d1d1f;
     }
-    .items-table td.align-center { text-align: center; }
-    .items-table td.align-right { text-align: right; }
-    
-    .item-brand-model { font-weight: 700; color: #1d1d1f; margin-bottom: 4px; font-size: 12px; }
-    .item-desc { color: #555; font-size: 10px; line-height: 1.4; }
-    .item-sn { font-family: 'Inter', monospace; margin-top: 4px; font-size: 10px; color: #333; }
-    
-    .table-summary {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      margin-top: 10px;
+    .items-table td.center { text-align: center; color: #6e6e73; }
+
+    .item-name { font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; }
+    .item-detail { font-size: 10.5px; color: #6e6e73; line-height: 1.5; }
+    .item-serial {
+      display: inline-block; font-family: 'Inter', 'SF Mono', monospace;
+      font-size: 10px; color: #1d1d1f; background: #f0f5ff;
+      padding: 2px 8px; border-radius: 4px; margin-top: 6px;
+      border: 0.5px solid #bfdbfe;
     }
-    .table-summary td {
-      padding: 4px 8px;
-      text-align: right;
-    }
-    .table-summary td:nth-child(1) {
-      color: ${dark};
-      font-weight: 700;
-    }
-    .table-summary td:nth-child(2) {
-      width: 80px;
-      color: #1d1d1f;
-      font-weight: 700;
-      font-size: 13px;
-    }
-    
-    .remarks-section {
-      margin-top: 40px;
-      font-size: 10px;
-      color: #1d1d1f;
-      line-height: 1.5;
-    }
-    .remarks-label {
-      color: ${dark};
-      font-weight: 700;
-      margin-bottom: 6px;
+    .item-serial-new {
+      display: inline-block; font-family: 'Inter', 'SF Mono', monospace;
+      font-size: 10px; color: #166534; background: #f0fdf4;
+      padding: 2px 8px; border-radius: 4px; margin-top: 3px;
+      border: 0.5px solid #bbf7d0;
     }
 
-    /* ── FOOTER / SIGNATURES ── */
-    .footer-section {
-      margin-top: 40px;
-      padding-top: 14px;
-      border-top: 2px solid #e5e5ea;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      page-break-inside: avoid;
+    /* ═══  SUMMARY  ═══ */
+    .summary-row {
+      display: flex; justify-content: flex-end; align-items: baseline;
+      gap: 16px; padding: 10px 12px;
+      border-top: 2px solid #2563eb;
+      margin-bottom: 28px;
     }
-    .sig-box {
-      border: 1px dashed ${border};
+    .summary-label { font-size: 12px; color: #6e6e73; font-weight: 500; }
+    .summary-value {
+      font-family: 'Inter', sans-serif; font-size: 16px;
+      font-weight: 700; color: #2563eb;
+    }
+
+    /* ═══  REMARKS  ═══ */
+    .remarks { margin-bottom: 36px; font-size: 10px; color: #6e6e73; line-height: 1.7; }
+    .remarks-title {
+      font-size: 10px; font-weight: 600; color: #2563eb;
+      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;
+    }
+
+    /* ═══  SIGNATURES  ═══ */
+    .signatures {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-top: auto; page-break-inside: avoid;
+    }
+    .sig-block {
+      border: 1px dashed #bfdbfe;
       border-radius: 8px;
       padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 120px;
+      min-height: 100px;
+      display: flex; flex-direction: column; justify-content: space-between;
     }
-    .sig-title {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: ${primary};
-      margin-bottom: 30px;
+    .sig-label {
+      font-size: 10px; font-weight: 600; color: #2563eb;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 36px;
     }
-    .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
-    .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 6px; }
-    .sig-name-label { font-size: 9px; color: #86868b; }
+    .sig-line { border-bottom: 0.5px solid #1d1d1f; margin-bottom: 6px; }
+    .sig-helper { display: flex; justify-content: space-between; }
+    .sig-helper-text { font-size: 9px; color: #86868b; }
 
     @media print {
       @page { size: A4; margin: 0; }
       body { background: white; }
-      .print-doc { width: 210mm; min-height: 297mm; padding: 10mm 12mm; }
+      .print-doc { width: 210mm; min-height: 297mm; padding: 14mm 16mm; }
     }
   </style>
 `;
@@ -359,13 +243,13 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
 
     return `
       <tr>
-        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
-        <td style="padding-top: 16px; padding-left: 12px;">
-          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
-          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc" style="color: #666;">อุปกรณ์ที่ส่ง: ${accString}</div>
-          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c; margin-top: 2px;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
-          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
+        <td class="center">${index + 1}</td>
+        <td>
+          <div class="item-name">${item.brand} ${item.productModel}</div>
+          <div class="item-detail">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-detail">อุปกรณ์ที่ส่ง: ${accString}</div>
+          ${item.deviceUsername ? `<div class="item-detail" style="color:#ea580c;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
+          <div class="item-serial">S/N: ${item.serialNumber}</div>
         </td>
         <td></td>
       </tr>
@@ -376,97 +260,75 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
     ${getCommonStyles('blue')}
     <div class="print-doc">
 
-      <!-- HEADER BAR -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px;">
-        <img src="${settings.logoUrl || '/logo.png'}" style="height: 60px; width: auto;" alt="logo" />
-        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
-          <div style="font-size: 20px; font-weight: 700; color: #333;">${settings.nameTh}</div>
-          <div style="font-size: 11px; color: #666; margin-top: 6px; line-height: 1.5;">
-            ${settings.address} | TAX ID: ${settings.taxId}<br/>
-            Tel: ${settings.tel} | Web: www.sectechnology.co.th
-          </div>
-        </div>
-      </div>
-      
-      <div style="height: 2px; background-color: #2563eb; margin-bottom: 20px;"></div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-        <div>
-          <div style="font-size: 24px; font-weight: 700; color: #2563eb;">ใบส่งเคลมสินค้า</div>
-          <div style="font-size: 14px; color: #555; margin-top: 4px; text-transform: uppercase;">DISTRIBUTOR RMA REQUEST FORM</div>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">REFERENCE NO.</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
-          <div style="font-size: 11px; color: #555; margin-top: 2px;">Date: ${today}</div>
+      <div class="doc-header">
+        <img src="${settings.logoUrl || '/logo.png'}" class="doc-logo" alt="logo" />
+        <div class="doc-company">
+          <div class="doc-company-name">${settings.nameTh}</div>
+          <div class="doc-company-info">${settings.address} | TAX ID: ${settings.taxId} | Tel: ${settings.tel}</div>
         </div>
       </div>
 
-      <!-- PARTIES -->
-      <div class="parties-grid">
-        <div class="party-box">
-          <div class="party-box-label">TO: DISTRIBUTOR (เรียน ผู้นำเข้า)</div>
-          <div class="party-name">${rma.distributor}</div>
-          <div class="party-detail">RMA / Service Department</div>
-        </div>
-        <div class="party-box">
-          <div class="party-box-label">FROM: OUR COMPANY (จาก)</div>
-          <div class="party-name">${settings.nameEn}</div>
-          <div class="party-detail">Attn: Technical Support Dept.</div>
+      <div class="doc-title-section">
+        <div class="doc-title">ใบส่งเคลมสินค้า</div>
+        <div class="doc-subtitle">Distributor RMA Request Form</div>
+        <div class="doc-meta">
+          <div class="doc-meta-item">Ref: <strong>${rma.groupRequestId || rma.quotationNumber || rma.id}</strong></div>
+          <div class="doc-meta-item">วันที่: <strong>${today}</strong></div>
         </div>
       </div>
 
-      <!-- ITEMS (TABLE) -->
-      <div class="section-title">
-        PRODUCT INFORMATION <span class="count-badge">${rmas.length} ITEMS</span>
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">เรียน ผู้นำเข้า / To: Distributor</div>
+          <div class="info-card-name">${rma.distributor}</div>
+          <div class="info-card-detail">RMA / Service Department</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">จาก / From</div>
+          <div class="info-card-name">${settings.nameEn}</div>
+          <div class="info-card-detail">Technical Support Dept.</div>
+        </div>
       </div>
 
-      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+      <div class="section-label">รายการสินค้า <span class="section-count">${rmas.length} รายการ</span></div>
+
+      <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
-            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
-            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+            <th class="center" style="width:5%;">#</th>
+            <th style="width:75%;">รายละเอียด</th>
+            <th style="width:20%;">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
+        <tbody>${tableRows}</tbody>
       </table>
-      
-      <table class="table-summary">
-        <tr>
-          <td>รวมจำนวนสินค้าเคลม</td>
-          <td>${rmas.length} ชิ้น</td>
-        </tr>
-      </table>
-      
-      <div class="remarks-section">
-        <div class="remarks-label">หมายเหตุ</div>
-        <div>- กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
-        <div>- หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
+
+      <div class="summary-row">
+        <span class="summary-label">รวมจำนวนสินค้าเคลม</span>
+        <span class="summary-value">${rmas.length} ชิ้น</span>
       </div>
 
-      <!-- SIGNATURES -->
-      <div class="footer-section">
-        <div class="sig-box">
-          <div class="sig-title">ผู้ส่ง / SENT BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
-            </div>
+      <div class="remarks">
+        <div class="remarks-title">หมายเหตุ</div>
+        <div>• กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
+        <div>• หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
+      </div>
+
+      <div class="signatures">
+        <div class="sig-block">
+          <div class="sig-label">ผู้ส่ง / Sent By</div>
+          <div class="sig-line"></div>
+          <div class="sig-helper">
+            <span class="sig-helper-text">ลงชื่อ / Signature</span>
+            <span class="sig-helper-text">วันที่ / Date ____________</span>
           </div>
         </div>
-        <div class="sig-box">
-          <div class="sig-title">ผู้รับ / RECEIVED BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
-            </div>
+        <div class="sig-block">
+          <div class="sig-label">ผู้รับ / Received By</div>
+          <div class="sig-line"></div>
+          <div class="sig-helper">
+            <span class="sig-helper-text">ลงชื่อ / Signature</span>
+            <span class="sig-helper-text">วันที่ / Date ____________</span>
           </div>
         </div>
       </div>
@@ -497,14 +359,15 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
 
     return `
       <tr>
-        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
-        <td style="padding-top: 16px; padding-left: 12px;">
-          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
-          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc" style="color: #666;">อุปกรณ์ที่คืน: ${accString}</div>
-          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
+        <td class="center">${index + 1}</td>
+        <td>
+          <div class="item-name">${item.brand} ${item.productModel}</div>
+          <div class="item-detail">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-detail">การดำเนินการ: ${actionText}</div>
+          <div class="item-detail">อุปกรณ์ที่คืน: ${accString}</div>
+          <div class="item-serial">S/N: ${item.serialNumber}</div>
           ${item.resolution?.replacedSerialNumber
-        ? `<div class="item-sn" style="color:#137333;">New S/N: ${item.resolution.replacedSerialNumber}</div>`
+        ? `<div class="item-serial-new">New S/N: ${item.resolution.replacedSerialNumber}</div>`
         : ''}
         </td>
         <td></td>
@@ -516,100 +379,75 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
     ${getCommonStyles('blue')}
     <div class="print-doc">
 
-      <!-- HEADER BAR -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px;">
-        <img src="${settings.logoUrl || '/logo.png'}" style="height: 60px; width: auto;" alt="logo" />
-        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
-          <div style="font-size: 20px; font-weight: 700; color: #333;">${settings.nameTh}</div>
-          <div style="font-size: 11px; color: #666; margin-top: 6px; line-height: 1.5;">
-            ${settings.address} | TAX ID: ${settings.taxId}<br/>
-            Tel: ${settings.tel} | Web: www.sectechnology.co.th
-          </div>
-        </div>
-      </div>
-      
-      <div style="height: 2px; background-color: #2563eb; margin-bottom: 20px;"></div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
-        <div>
-          <div style="font-size: 24px; font-weight: 700; color: #2563eb;">ใบส่งคืนสินค้าเคลม</div>
-          <div style="font-size: 14px; color: #555; margin-top: 4px;">Product Return Note</div>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
+      <div class="doc-header">
+        <img src="${settings.logoUrl || '/logo.png'}" class="doc-logo" alt="logo" />
+        <div class="doc-company">
+          <div class="doc-company-name">${settings.nameTh}</div>
+          <div class="doc-company-info">${settings.address} | TAX ID: ${settings.taxId} | Tel: ${settings.tel}</div>
         </div>
       </div>
 
-      <!-- PARTIES -->
-      <div class="parties-grid">
-        <div class="party-box" style="padding: 12px 16px;">
-          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">CUSTOMER DETAILS (ลูกค้า)</div>
-          <div class="party-name">${rma.customerName}</div>
-          <div class="party-detail" style="margin-top: 4px;">
-            ${rma.customerPhone ? `Tel: ${rma.customerPhone}<br/>` : ''}
-            ${rma.customerEmail ? `Email: ${rma.customerEmail}<br/>` : ''}
-          </div>
-        </div>
-        <div class="party-box" style="padding: 12px 16px;">
-          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">SERVICE STATUS (สถานะ)</div>
-          <div style="font-size: 14px; font-weight: 700; color: #1d1d1f; text-transform: uppercase;">
-             ${rma.status.replace('_', ' ')}
-          </div>
+      <div class="doc-title-section">
+        <div class="doc-title">ใบส่งคืนสินค้า</div>
+        <div class="doc-subtitle">Product Return Note</div>
+        <div class="doc-meta">
+          <div class="doc-meta-item">Ref: <strong>${rma.groupRequestId || rma.quotationNumber || rma.id}</strong></div>
+          <div class="doc-meta-item">วันที่: <strong>${today}</strong></div>
+          <div class="doc-meta-item">สถานะ: <strong>${statusText.label}</strong></div>
         </div>
       </div>
 
-      <!-- ITEMS (TABLE) -->
-      <div class="section-title">
-        SERVICE ITEM DETAILS
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-label">ข้อมูลลูกค้า / Customer</div>
+          <div class="info-card-name">${rma.customerName}</div>
+          <div class="info-card-detail">
+            ${rma.customerPhone ? `Tel: ${rma.customerPhone}` : ''}
+            ${rma.customerPhone && rma.customerEmail ? ' · ' : ''}
+            ${rma.customerEmail ? `Email: ${rma.customerEmail}` : ''}
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">ศูนย์บริการ / Service Center</div>
+          <div class="info-card-name">${settings.nameEn}</div>
+          <div class="info-card-detail">${settings.address}</div>
+        </div>
       </div>
 
-      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+      <div class="section-label">รายการสินค้า <span class="section-count">${rmas.length} รายการ</span></div>
+
+      <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
-            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
-            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+            <th class="center" style="width:5%;">#</th>
+            <th style="width:75%;">รายละเอียด</th>
+            <th style="width:20%;">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
+        <tbody>${tableRows}</tbody>
       </table>
-      
-      <table class="table-summary">
-        <tr>
-          <td></td>
-          <td></td>
-        </tr>
-      </table>
-      
-      <div class="remarks-section">
-        <div class="remarks-label">หมายเหตุ</div>
-        <div>- การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
-        <div>- สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
+
+      <div class="remarks">
+        <div class="remarks-title">หมายเหตุ</div>
+        <div>• การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
+        <div>• สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
       </div>
 
-      <!-- SIGNATURES -->
-      <div class="footer-section">
-        <div class="sig-box">
-          <div class="sig-title" style="color: #0b57d0;">ผู้ส่ง / SENT BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
-            </div>
+      <div class="signatures">
+        <div class="sig-block">
+          <div class="sig-label">ผู้ส่ง / Sent By</div>
+          <div class="sig-line"></div>
+          <div class="sig-helper">
+            <span class="sig-helper-text">ลงชื่อ / Signature</span>
+            <span class="sig-helper-text">วันที่ / Date ____________</span>
           </div>
         </div>
-        <div class="sig-box">
-          <div class="sig-title" style="color: #0b57d0;">ผู้รับ / RECEIVED BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
-            </div>
+        <div class="sig-block">
+          <div class="sig-label">ผู้รับ / Received By</div>
+          <div class="sig-line"></div>
+          <div class="sig-helper">
+            <span class="sig-helper-text">ลงชื่อ / Signature</span>
+            <span class="sig-helper-text">วันที่ / Date ____________</span>
           </div>
         </div>
       </div>
