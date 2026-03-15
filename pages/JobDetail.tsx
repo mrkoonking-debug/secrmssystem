@@ -99,7 +99,7 @@ export const JobDetail: React.FC = () => {
                         navigate(`/admin/rma/${editRmaId}/edit`, { replace: true });
                     }
                 } else {
-                    // navigate('/admin/rmas'); // Optional redirect
+                    navigate('/admin/rmas');
                 }
             } catch (error) {
                 console.error("Failed to fetch job", error);
