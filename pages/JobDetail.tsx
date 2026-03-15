@@ -434,21 +434,27 @@ export const JobDetail: React.FC = () => {
                                         {/* Delete Button */}
                                         <button
                                             onClick={async () => {
-                                                if (!confirm('Are you sure you want to delete this rma? This action cannot be undone.')) return;
-                                                setLoading(true);
-                                                await MockDb.deleteRMA(item.id);
-                                                // Check if this was the last RMA in the job
-                                                const allRMAs = await MockDb.getRMAs();
-                                                const decodedId = decodeURIComponent(jobId || '');
-                                                const remaining = allRMAs.filter(c =>
-                                                    c.quotationNumber === decodedId ||
-                                                    c.groupRequestId === decodedId ||
-                                                    (c.id === decodedId)
-                                                );
-                                                if (remaining.length === 0) {
-                                                    navigate('/admin/rmas');
-                                                } else {
-                                                    await refreshRMAs();
+                                                if (!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้')) return;
+                                                try {
+                                                    setLoading(true);
+                                                    await MockDb.deleteRMA(item.id);
+                                                    // Check remaining RMAs in this job
+                                                    const allRMAs = await MockDb.getRMAs();
+                                                    const decodedId = decodeURIComponent(jobId || '');
+                                                    const remaining = allRMAs.filter(c =>
+                                                        c.quotationNumber === decodedId ||
+                                                        c.groupRequestId === decodedId ||
+                                                        (c.id === decodedId)
+                                                    );
+                                                    if (remaining.length === 0) {
+                                                        navigate('/admin/rmas');
+                                                    } else {
+                                                        setRMAs(remaining);
+                                                        setLoading(false);
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Delete failed:', err);
+                                                    alert('ลบไม่สำเร็จ: ' + (err as any)?.message || 'Unknown error');
                                                     setLoading(false);
                                                 }
                                             }}
