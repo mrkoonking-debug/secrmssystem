@@ -305,16 +305,18 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
       align-items: center;
       gap: 12px;
       padding: 10px 16px;
-      background: ${primary};
-      color: white;
+      background: #f0f4ff;
+      color: ${dark};
+      border: 1px solid ${light};
+      border-top: none;
       border-radius: 0 0 6px 6px;
       margin-bottom: 28px;
       font-size: 12px;
     }
-    .table-summary-bar .summary-label { font-weight: 400; opacity: 0.85; }
+    .table-summary-bar .summary-label { font-weight: 400; color: #555; }
     .table-summary-bar .summary-value {
       font-family: 'Inter', sans-serif;
-      font-weight: 700; font-size: 15px;
+      font-weight: 700; font-size: 15px; color: ${primary};
     }
     
     /* ── REMARKS ── */
@@ -367,6 +369,8 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
     .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
     .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 6px; }
     .sig-name-label { font-size: 9px; color: #86868b; }
+    .sig-date-label { font-size: 9px; color: #86868b; }
+    .sig-date-line { display: inline-block; border-bottom: 1px solid #1d1d1f; width: 150px; margin-left: 4px; }
 
     @media print {
       @page { size: A4; margin: 0; }
@@ -387,10 +391,22 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const tableRows = rmas.map((item, index) => {
-    const accList = item.distributorSentItems && item.distributorSentItems.length > 0
-      ? item.distributorSentItems
-      : item.accessories;
-    const accString = accList.length > 0 ? accList.map(a => formatAccessory(a)).join(', ') : 'Unit Only (เฉพาะเครื่อง)';
+    const sentItems = item.distributorSentItems || [];
+    const allAcc = item.accessories || [];
+    
+    // If sentItems is set, use it. Otherwise fallback to all accessories
+    let sentString: string;
+    let keptString: string;
+    
+    if (sentItems.length > 0) {
+      const sentFormatted = sentItems.map(a => a === 'unit' ? 'ตัวเครื่อง (Unit)' : formatAccessory(a));
+      sentString = sentFormatted.join(', ');
+      const keptItems = allAcc.filter(a => !sentItems.includes(a));
+      keptString = keptItems.length > 0 ? keptItems.map(a => formatAccessory(a)).join(', ') : '';
+    } else {
+      sentString = 'Unit Only (เฉพาะเครื่อง)';
+      keptString = allAcc.length > 0 ? allAcc.map(a => formatAccessory(a)).join(', ') : '';
+    }
 
     return `
       <tr>
@@ -398,7 +414,8 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         <td style="padding-left: 12px;">
           <div class="item-brand-model">${item.brand} ${item.productModel}</div>
           <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc">อุปกรณ์ที่ส่ง: ${accString}</div>
+          <div class="item-desc">อุปกรณ์ที่ส่ง: ${sentString}</div>
+          ${keptString ? `<div class="item-desc" style="color:#86868b;">เก็บไว้ที่ร้าน: ${keptString}</div>` : ''}
           ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
           <div class="item-sn">S/N: ${item.serialNumber}</div>
         </td>
@@ -474,29 +491,35 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
       
       <div class="remarks-card">
         <div class="remarks-card-title">หมายเหตุ / Remarks</div>
-        <div>• กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
-        <div>• หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
+        <div>1. กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
+        <div style="margin-top: 4px;">2. เมื่อดำเนินการเสร็จสิ้น กรุณาส่งคืนสินค้าพร้อมอุปกรณ์ที่แนบมาตามรายการด้านบนให้ครบถ้วน</div>
       </div>
 
       <!-- SIGNATURES -->
       <div class="footer-section">
         <div class="sig-box">
           <div class="sig-title">ผู้ส่ง / SENT BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
+          <div style="display: flex; gap: 24px; margin-top: 8px; align-items: flex-end;">
+            <div style="flex: 1;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">ลงชื่อ / Signature</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
+            </div>
+            <div style="width: 40%;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">วันที่ / Date</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
             </div>
           </div>
         </div>
         <div class="sig-box">
           <div class="sig-title">ผู้รับ / RECEIVED BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
+          <div style="display: flex; gap: 24px; margin-top: 8px; align-items: flex-end;">
+            <div style="flex: 1;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">ลงชื่อ / Signature</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
+            </div>
+            <div style="width: 40%;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">วันที่ / Date</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
             </div>
           </div>
         </div>
@@ -532,9 +555,10 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
         <td style="padding-left: 12px;">
           <div class="item-brand-model">${item.brand} ${item.productModel}</div>
           <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc">การดำเนินการ: ${actionText}</div>
           <div class="item-desc">อุปกรณ์ที่คืน: ${accString}</div>
           <div class="item-sn">S/N: ${item.serialNumber}</div>
-          ${item.resolution?.replacedSerialNumber
+          ${item.resolution?.replacedSerialNumber && item.resolution?.actionTaken !== 'replaced_component'
         ? `<div class="item-sn-new">New S/N: ${item.resolution.replacedSerialNumber}</div>`
         : ''}
         </td>
@@ -569,24 +593,18 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
           <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
+          <div style="font-size: 11px; color: #555; margin-top: 2px;">Date: ${today}</div>
         </div>
       </div>
 
-      <!-- PARTIES -->
-      <div class="parties-grid">
-        <div class="party-box">
-          <div class="party-box-label">CUSTOMER DETAILS (ลูกค้า)</div>
-          <div class="party-name">${rma.customerName}</div>
-          <div class="party-detail" style="margin-top: 4px;">
-            ${rma.customerPhone ? `Tel: ${rma.customerPhone}<br/>` : ''}
-            ${rma.customerEmail ? `Email: ${rma.customerEmail}<br/>` : ''}
-          </div>
-        </div>
-        <div class="party-box">
-          <div class="party-box-label">SERVICE STATUS (สถานะ)</div>
-          <div style="font-size: 14px; font-weight: 700; color: #1d1d1f; text-transform: uppercase;">
-             ${statusText.label}
-          </div>
+      <!-- CUSTOMER INFO -->
+      <div class="party-box" style="margin-bottom: 20px;">
+        <div class="party-box-label">CUSTOMER DETAILS (ลูกค้า)</div>
+        <div class="party-name">${rma.customerName}</div>
+        <div class="party-detail" style="margin-top: 4px;">
+          ${rma.customerPhone ? `Tel: ${rma.customerPhone}` : ''}
+          ${rma.customerPhone && rma.customerEmail ? ' · ' : ''}
+          ${rma.customerEmail ? `Email: ${rma.customerEmail}` : ''}
         </div>
       </div>
 
@@ -613,29 +631,35 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
       
       <div class="remarks-card">
         <div class="remarks-card-title">หมายเหตุ / Remarks</div>
-        <div>• การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
-        <div>• สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
+        <div>1. ได้รับสินค้าข้างบนนี้เรียบร้อยแล้ว</div>
+        <div style="margin-top: 6px;">2. สินค้าตามใบส่งของนี้ หากมีการเสียหายหรือไม่ครบจำนวน โปรดแจ้งทางบริษัทฯทราบภายใน 7 วัน มิฉะนั้นบริษัทฯจะไม่รับผิดชอบความเสียหายใดๆทั้งสิ้น (ไม่มีใบรับประกันทางบริษัทจะไม่รับเคลมสินค้า)</div>
       </div>
 
       <!-- SIGNATURES -->
       <div class="footer-section">
         <div class="sig-box">
           <div class="sig-title">ผู้ส่ง / SENT BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
+          <div style="display: flex; gap: 24px; margin-top: 8px; align-items: flex-end;">
+            <div style="flex: 1;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">ลงชื่อ / Signature</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
+            </div>
+            <div style="width: 40%;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">วันที่ / Date</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
             </div>
           </div>
         </div>
         <div class="sig-box">
           <div class="sig-title">ผู้รับ / RECEIVED BY</div>
-          <div>
-            <div class="sig-line"></div>
-            <div style="display: flex; justify-content: space-between;">
-              <div class="sig-name-label">ลงชื่อ / Signature</div>
-              <div class="sig-name-label">วันที่ / Date: ____________</div>
+          <div style="display: flex; gap: 24px; margin-top: 8px; align-items: flex-end;">
+            <div style="flex: 1;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">ลงชื่อ / Signature</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
+            </div>
+            <div style="width: 40%;">
+              <div style="font-size: 9px; color: #86868b; margin-bottom: 4px;">วันที่ / Date</div>
+              <div style="border-bottom: 1px dotted #999; height: 36px;"></div>
             </div>
           </div>
         </div>

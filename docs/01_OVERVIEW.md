@@ -11,8 +11,8 @@
 
 ## เทคโนโลยีที่ใช้ (Tech Stack)
 
-| ส่วน | เทคโนโลยี |
-| :--- | :--- |
+| ส่วน             |     เทคโนโลยี |
+| :---          |       :--- |
 | **Frontend** | React 18 + TypeScript |
 | **Build Tool** | Vite |
 | **Styling** | Tailwind CSS |

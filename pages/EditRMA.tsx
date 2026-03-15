@@ -42,8 +42,6 @@ export const EditRMA: React.FC = () => {
             description: `Edited: ${changeDesc}`,
             user: MockDb.getCurrentUser()?.name || 'Staff'
         });
-
-        navigate(-1);
     };
 
     const handleClose = () => {

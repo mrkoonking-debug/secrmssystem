@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RMA, RMAStatus, Team, DelayReason, ResolutionDetails } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check } from 'lucide-react';
+import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock } from 'lucide-react';
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
@@ -29,6 +29,10 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [customAction, setCustomAction] = useState('');
     const [customAccessory, setCustomAccessory] = useState('');
     const [showHddModal, setShowHddModal] = useState(false);
+    const [isAccessoriesLocked, setIsAccessoriesLocked] = useState(true);
+    const [accessoriesBackup, setAccessoriesBackup] = useState<string[]>([]);
+    const [showAccReview, setShowAccReview] = useState(false);
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
     // Team State
     const [tempTeam, setTempTeam] = useState<Team | ''>('');
@@ -197,7 +201,27 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             newDiffs.push({ field: t('submit.accessories'), old: fmtAcc(rma.accessories || []), new: fmtAcc(formData.accessories || []) });
         }
 
+        // Distributor Sent Items
+        const oldSent = (rma.distributorSentItems || []).sort().join(', ');
+        const newSent = (formData.distributorSentItems || []).sort().join(', ');
+        if (oldSent !== newSent) {
+            const fmtSent = (keys: string[]) => {
+                if (keys.length === 0) return '(ไม่ได้เลือก)';
+                return keys.map(k => k === 'unit' ? 'ตัวเครื่อง' : (k.startsWith('acc_') ? t(`accessories_list.${k}`) : k)).join(', ');
+            };
+            newDiffs.push({ field: 'อุปกรณ์ที่ส่งเคลม', old: fmtSent(rma.distributorSentItems || []), new: fmtSent(formData.distributorSentItems || []) });
+        }
+
         return newDiffs;
+    };
+
+    const handleSafeClose = () => {
+        const diffs = calculateDiffs();
+        if (diffs.length > 0) {
+            setShowUnsavedModal(true);
+        } else {
+            onClose();
+        }
     };
 
     const handlePreSave = () => {
@@ -260,7 +284,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         { value: "Other", label: t('submit.other') }
     ];
 
-    const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit" || formData.resolution?.actionTaken === "Replaced Component";
+    const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit";
 
     return (
         <div className="max-w-5xl mx-auto py-6 px-4 animate-fade-in">
@@ -278,7 +302,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <span className="font-mono whitespace-nowrap">{rma.serialNumber}</span>
                     </div>
                 </div>
-                <button onClick={onClose} className="w-fit px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors flex items-center gap-2">
+                <button onClick={handleSafeClose} className="w-fit px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors flex items-center gap-2">
                     <ArrowRight className="w-4 h-4 rotate-180" /> กลับ
                 </button>
             </div>
@@ -321,8 +345,39 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
                     {/* Accessories */}
                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-3 ml-2">{t('submit.accessories')}</label>
-                        <div className="flex flex-wrap gap-2 mb-2">
+                        <div className="flex items-center justify-between mb-3 ml-2">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase">{t('submit.accessories')}</label>
+                            {isAccessoriesLocked ? (
+                                <button type="button" onClick={() => {
+                                    setAccessoriesBackup([...(formData.accessories || [])]);
+                                    setIsAccessoriesLocked(false);
+                                }} className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl text-gray-500 hover:text-[#0071e3] hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all">
+                                    <Pencil className="w-3 h-3" /> แก้ไข
+                                </button>
+                            ) : (
+                                <div className="flex gap-1.5">
+                                    <button type="button" onClick={() => {
+                                        handleFormChange('accessories', accessoriesBackup);
+                                        setIsAccessoriesLocked(true);
+                                    }} className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                                        <RotateCcw className="w-3 h-3" /> ยกเลิก
+                                    </button>
+                                    <button type="button" onClick={() => {
+                                        const current = formData.accessories || [];
+                                        const added = current.filter(a => !accessoriesBackup.includes(a));
+                                        const removed = accessoriesBackup.filter(a => !current.includes(a));
+                                        if (added.length === 0 && removed.length === 0) {
+                                            setIsAccessoriesLocked(true);
+                                            return;
+                                        }
+                                        setShowAccReview(true);
+                                    }} className="flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-xl text-white bg-[#0071e3] hover:bg-[#0077ED] transition-all">
+                                        <Check className="w-3 h-3" /> บันทึก
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className={`flex flex-wrap gap-2 mb-2 ${isAccessoriesLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                             {['acc_box', 'acc_adapter', 'acc_hdmi', 'acc_mouse', 'acc_remote', 'acc_hdd', 'acc_cables'].map(acc => {
                                 const hddCount = acc === 'acc_hdd' ? (formData.accessories || []).filter(a => a.startsWith('acc_hdd::')).length : 0;
                                 const isActive = (formData.accessories || []).includes(acc) || hddCount > 0;
@@ -346,7 +401,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 );
                             })}
                         </div>
-                        <div className="flex gap-2 mb-2">
+                        <div className={`flex gap-2 mb-2 ${isAccessoriesLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                             <input
                                 type="text"
                                 value={customAccessory}
@@ -364,7 +419,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             </button>
                         </div>
                         {(formData.accessories || []).length > 0 && (
-                            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-[#2c2c2e] rounded-2xl border border-gray-200 dark:border-[#424245]">
+                            <div className={`flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-[#2c2c2e] rounded-2xl border border-gray-200 dark:border-[#424245] ${isAccessoriesLocked ? 'pointer-events-none' : ''}`}>
                                 {(formData.accessories || []).map((acc, idx) => (
                                     <span key={`${acc}-${idx}`} className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#3a3a3c] text-xs font-medium rounded-xl shadow-sm border border-gray-200 dark:border-[#48484a] text-[#1d1d1f] dark:text-white">
                                         {acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') ? t(`accessories_list.${acc}`) : acc)}
@@ -485,6 +540,53 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                 </div>
             </div>
 
+            {/* SECTION 3.5: อุปกรณ์ที่ส่งให้ผู้นำเข้า */}
+            {(formData.accessories || []).length > 0 && (
+                <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
+                    <h2 className="font-semibold text-lg flex items-center gap-3 mb-2 text-[#1d1d1f] dark:text-white">
+                        <span className="w-8 h-8 rounded-full bg-orange-500/10 text-orange-600 flex items-center justify-center text-sm font-bold"><Truck className="w-4 h-4" /></span>
+                        อุปกรณ์ที่ส่งเคลม
+                    </h2>
+                    <p className="text-xs text-gray-400 mb-5 ml-11">เลือกรายการที่จะส่งไปให้ผู้นำเข้า (รายการที่ไม่เลือก = เก็บไว้ที่ร้าน)</p>
+                    <div className="flex flex-wrap gap-2">
+                        {/* Unit always as option */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const current = formData.distributorSentItems || [];
+                                const isActive = current.includes('unit');
+                                handleFormChange('distributorSentItems', isActive ? current.filter(a => a !== 'unit') : [...current, 'unit']);
+                            }}
+                            className={`px-4 py-2 text-xs font-medium rounded-full border transition-all flex items-center gap-2 ${(formData.distributorSentItems || []).includes('unit')
+                                    ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                                    : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#424245] text-[#1d1d1f] dark:text-gray-300 hover:border-orange-400 hover:text-orange-500'
+                                }`}
+                        >
+                            <Box className="w-3.5 h-3.5" /> ตัวเครื่อง (Unit)
+                        </button>
+                        {(formData.accessories || []).map((acc, idx) => {
+                            const isActive = (formData.distributorSentItems || []).includes(acc);
+                            const label = acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') ? t(`accessories_list.${acc}`) : acc);
+                            return (
+                                <button
+                                    key={`${acc}-${idx}`}
+                                    type="button"
+                                    onClick={() => {
+                                        const current = formData.distributorSentItems || [];
+                                        handleFormChange('distributorSentItems', isActive ? current.filter(a => a !== acc) : [...current, acc]);
+                                    }}
+                                    className={`px-4 py-2 text-xs font-medium rounded-full border transition-all ${isActive
+                                            ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                                            : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#424245] text-[#1d1d1f] dark:text-gray-300 hover:border-orange-400 hover:text-orange-500'
+                                        }`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
             {/* SECTION 4: บันทึก */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
                 <h2 className="font-semibold text-lg flex items-center gap-3 mb-6 text-[#1d1d1f] dark:text-white">
@@ -496,13 +598,89 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
             {/* ACTION BUTTONS */}
             <div className="flex justify-end items-center gap-4 px-2 pb-8">
-                <button onClick={onClose} className="px-8 py-3.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors">
+                <button onClick={handleSafeClose} className="px-8 py-3.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors">
                     {t('track.cancelBtn')}
                 </button>
                 <button onClick={handlePreSave} className="px-10 py-3.5 rounded-full text-sm font-bold text-white bg-[#0071e3] hover:bg-[#0077ed] shadow-xl shadow-blue-500/20 transition-all flex items-center gap-2 transform hover:scale-[1.01] active:scale-[0.98]">
                     ตรวจสอบและบันทึก <ChevronRight className="w-4 h-4" />
                 </button>
             </div>
+
+            {/* UNSAVED CHANGES MODAL */}
+            {showUnsavedModal && createPortal(
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-fade-in font-sans">
+                    <div className="bg-white dark:bg-[#1e1e20] w-full max-w-sm rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-8 text-center">
+                            <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle className="w-7 h-7 text-amber-500" />
+                            </div>
+                            <h3 className="font-bold text-[#1d1d1f] dark:text-white text-lg mb-2">ยังไม่ได้บันทึก</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">คุณมีรายการที่แก้ไขแต่ยังไม่ได้บันทึก<br />หากออกจากหน้านี้ การแก้ไขทั้งหมดจะหายไป</p>
+                        </div>
+                        <div className="px-6 pb-6 flex gap-3">
+                            <button onClick={() => setShowUnsavedModal(false)} className="flex-1 py-3 rounded-2xl text-sm font-semibold text-[#0071e3] bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                                กลับไปแก้ไข
+                            </button>
+                            <button onClick={() => { setShowUnsavedModal(false); onClose(); }} className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors">
+                                ออกโดยไม่บันทึก
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ACCESSORIES REVIEW MODAL */}
+            {showAccReview && createPortal(
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-fade-in font-sans">
+                    <div className="bg-white dark:bg-[#1e1e20] w-full max-w-md rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-6 pb-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                    <CheckCircle2 className="w-5 h-5 text-orange-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-[#1d1d1f] dark:text-white text-base">ยืนยันการแก้ไขอุปกรณ์</h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">กรุณาตรวจสอบรายการที่เปลี่ยนแปลง</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAccReview(false)} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-3">
+                            {(() => {
+                                const current = formData.accessories || [];
+                                const added = current.filter(a => !accessoriesBackup.includes(a));
+                                const removed = accessoriesBackup.filter(a => !current.includes(a));
+                                const fmtLabel = (a: string) => a.startsWith('acc_hdd::') ? `HDD (${a.split('::')[1]})` : (a.startsWith('acc_') ? t(`accessories_list.${a}`) : a);
+                                return (
+                                    <>
+                                        {added.map((a, i) => (
+                                            <div key={`add-${i}`} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
+                                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0"><Plus className="w-3 h-3 text-white" /></div>
+                                                <span className="text-sm font-medium text-green-700 dark:text-green-400">เพิ่ม: {fmtLabel(a)}</span>
+                                            </div>
+                                        ))}
+                                        {removed.map((a, i) => (
+                                            <div key={`rm-${i}`} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30">
+                                                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><X className="w-3 h-3 text-white" /></div>
+                                                <span className="text-sm font-medium text-red-700 dark:text-red-400">เอาออก: {fmtLabel(a)}</span>
+                                            </div>
+                                        ))}
+                                        <p className="text-xs text-gray-400 text-center pt-1">{added.length + removed.length} รายการที่เปลี่ยนแปลง</p>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                        <div className="p-6 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                            <button onClick={() => setShowAccReview(false)} className="px-5 py-2.5 text-sm font-medium rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">ยกเลิก</button>
+                            <button onClick={() => { setShowAccReview(false); setIsAccessoriesLocked(true); }} className="px-5 py-2.5 text-sm font-semibold rounded-full text-white bg-[#0071e3] hover:bg-[#0077ED] transition-colors flex items-center gap-2">
+                                <Check className="w-4 h-4" /> ยืนยันการเปลี่ยนแปลง
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* REVIEW MODAL OVERLAY */}
             {isReviewing && createPortal(

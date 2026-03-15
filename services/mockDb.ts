@@ -5,7 +5,7 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import {
   collection, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, Timestamp, limit, serverTimestamp, startAfter, QueryDocumentSnapshot,
-  getCountFromServer
+  getCountFromServer, runTransaction
 } from 'firebase/firestore';
 import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged,
@@ -477,47 +477,50 @@ export const MockDb = {
 
   // --- Dynamic Sequential Job ID ---
   generateNextGroupRequestId: async (): Promise<string> => {
-    if (!isConfigured || !db) {
-      // Fallback for offline mode: SECRMA-YYYYMM-RAND
-      const now = new Date();
-      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-      return `SECRMA-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
-
     const now = new Date();
-    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`; // e.g., "202602"
+    const year = String(now.getFullYear()); // e.g., "2026"
+
+    if (!isConfigured || !db) {
+      // Offline fallback: use timestamp to keep rough order
+      const ts = Date.now().toString().slice(-4);
+      return `SECRMA-${year}-${ts}`;
+    }
 
     const counterRef = doc(db, 'counters', 'jobCounter');
 
     try {
-      const snap = await getDoc(counterRef);
-      let currentSequence = 1;
+      const newSeq = await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(counterRef);
+        let currentSequence = 1;
 
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.currentMonth === yearMonth) {
-          // Same month, increment
-          currentSequence = (data.sequence || 0) + 1;
-        } else {
-          // New month, reset counter
-          currentSequence = 1;
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.currentYear === year) {
+            // Same year, increment
+            currentSequence = (data.sequence || 0) + 1;
+          } else {
+            // New year, reset counter
+            currentSequence = 1;
+          }
         }
-      }
 
-      // Update the counter
-      await setDoc(counterRef, {
-        currentMonth: yearMonth,
-        sequence: currentSequence
-      }, { merge: true });
+        // Atomic update
+        transaction.set(counterRef, {
+          currentYear: year,
+          sequence: currentSequence
+        }, { merge: true });
 
-      // Format to 4 digits: e.g., 0001
-      const formattedSeq = String(currentSequence).padStart(4, '0');
-      return `SECRMA-${yearMonth}-${formattedSeq}`;
+        return currentSequence;
+      });
+
+      const formattedSeq = String(newSeq).padStart(4, '0');
+      return `SECRMA-${year}-${formattedSeq}`;
 
     } catch (e) {
-      console.error("Failed to generate sequence ID, falling back to random:", e);
-      // Safe fallback in case of permission or connection issues
-      return `SECRMA-${yearMonth}-${Math.floor(1000 + Math.random() * 9000)}`;
+      console.error("Failed to generate sequence ID, falling back:", e);
+      // Fallback: timestamp-based to keep rough order
+      const ts = Date.now().toString().slice(-4);
+      return `SECRMA-${year}-${ts}`;
     }
   },
 
@@ -531,11 +534,11 @@ export const MockDb = {
         const rmaData = snap.data() as RMA;
         const groupReqId = rmaData.groupRequestId;
 
-        // If it looks like SECRMA-YYYYMM-XXXX
+        // If it looks like SECRMA-YYYY-XXXX
         if (groupReqId && groupReqId.startsWith('SECRMA-')) {
           const parts = groupReqId.split('-');
           if (parts.length === 3) {
-            const yearMonth = parts[1];
+            const year = parts[1];
             const seqStr = parts[2];
             const seqNum = parseInt(seqStr, 10);
 
@@ -545,14 +548,14 @@ export const MockDb = {
 
             if (counterSnap.exists()) {
               const counterData = counterSnap.data();
-              // If this deleted job was the absolute latest one generated for this month
-              if (counterData.currentMonth === yearMonth && counterData.sequence === seqNum) {
+              // If this deleted job was the absolute latest one generated for this year
+              if (counterData.currentYear === year && counterData.sequence === seqNum) {
                 // Decrement so the next one reuses this ID
                 await setDoc(counterRef, {
-                  currentMonth: yearMonth,
+                  currentYear: year,
                   sequence: Math.max(0, seqNum - 1)
                 }, { merge: true });
-                console.log(`Reverted job counter for ${yearMonth} from ${seqNum} to ${seqNum - 1}`);
+                console.log(`Reverted job counter for ${year} from ${seqNum} to ${seqNum - 1}`);
               }
             }
           }
