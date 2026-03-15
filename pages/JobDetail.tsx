@@ -437,9 +437,20 @@ export const JobDetail: React.FC = () => {
                                                 if (!confirm('Are you sure you want to delete this rma? This action cannot be undone.')) return;
                                                 setLoading(true);
                                                 await MockDb.deleteRMA(item.id);
-                                                // Refresh List
-                                                await refreshRMAs();
-                                                setLoading(false);
+                                                // Check if this was the last RMA in the job
+                                                const allRMAs = await MockDb.getRMAs();
+                                                const decodedId = decodeURIComponent(jobId || '');
+                                                const remaining = allRMAs.filter(c =>
+                                                    c.quotationNumber === decodedId ||
+                                                    c.groupRequestId === decodedId ||
+                                                    (c.id === decodedId)
+                                                );
+                                                if (remaining.length === 0) {
+                                                    navigate('/admin/rmas');
+                                                } else {
+                                                    await refreshRMAs();
+                                                    setLoading(false);
+                                                }
                                             }}
                                             className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
                                             title="Delete RMA"
