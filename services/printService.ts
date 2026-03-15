@@ -220,7 +220,7 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
       color: ${primary};
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -235,91 +235,126 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
       background: ${primary};
       color: white;
       font-size: 9px;
-      padding: 1px 6px;
+      font-weight: 600;
+      padding: 2px 8px;
       border-radius: 10px;
+      letter-spacing: 0.02em;
     }
-
 
     /* ── ITEMS TABLE ── */
     .items-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 24px;
+      margin-bottom: 0;
       font-size: 11px;
+      border: 1px solid ${light};
+      border-radius: 6px;
+      overflow: hidden;
     }
     .items-table th {
-      background-color: #fff;
-      color: ${primary};
+      background: ${bgLight};
+      color: ${dark};
       font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       text-align: center;
-      padding: 6px 8px;
-      border-top: 2px solid ${primary};
+      padding: 10px 12px;
       border-bottom: 2px solid ${primary};
     }
     .items-table th.align-left { text-align: left; }
     .items-table td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #e5e5ea;
+      padding: 14px 12px;
+      border-bottom: 1px solid #eef2f7;
       vertical-align: top;
     }
-    .items-table td.align-center { text-align: center; }
-    .items-table td.align-right { text-align: right; }
+    .items-table tr:last-child td { border-bottom: none; }
+    .items-table td.align-center { text-align: center; color: #9ca3af; }
     
-    .item-brand-model { font-weight: 700; color: #1d1d1f; margin-bottom: 4px; font-size: 12px; }
-    .item-desc { color: #555; font-size: 10px; line-height: 1.4; }
-    .item-sn { font-family: 'Inter', monospace; margin-top: 4px; font-size: 10px; color: #333; }
+    .item-brand-model {
+      font-weight: 700; color: #1d1d1f; font-size: 13px; margin-bottom: 6px;
+    }
+    .item-desc {
+      color: #555; font-size: 10.5px; line-height: 1.5; margin-bottom: 1px;
+    }
+    .item-sn {
+      display: inline-block;
+      font-family: 'Inter', 'SF Mono', monospace;
+      font-size: 10px; color: #1d1d1f;
+      background: #f3f4f6; 
+      padding: 3px 10px; border-radius: 4px;
+      margin-top: 8px;
+      border: 1px solid #e5e7eb;
+      letter-spacing: 0.01em;
+    }
+    .item-sn-new {
+      display: inline-block;
+      font-family: 'Inter', 'SF Mono', monospace;
+      font-size: 10px; color: #166534;
+      background: #f0fdf4;
+      padding: 3px 10px; border-radius: 4px;
+      margin-top: 4px; margin-left: 4px;
+      border: 1px solid #bbf7d0;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── SUMMARY ── */
+    .table-summary-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: ${primary};
+      color: white;
+      border-radius: 0 0 6px 6px;
+      margin-bottom: 28px;
+      font-size: 12px;
+    }
+    .table-summary-bar .summary-label { font-weight: 400; opacity: 0.85; }
+    .table-summary-bar .summary-value {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700; font-size: 15px;
+    }
     
-    .table-summary {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      margin-top: 10px;
+    /* ── REMARKS ── */
+    .remarks-card {
+      background: #f8f9fb;
+      border-left: 3px solid ${primary};
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-bottom: 32px;
+      font-size: 10.5px;
+      color: #444;
+      line-height: 1.7;
     }
-    .table-summary td {
-      padding: 4px 8px;
-      text-align: right;
-    }
-    .table-summary td:nth-child(1) {
-      color: ${dark};
-      font-weight: 700;
-    }
-    .table-summary td:nth-child(2) {
-      width: 80px;
-      color: #1d1d1f;
-      font-weight: 700;
-      font-size: 13px;
-    }
-    
-    .remarks-section {
-      margin-top: 40px;
+    .remarks-card-title {
       font-size: 10px;
-      color: #1d1d1f;
-      line-height: 1.5;
-    }
-    .remarks-label {
-      color: ${dark};
       font-weight: 700;
-      margin-bottom: 6px;
+      color: ${dark};
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
     }
 
     /* ── FOOTER / SIGNATURES ── */
     .footer-section {
-      margin-top: 40px;
-      padding-top: 14px;
-      border-top: 2px solid #e5e5ea;
+      margin-top: 24px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 30px;
+      gap: 20px;
       page-break-inside: avoid;
     }
     .sig-box {
-      border: 1px dashed ${border};
-      border-radius: 8px;
-      padding: 16px 20px;
+      border: 1px solid #e5e7eb;
+      border-top: 3px solid ${primary};
+      border-radius: 0 0 8px 8px;
+      padding: 14px 18px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 120px;
+      min-height: 110px;
+      background: #fff;
     }
     .sig-title {
       font-size: 10px;
@@ -327,7 +362,7 @@ const getCommonStyles = (theme: 'blue' | 'orange' = 'blue') => {
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: ${primary};
-      margin-bottom: 30px;
+      margin-bottom: 32px;
     }
     .sig-subtitle { font-size: 9px; color: #86868b; margin-bottom: 24px; }
     .sig-line { border-bottom: 1px solid #1d1d1f; margin-bottom: 6px; }
@@ -359,13 +394,13 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
 
     return `
       <tr>
-        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
-        <td style="padding-top: 16px; padding-left: 12px;">
-          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
-          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc" style="color: #666;">อุปกรณ์ที่ส่ง: ${accString}</div>
-          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c; margin-top: 2px;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
-          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
+        <td class="align-center">${index + 1}</td>
+        <td style="padding-left: 12px;">
+          <div class="item-brand-model">${item.brand} ${item.productModel}</div>
+          <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc">อุปกรณ์ที่ส่ง: ${accString}</div>
+          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
+          <div class="item-sn">S/N: ${item.serialNumber}</div>
         </td>
         <td></td>
       </tr>
@@ -416,35 +451,31 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         </div>
       </div>
 
-      <!-- ITEMS (TABLE) -->
+      <!-- ITEMS TABLE -->
       <div class="section-title">
         PRODUCT INFORMATION <span class="count-badge">${rmas.length} ITEMS</span>
       </div>
 
-      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+      <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
-            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
-            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+            <th style="width: 5%;">#</th>
+            <th class="align-left" style="width: 75%; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
+            <th style="width: 20%;">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
+        <tbody>${tableRows}</tbody>
       </table>
+
+      <div class="table-summary-bar">
+        <span class="summary-label">รวมจำนวนสินค้าเคลม</span>
+        <span class="summary-value">${rmas.length} ชิ้น</span>
+      </div>
       
-      <table class="table-summary">
-        <tr>
-          <td>รวมจำนวนสินค้าเคลม</td>
-          <td>${rmas.length} ชิ้น</td>
-        </tr>
-      </table>
-      
-      <div class="remarks-section">
-        <div class="remarks-label">หมายเหตุ</div>
-        <div>- กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
-        <div>- หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
+      <div class="remarks-card">
+        <div class="remarks-card-title">หมายเหตุ / Remarks</div>
+        <div>• กรุณาตรวจสอบสภาพสินค้าและอุปกรณ์ที่ส่งเคลมตามรายการด้านบน</div>
+        <div>• หากพบความผิดปกติ กรุณาแจ้งกลับภายใน 3 วันทำการ</div>
       </div>
 
       <!-- SIGNATURES -->
@@ -497,14 +528,14 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
 
     return `
       <tr>
-        <td class="align-center" style="font-weight: normal; padding-top: 16px;">${index + 1}</td>
-        <td style="padding-top: 16px; padding-left: 12px;">
-          <div class="item-brand-model" style="font-size: 13px;">${item.brand} ${item.productModel}</div>
-          <div class="item-desc" style="color: #666;">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc" style="color: #666;">อุปกรณ์ที่คืน: ${accString}</div>
-          <div class="item-sn" style="color: #333; margin-top: 6px; font-size: 11px;">S/N: ${item.serialNumber}</div>
+        <td class="align-center">${index + 1}</td>
+        <td style="padding-left: 12px;">
+          <div class="item-brand-model">${item.brand} ${item.productModel}</div>
+          <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc">อุปกรณ์ที่คืน: ${accString}</div>
+          <div class="item-sn">S/N: ${item.serialNumber}</div>
           ${item.resolution?.replacedSerialNumber
-        ? `<div class="item-sn" style="color:#137333;">New S/N: ${item.resolution.replacedSerialNumber}</div>`
+        ? `<div class="item-sn-new">New S/N: ${item.resolution.replacedSerialNumber}</div>`
         : ''}
         </td>
         <td></td>
@@ -543,57 +574,53 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
 
       <!-- PARTIES -->
       <div class="parties-grid">
-        <div class="party-box" style="padding: 12px 16px;">
-          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">CUSTOMER DETAILS (ลูกค้า)</div>
+        <div class="party-box">
+          <div class="party-box-label">CUSTOMER DETAILS (ลูกค้า)</div>
           <div class="party-name">${rma.customerName}</div>
           <div class="party-detail" style="margin-top: 4px;">
             ${rma.customerPhone ? `Tel: ${rma.customerPhone}<br/>` : ''}
             ${rma.customerEmail ? `Email: ${rma.customerEmail}<br/>` : ''}
           </div>
         </div>
-        <div class="party-box" style="padding: 12px 16px;">
-          <div class="party-box-label" style="color:#1d1d1f; margin-bottom: 8px;">SERVICE STATUS (สถานะ)</div>
+        <div class="party-box">
+          <div class="party-box-label">SERVICE STATUS (สถานะ)</div>
           <div style="font-size: 14px; font-weight: 700; color: #1d1d1f; text-transform: uppercase;">
-             ${rma.status.replace('_', ' ')}
+             ${statusText.label}
           </div>
         </div>
       </div>
 
-      <!-- ITEMS (TABLE) -->
+      <!-- ITEMS TABLE -->
       <div class="section-title">
-        SERVICE ITEM DETAILS
+        SERVICE ITEM DETAILS <span class="count-badge">${rmas.length} ITEMS</span>
       </div>
 
-      <table class="items-table" style="border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb;">
+      <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 5%; color: #2563eb; border-bottom: 2px solid #2563eb;">#</th>
-            <th class="align-left" style="width: 75%; color: #2563eb; border-bottom: 2px solid #2563eb; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
-            <th style="width: 20%; color: #2563eb; border-bottom: 2px solid #2563eb;">หมายเหตุ</th>
+            <th style="width: 5%;">#</th>
+            <th class="align-left" style="width: 75%; padding-left: 12px;">รายละเอียดชิ้นส่วน/สินค้า</th>
+            <th style="width: 20%;">หมายเหตุ</th>
           </tr>
         </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
+        <tbody>${tableRows}</tbody>
       </table>
+
+      <div class="table-summary-bar">
+        <span class="summary-label">รวมจำนวนสินค้า</span>
+        <span class="summary-value">${rmas.length} ชิ้น</span>
+      </div>
       
-      <table class="table-summary">
-        <tr>
-          <td></td>
-          <td></td>
-        </tr>
-      </table>
-      
-      <div class="remarks-section">
-        <div class="remarks-label">หมายเหตุ</div>
-        <div>- การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
-        <div>- สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
+      <div class="remarks-card">
+        <div class="remarks-card-title">หมายเหตุ / Remarks</div>
+        <div>• การรับประกันไม่ครอบคลุมภัยจากคน, สัตว์, ภัยธรรมชาติ, ตัดต่อสาย, ไฟกระชาก หรือการติดตั้งที่ไม่ได้มาตรฐาน</div>
+        <div>• สินค้าที่ส่งคืนแล้ว ไม่รับเปลี่ยนหรือคืนในทุกกรณี</div>
       </div>
 
       <!-- SIGNATURES -->
       <div class="footer-section">
         <div class="sig-box">
-          <div class="sig-title" style="color: #0b57d0;">ผู้ส่ง / SENT BY</div>
+          <div class="sig-title">ผู้ส่ง / SENT BY</div>
           <div>
             <div class="sig-line"></div>
             <div style="display: flex; justify-content: space-between;">
@@ -603,7 +630,7 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
           </div>
         </div>
         <div class="sig-box">
-          <div class="sig-title" style="color: #0b57d0;">ผู้รับ / RECEIVED BY</div>
+          <div class="sig-title">ผู้รับ / RECEIVED BY</div>
           <div>
             <div class="sig-line"></div>
             <div style="display: flex; justify-content: space-between;">
