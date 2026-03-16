@@ -413,7 +413,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         <td class="align-center">${index + 1}</td>
         <td style="padding-left: 12px;">
           <div class="item-brand-model">${item.brand} ${item.productModel}</div>
-          <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
+          <div class="item-desc">อาการที่พบ: ${item.resolution?.rootCause || '-'}</div>
           <div class="item-desc">อุปกรณ์ที่ส่ง: ${sentString}</div>
           ${keptString ? `<div class="item-desc" style="color:#86868b;">เก็บไว้ที่ร้าน: ${keptString}</div>` : ''}
           ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}

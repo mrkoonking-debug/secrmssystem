@@ -434,7 +434,7 @@ export const translations = {
       unassigned: 'รอรับเข้าทีม'
     },
     status: {
-      PENDING: 'รับสินค้าแล้ว',
+      PENDING: 'รับเรื่องแล้ว',
       DIAGNOSING: 'กำลังตรวจสอบ (ที่ร้าน)',
       WAITING_PARTS: 'ส่งเคลมศูนย์แล้ว',
       REPAIRED: 'สินค้ากลับมาแล้ว/พร้อมส่ง',

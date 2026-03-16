@@ -225,6 +225,13 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     };
 
     const handlePreSave = () => {
+        // ถ้าปิดงาน (CLOSED) ต้องเลือกผลการดำเนินงานก่อน
+        const currentAction = formData.resolution?.actionTaken === 'Other' ? customAction : formData.resolution?.actionTaken;
+        if (formData.status === RMAStatus.CLOSED && (!currentAction || currentAction.trim() === '')) {
+            alert('กรุณาเลือก "วิธีแก้ไข/ดำเนินการ" ก่อนปิดงาน');
+            return;
+        }
+
         const calculatedDiffs = calculateDiffs();
         if (calculatedDiffs.length === 0) {
             alert("No changes detected.");
@@ -246,17 +253,22 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         if (formData.resolution) {
             updates.resolution = {
                 ...formData.resolution,
-                actionTaken: formData.resolution.actionTaken === 'Other' ? customAction : formData.resolution.actionTaken
+                actionTaken: formData.resolution.actionTaken === 'Other' ? customAction : (formData.resolution.actionTaken || '')
             };
         }
 
         // Firebase Firestore does not accept 'undefined' values.
-        // We strip them out cleanly.
-        Object.keys(updates).forEach(key => {
-            if (updates[key as keyof Partial<RMA>] === undefined) {
-                delete updates[key as keyof Partial<RMA>];
-            }
-        });
+        // We strip them out cleanly — including nested objects.
+        const stripUndefined = (obj: any) => {
+            Object.keys(obj).forEach(key => {
+                if (obj[key] === undefined) {
+                    delete obj[key];
+                } else if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && !(obj[key] instanceof Date)) {
+                    stripUndefined(obj[key]);
+                }
+            });
+        };
+        stripUndefined(updates);
 
         try {
             await onSave(rma.id, updates, diffs);
@@ -277,6 +289,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const statusOptions = Object.values(RMAStatus).map(s => ({ value: s, label: t(`status.${s}`) }));
     const delayOptions = ['NONE', 'WAITING_PARTS', 'WAITING_DISTRIBUTOR', 'WAITING_CUSTOMER', 'INTERNAL_QUEUE'].map(d => ({ value: d, label: t(`delays.${d}`) }));
     const actionOptions = [
+        { value: "", label: "-- ยังไม่ดำเนินการ --" },
         { value: "Replaced Component", label: t('actions.replaced_component') },
         { value: "Swapped Unit", label: t('actions.swapped_unit') },
         { value: "Software Update", label: t('actions.software_update') },
