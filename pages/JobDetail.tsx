@@ -563,6 +563,14 @@ export const JobDetail: React.FC = () => {
                                     let textLines: string[] = [];
                                     textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
                                     textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
+
+                                    const actionMap: Record<string, string> = {
+                                        'Replaced Component': 'ศูนย์เปลี่ยนอะไหล่',
+                                        'Swapped Unit': 'เปลี่ยนเครื่อง (Swap)',
+                                        'Software Update': 'อัพเดทซอฟต์แวร์',
+                                        'No Fault Found': 'ไม่พบอาการเสีย(ส่งคืน)'
+                                    };
+                                    const formatAction = (action?: string) => action ? (actionMap[action] || action) : '-';
                                     
                                     if (docPreviewType === 'CUSTOMER') {
                                         textLines.push(`ลูกค้า: ${rma0?.customerName || '-'}`);
@@ -573,7 +581,7 @@ export const JobDetail: React.FC = () => {
                                             textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
                                             textLines.push(`   S/N: ${r.serialNumber}`);
                                             textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                            textLines.push(`   การดำเนินการ: ${r.resolution?.actionTaken || '-'}`);
+                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution?.actionTaken)}`);
                                             if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     } else {
@@ -586,7 +594,7 @@ export const JobDetail: React.FC = () => {
                                             textLines.push(`   S/N: ${r.serialNumber}`);
                                             textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
                                             textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                            textLines.push(`   การดำเนินการ: ${r.resolution?.actionTaken || '-'}`);
+                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution?.actionTaken)}`);
                                             if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     }
