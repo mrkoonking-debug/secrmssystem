@@ -10,6 +10,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { printDistributorDocuments, printCustomerDocuments, getDistributorDocumentsHTML, getCustomerDocumentsHTML } from '../services/printService';
 import { Printer, Copy, X as XIcon } from 'lucide-react';
 import { ShipmentTagModal } from '../components/ShipmentTagModal';
+import html2canvas from 'html2canvas';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -24,6 +25,8 @@ export const JobDetail: React.FC = () => {
 
     // Document Preview Popup state
     const [docPreviewHtml, setDocPreviewHtml] = useState<string | null>(null);
+    const [docPreviewType, setDocPreviewType] = useState<'DISTRIBUTOR' | 'CUSTOMER'>('DISTRIBUTOR');
+    const [docPreviewRmas, setDocPreviewRmas] = useState<RMA[]>([]);
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -245,7 +248,11 @@ export const JobDetail: React.FC = () => {
                                 <button
                                     onClick={async () => {
                                         const html = await getDistributorDocumentsHTML(rmas);
-                                        if (html) setDocPreviewHtml(html);
+                                        if (html) {
+                                            setDocPreviewHtml(html);
+                                            setDocPreviewType('DISTRIBUTOR');
+                                            setDocPreviewRmas(rmas);
+                                        }
                                     }}
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium transition-colors text-sm border-r border-gray-200 dark:border-[#424245] whitespace-nowrap"
                                     title="พิมพ์ใบส่งเคลม"
@@ -273,7 +280,11 @@ export const JobDetail: React.FC = () => {
                                 <button
                                     onClick={async () => {
                                         const html = await getCustomerDocumentsHTML(finishedRMAs);
-                                        if (html) setDocPreviewHtml(html);
+                                        if (html) {
+                                            setDocPreviewHtml(html);
+                                            setDocPreviewType('CUSTOMER');
+                                            setDocPreviewRmas(finishedRMAs);
+                                        }
                                     }}
                                     disabled={!hasFinishedRMAs}
                                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border-r border-gray-200 dark:border-[#424245] transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
@@ -534,6 +545,56 @@ export const JobDetail: React.FC = () => {
                     {/* Toolbar */}
                     <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
                         <h2 className="text-gray-800 font-semibold text-base flex-1">📋 Preview เอกสาร</h2>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const iframe = document.getElementById('doc-preview-iframe') as HTMLIFrameElement;
+                                    const iframeDoc = iframe?.contentWindow?.document;
+                                    if (!iframeDoc?.body) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
+
+                                    // Capture image
+                                    const canvas = await html2canvas(iframeDoc.body, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                                    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+
+                                    // Build text summary
+                                    const jobId = docPreviewRmas[0]?.groupRequestId || docPreviewRmas[0]?.quotationNumber || docPreviewRmas[0]?.id || '-';
+                                    let textLines = [`📦 Job ID: ${jobId}`];
+                                    if (docPreviewType === 'CUSTOMER') {
+                                        textLines.push(`👤 ลูกค้า: ${docPreviewRmas[0]?.customerName || '-'}`);
+                                        docPreviewRmas.forEach((r, i) => {
+                                            textLines.push(`\n🔧 รายการ ${i + 1}:`);
+                                            textLines.push(`   รุ่น: ${r.productModel}`);
+                                            textLines.push(`   S/N: ${r.serialNumber}`);
+                                            textLines.push(`   อาการ: ${r.issueDescription || '-'}`);
+                                        });
+                                    } else {
+                                        textLines.push(`🏢 ผู้นำเข้า: ${docPreviewRmas[0]?.distributor || '-'}`);
+                                        docPreviewRmas.forEach((r, i) => {
+                                            textLines.push(`\n🔧 รายการ ${i + 1}:`);
+                                            textLines.push(`   รุ่น: ${r.productModel}`);
+                                            textLines.push(`   S/N: ${r.serialNumber}`);
+                                            textLines.push(`   อาการที่พบ: ${r.issueDescription || '-'}`);
+                                        });
+                                    }
+                                    const copyText = textLines.join('\n');
+
+                                    // Write both image + text to clipboard
+                                    await navigator.clipboard.write([
+                                        new ClipboardItem({
+                                            'image/png': blob,
+                                            'text/plain': new Blob([copyText], { type: 'text/plain' })
+                                        })
+                                    ]);
+                                    alert('✅ ก๊อปปี้รูปภาพและข้อความแล้ว! วางใน LINE ได้เลย');
+                                } catch (err) {
+                                    console.error('Copy failed:', err);
+                                    alert('ไม่สามารถก๊อปปี้ได้ ลองใหม่อีกครั้ง');
+                                }
+                            }}
+                            className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        >
+                            <Copy className="w-4 h-4" /> คัดลอก
+                        </button>
                         <button
                             onClick={() => {
                                 const iframe = document.getElementById('doc-preview-iframe') as HTMLIFrameElement;
