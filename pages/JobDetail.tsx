@@ -557,23 +557,37 @@ export const JobDetail: React.FC = () => {
                                     const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
 
                                     // Build text summary
-                                    const jobId = docPreviewRmas[0]?.groupRequestId || docPreviewRmas[0]?.quotationNumber || docPreviewRmas[0]?.id || '-';
-                                    let textLines = [`📦 Job ID: ${jobId}`];
+                                    const rma0 = docPreviewRmas[0];
+                                    const jobIdVal = rma0?.groupRequestId || rma0?.id || '-';
+                                    const quotationVal = rma0?.quotationNumber || '-';
+                                    let textLines: string[] = [];
+                                    textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
+                                    textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
+                                    
                                     if (docPreviewType === 'CUSTOMER') {
-                                        textLines.push(`👤 ลูกค้า: ${docPreviewRmas[0]?.customerName || '-'}`);
+                                        textLines.push(`ลูกค้า: ${rma0?.customerName || '-'}`);
+                                        textLines.push('');
+                                        textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
                                         docPreviewRmas.forEach((r, i) => {
-                                            textLines.push(`\n🔧 รายการ ${i + 1}:`);
-                                            textLines.push(`   รุ่น: ${r.productModel}`);
+                                            textLines.push(`รายการ ${i + 1}:`);
+                                            textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
                                             textLines.push(`   S/N: ${r.serialNumber}`);
-                                            textLines.push(`   อาการ: ${r.issueDescription || '-'}`);
+                                            textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                            textLines.push(`   การดำเนินการ: ${r.resolution?.actionTaken || '-'}`);
+                                            if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     } else {
-                                        textLines.push(`🏢 ผู้นำเข้า: ${docPreviewRmas[0]?.distributor || '-'}`);
+                                        textLines.push(`ผู้นำเข้า: ${rma0?.distributor || '-'}`);
+                                        textLines.push('');
+                                        textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
                                         docPreviewRmas.forEach((r, i) => {
-                                            textLines.push(`\n🔧 รายการ ${i + 1}:`);
-                                            textLines.push(`   รุ่น: ${r.productModel}`);
+                                            textLines.push(`รายการ ${i + 1}:`);
+                                            textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
                                             textLines.push(`   S/N: ${r.serialNumber}`);
-                                            textLines.push(`   อาการที่พบ: ${r.issueDescription || '-'}`);
+                                            textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
+                                            textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                            textLines.push(`   การดำเนินการ: ${r.resolution?.actionTaken || '-'}`);
+                                            if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     }
                                     const copyText = textLines.join('\n');
