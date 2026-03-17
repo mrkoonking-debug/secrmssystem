@@ -77,7 +77,8 @@ export interface RMA {
   customerLineId?: string;
   customerAddress?: string;       // ที่อยู่ลูกค้า
   customerReturnAddress?: string; // ที่อยู่สำหรับส่งของคืน
-  trackingIds?: string[]; // Array of tracking IDs for multi-box shipments
+  trackingIds?: string[]; // Array of tracking IDs for multi-box shipments (Distributor)
+  customerTrackingIds?: string[]; // Array of tracking IDs for customer return shipments
   createdBy?: string;             // ใครเป็นคนสร้างรายการนี้ (Admin คนไหน)
 
   // ข้อมูลสินค้า

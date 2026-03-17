@@ -48,7 +48,10 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                 setReceiverPhone(rma.customerPhone || '');
                 setReceiverAddress(rma.customerReturnAddress || '');
             }
-            setTrackingIds(rma.trackingIds && rma.trackingIds.length > 0 ? rma.trackingIds : ['']);
+            const sourceTrackingIds = targetType === 'DISTRIBUTOR' 
+                ? rma.trackingIds 
+                : rma.customerTrackingIds;
+            setTrackingIds(sourceTrackingIds && sourceTrackingIds.length > 0 ? sourceTrackingIds : ['']);
         }
     }, [isOpen, rma, targetType]);
 
@@ -90,7 +93,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                 contactPerson: contactPerson,
                 customerPhone: receiverPhone,
                 customerReturnAddress: receiverAddress,
-                trackingIds: cleanTrackingIds
+                customerTrackingIds: cleanTrackingIds
             };
         }
     };

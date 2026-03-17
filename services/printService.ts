@@ -709,8 +709,8 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         else if (rma.team === 'TEAM_G') teamName = 'Team G: Online Platform';
         else teamName = `Team ${rma.team}`;
 
-        // Build phone lines from all recipients
-        teamPhoneLines = lineAccount.recipients.map(r => `${r.name}: ${r.phone}`).join('<br/>');
+        // Build phone lines from all recipients - comma separated
+        teamPhoneLines = lineAccount.recipients.map(r => `${r.name}: ${r.phone}`).join(', ');
       } else {
         teamName = `Team ${rma.team}`;
       }
@@ -726,18 +726,16 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
           <!-- LEFT: Logo + Name + Details -->
           <div class="st-sender-col">
             <div class="st-brand-block">
-              <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
               ${settings.logoUrl ? `<img src="${settings.logoUrl}" class="st-sender-logo" alt="Logo" />` : ''}
-              <div class="st-brand-text">
-                <div class="st-sender-name">${settings.nameTh}</div>
-                <div class="st-sender-team">แผนกเคลม: ${teamName}</div>
+              <div class="st-sender-name">${settings.nameTh}</div>
+              <div class="st-sender-details">
+                ${settings.address}<br/>
+                โทร: ${settings.tel}
               </div>
+              <div class="st-sender-team">แผนกเคลม: ${teamName}</div>
+              ${teamPhoneLines ? `<div class="st-team-phones">${teamPhoneLines}</div>` : ''}
             </div>
-            <div class="st-sender-details">
-              ${settings.address}<br/>
-              โทร: ${settings.tel}
-              ${teamPhoneLines ? `<br/><span style="font-size: 10px; color: #1d4ed8; font-weight: 500;">${teamPhoneLines}</span>` : ''}
-            </div>
+            <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
           </div>
           <!-- RIGHT: QR + Job ID (full height) -->
           <div class="st-job-box">
@@ -755,15 +753,13 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         <div class="st-row-2">
           <div class="st-track-qr-container">
             <img src="${qrTrackingUrl}" class="st-qr-img" alt="QR Tracking" />
+            <div class="st-track-label">EMS / TRACKING</div>
+            <div class="st-track-val">${trackingId || '-'}</div>
           </div>
           <div class="st-track-center">
             <div class="st-track-placeholder">
               <span style="letter-spacing: 1px;">ติด Tracking Label ที่นี่</span>
             </div>
-          </div>
-          <div class="st-track-info">
-            <div class="st-track-label">EMS / Tracking No.</div>
-            <div class="st-track-val">${trackingId || '-'}</div>
           </div>
         </div>
 
@@ -807,10 +803,10 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
       .shipping-label {
         font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         color: #1d1d1f;
-        width: 210mm;        /* A4 Width */
-        height: auto;        /* Auto height for content */
-        min-height: 148mm;   /* Minimum half A4 */
-        padding: 8mm;        /* Outer padding */
+        width: 210mm;
+        height: auto;
+        min-height: 148mm;
+        padding: 8mm;
         margin: 0;
         position: relative;
         box-sizing: border-box;
@@ -819,96 +815,105 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
       .st-container {
         width: 100%;
         background-color: #fff;
-        border: 2px solid #e5e5ea;
-        border-radius: 16px;
+        border: 1.5px solid #d1d5db;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
       }
 
       /* --- ROW 1: HEADER (SENDER & JOB ID) --- */
       .st-row-1 {
         display: flex;
-        border-bottom: 2px solid #e5e5ea;
-        background-color: #fff;
+        border-bottom: 1.5px solid #e5e7eb;
+        background: linear-gradient(to bottom, #fafbfc, #fff);
       }
       .st-sender-col {
         flex: 1;
-        padding: 14px 16px;
+        padding: 18px 20px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         gap: 10px;
+        position: relative;
       }
       .st-brand-block {
         display: flex;
-        align-items: center;
-        gap: 12px;
+        flex-direction: column;
+        gap: 6px;
       }
       .st-sender-logo {
-        height: 64px;
-        max-width: 110px;
+        height: 56px;
+        max-width: 100px;
         object-fit: contain;
       }
       .st-page-badge {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
         background: #f3f4f6;
-        color: #6b7280;
-        font-size: 10px;
+        color: #9ca3af;
+        font-size: 9px;
         line-height: 1;
-        font-weight: 700;
-        padding: 3px 6px;
-        border-radius: 6px;
+        font-weight: 600;
+        padding: 3px 7px;
+        border-radius: 20px;
         border: 1px solid #e5e7eb;
       }
       .st-brand-text {
         display: flex;
         flex-direction: column;
+        gap: 2px;
       }
       .st-sender-name {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
         color: #111827;
         letter-spacing: -0.01em;
       }
       .st-sender-team {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         color: #2563eb;
-        margin-top: 2px;
       }
       .st-sender-details {
         font-size: 11px;
-        color: #4b5563;
+        color: #6b7280;
+        line-height: 1.6;
+      }
+      .st-team-phones {
+        font-size: 10px;
+        color: #1d4ed8;
+        font-weight: 500;
         line-height: 1.5;
       }
 
       .st-job-box {
-        width: 72mm;
-        background-color: #fce7f3;
-        border-left: 2px solid #e5e5ea;
+        width: 62mm;
+        background: linear-gradient(135deg, #fce7f3, #fdf2f8);
+        border-left: 1.5px solid #e5e7eb;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 10px 14px;
-        gap: 2px;
+        padding: 14px;
+        gap: 4px;
       }
       .st-job-label {
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 700;
         color: #be185d;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 4px;
+        letter-spacing: 0.1em;
+        margin-top: 6px;
       }
       .st-job-value {
         font-weight: 800;
         color: #111827;
         font-family: 'Inter', monospace;
         letter-spacing: -0.02em;
-        line-height: 1.1;
+        line-height: 1.2;
         white-space: nowrap;
         text-align: center;
       }
@@ -922,71 +927,63 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
       /* --- ROW 2: TRACKING --- */
       .st-row-2 {
         display: flex;
-        height: 36mm;
-        border-bottom: 2px dashed #d1d5db;
-        background-color: #f9fafb;
+        height: 42mm;
+        border-bottom: 1.5px dashed #d1d5db;
+        background-color: #fafbfc;
       }
-      .st-track-info {
-        width: 70mm; 
-        padding: 12px 16px;
+      .st-track-qr-container {
+        width: 50mm; 
+        border-right: 1.5px solid #e5e7eb;
+        background-color: #eff6ff;
         display: flex;
         flex-direction: column;
+        align-items: center;
         justify-content: center;
-        border-left: 2px solid #e5e5ea;
-        background-color: #fff;
+        padding: 10px;
+        gap: 4px;
       }
       .st-track-label {
-        font-size: 12px;
+        font-size: 9px;
         font-weight: 700;
         color: #6b7280;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 4px;
+        letter-spacing: 0.08em;
+        margin-top: 4px;
       }
       .st-track-val {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
         color: #111827;
         font-family: 'Inter', monospace;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
+        text-align: center;
       }
-      
+
       .st-track-center {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 10px;
+        padding: 12px;
       }
       .st-track-placeholder {
-        border: 2px dashed #cbd5e1;
-        background-color: #f1f5f9;
-        border-radius: 8px;
+        border: 1.5px dashed #cbd5e1;
+        background-color: #f8fafc;
+        border-radius: 10px;
         width: 100%;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #94a3b8;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 500;
-      }
-      
-      .st-track-qr-container {
-        width: 46mm; 
-        border-right: 2px solid #e5e5ea;
-        background-color: #fff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
       }
 
       /* Shared QR Styles */
       .st-qr-img {
-        width: 26mm;
-        height: 26mm;
+        width: 24mm;
+        height: 24mm;
         border-radius: 4px;
         mix-blend-mode: multiply;
       }
@@ -999,47 +996,47 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
 
       /* --- ROW 3: RECEIVER --- */
       .st-row-3 {
-        padding: 14px 16px 16px;
+        padding: 16px 18px 18px;
         background-color: #fff;
         display: flex;
         flex-direction: column;
       }
       .st-receiver-card {
-        border: 2px solid #111827;
-        border-radius: 12px;
+        border: 1.5px solid #374151;
+        border-radius: 10px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
       .st-deliver-header {
-        background-color: #111827; /* Dark header */
+        background: linear-gradient(135deg, #1e293b, #334155);
         color: #fff;
-        padding: 6px 14px;
+        padding: 7px 16px;
         display: flex;
         align-items: center;
       }
       .st-deliver-badge {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
         letter-spacing: 0.05em;
       }
       .st-receiver-content {
-        padding: 14px 18px 16px;
+        padding: 16px 20px 18px;
         display: flex;
         flex-direction: column;
         justify-content: center;
       }
       .st-receiver-name {
-        font-size: 24px; 
+        font-size: 22px; 
         font-weight: 800;
         color: #111827;
         margin-bottom: 6px;
         line-height: 1.2;
       }
       .st-receiver-contact {
-        font-size: 16px;
-        font-weight: 600;
-        color: #374151;
+        font-size: 15px;
+        font-weight: 500;
+        color: #4b5563;
         margin-bottom: 4px;
       }
       .st-receiver-phone {
@@ -1050,7 +1047,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         font-family: 'Inter', sans-serif;
       }
       .st-receiver-address {
-        font-size: 16px;
+        font-size: 15px;
         color: #4b5563;
         line-height: 1.5;
         display: -webkit-box;
