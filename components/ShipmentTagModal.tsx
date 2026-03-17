@@ -182,7 +182,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         if (cleanTrackingIds.length > 0) {
             text += `\n`;
             cleanTrackingIds.forEach(tid => {
-                text += `Tracking ID: ${tid}\n`;
+                text += `หมายเลขพัสดุ: ${tid}\n`;
                 text += `https://track.thailandpost.co.th/?trackNumber=${tid}\n`;
             });
         }
