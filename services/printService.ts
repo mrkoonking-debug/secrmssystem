@@ -1148,6 +1148,24 @@ export const printDistributorDocuments = async (rmas: RMA[]) => {
   }
 };
 
+export const getDistributorDocumentsHTML = async (rmas: RMA[]): Promise<string> => {
+  if (!rmas || rmas.length === 0) return '';
+
+  const grouped: Record<string, RMA[]> = {};
+  for (const rma of rmas) {
+    const key = rma.distributor || 'Unknown';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(rma);
+  }
+
+  const pages: string[] = [];
+  for (const distName of Object.keys(grouped)) {
+    const html = await getImporterFormHTML(grouped[distName]);
+    pages.push(html);
+  }
+  return pages.join('<div style="page-break-after: always;"></div>');
+};
+
 export const printCustomerDocuments = async (rmas: RMA[]) => {
   try {
     if (!rmas || rmas.length === 0) return;
@@ -1157,6 +1175,11 @@ export const printCustomerDocuments = async (rmas: RMA[]) => {
     console.error("Error generating print documents:", err);
     alert("Error generating documents. Please try again.");
   }
+};
+
+export const getCustomerDocumentsHTML = async (rmas: RMA[]): Promise<string> => {
+  if (!rmas || rmas.length === 0) return '';
+  return await getCustomerFormHTML(rmas);
 };
 
 const executePrint = (html: string, titleName: string) => {

@@ -7,8 +7,8 @@ import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, Hist
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 
-import { printDistributorDocuments, printCustomerDocuments } from '../services/printService';
-import { Printer } from 'lucide-react'; // Added import or ensure it is already there
+import { printDistributorDocuments, printCustomerDocuments, getDistributorDocumentsHTML, getCustomerDocumentsHTML } from '../services/printService';
+import { Printer, Copy, X as XIcon } from 'lucide-react';
 import { ShipmentTagModal } from '../components/ShipmentTagModal';
 
 export const JobDetail: React.FC = () => {
@@ -21,6 +21,9 @@ export const JobDetail: React.FC = () => {
     // Shipment Tag Modal state
     const [isShipmentTagModalOpen, setIsShipmentTagModalOpen] = useState(false);
     const [shipmentTagTarget, setShipmentTagTarget] = useState<'CUSTOMER' | 'DISTRIBUTOR'>('CUSTOMER');
+
+    // Document Preview Popup state
+    const [docPreviewHtml, setDocPreviewHtml] = useState<string | null>(null);
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -240,7 +243,10 @@ export const JobDetail: React.FC = () => {
                             </div>
                             <div className="flex flex-1 items-center bg-transparent">
                                 <button
-                                    onClick={() => printDistributorDocuments(rmas)}
+                                    onClick={async () => {
+                                        const html = await getDistributorDocumentsHTML(rmas);
+                                        if (html) setDocPreviewHtml(html);
+                                    }}
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium transition-colors text-sm border-r border-gray-200 dark:border-[#424245] whitespace-nowrap"
                                     title="พิมพ์ใบส่งเคลม"
                                 >
@@ -265,7 +271,10 @@ export const JobDetail: React.FC = () => {
                             </div>
                             <div className="flex flex-1 items-center bg-transparent">
                                 <button
-                                    onClick={() => printCustomerDocuments(finishedRMAs)}
+                                    onClick={async () => {
+                                        const html = await getCustomerDocumentsHTML(finishedRMAs);
+                                        if (html) setDocPreviewHtml(html);
+                                    }}
                                     disabled={!hasFinishedRMAs}
                                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border-r border-gray-200 dark:border-[#424245] transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
                                     title={!hasFinishedRMAs ? "ต้องมีงานที่ปิดแล้วหรือเสร็จสิ้นอย่างน้อย 1 ชิ้น" : "พิมพ์ใบส่งคืนลูกค้า (เฉพาะเครื่องที่เสร็จแล้ว)"}
@@ -517,6 +526,40 @@ export const JobDetail: React.FC = () => {
                     onSave={handleSaveShipmentTagData}
                     targetType={shipmentTagTarget}
                 />
+            )}
+
+            {/* Document Preview Popup */}
+            {docPreviewHtml && (
+                <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
+                    {/* Toolbar */}
+                    <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
+                        <h2 className="text-gray-800 font-semibold text-base flex-1">📋 Preview เอกสาร</h2>
+                        <button
+                            onClick={() => {
+                                const iframe = document.getElementById('doc-preview-iframe') as HTMLIFrameElement;
+                                iframe?.contentWindow?.print();
+                            }}
+                            className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        >
+                            🖨️ พิมพ์เอกสาร
+                        </button>
+                        <button
+                            onClick={() => setDocPreviewHtml(null)}
+                            className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        >
+                            <XIcon className="w-4 h-4" /> ปิด
+                        </button>
+                    </div>
+                    {/* Preview Content - A4 */}
+                    <div className="flex-1 overflow-auto flex justify-center py-4 px-4">
+                        <iframe
+                            id="doc-preview-iframe"
+                            srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${docPreviewHtml}</body></html>`}
+                            className="border-0 shadow-2xl bg-white"
+                            style={{ width: '794px', height: '1123px', minWidth: '794px' }}
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );
