@@ -513,6 +513,7 @@ export const JobDetail: React.FC = () => {
                     isOpen={isShipmentTagModalOpen}
                     onClose={() => setIsShipmentTagModalOpen(false)}
                     rma={rmas[0]}
+                    allRmas={rmas}
                     onSave={handleSaveShipmentTagData}
                     targetType={shipmentTagTarget}
                 />

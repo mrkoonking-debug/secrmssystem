@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Package, Trash2, Expand, RefreshCw, Copy, Mail, Plus, Save, Truck } from 'lucide-react';
 import { RMA } from '../types';
-import { ShippingLabelPayload, printCustomerShippingLabel } from '../services/printService';
+import { ShippingLabelPayload, getCustomerShippingLabelHTML } from '../services/printService';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface ShipmentTagModalProps {
     isOpen: boolean;
     onClose: () => void;
     rma: RMA;
+    allRmas?: RMA[];
     onSave: (customerData: any) => Promise<void>;
     targetType: 'CUSTOMER' | 'DISTRIBUTOR';
 }
@@ -16,6 +17,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
     isOpen,
     onClose,
     rma,
+    allRmas,
     onSave,
     targetType
 }) => {
@@ -31,14 +33,15 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
     const [trackingIds, setTrackingIds] = useState<string[]>(['']); // Start with 1 empty box
 
     const [isSaving, setIsSaving] = useState(false);
+    const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             if (targetType === 'DISTRIBUTOR') {
                 setReceiverName(rma.distributor || '');
-                setContactPerson('');
-                setReceiverPhone('');
-                setReceiverAddress('');
+                setContactPerson((rma as any).distributorContactPerson || '');
+                setReceiverPhone((rma as any).distributorPhone || '');
+                setReceiverAddress((rma as any).distributorAddress || '');
             } else {
                 setReceiverName(rma.customerName || '');
                 setContactPerson(rma.contactPerson || '');
@@ -72,18 +75,32 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         setTrackingIds(newIds);
     };
 
-    const handleSaveAndPrint = async () => {
-        try {
-            setIsSaving(true);
-
-            // 1. Save updated customer info to DB (if modified here)
-            await onSave({
+    const buildSavePayload = () => {
+        const cleanTrackingIds = trackingIds.map(t => t.trim()).filter(Boolean);
+        if (targetType === 'DISTRIBUTOR') {
+            return {
+                distributorContactPerson: contactPerson,
+                distributorPhone: receiverPhone,
+                distributorAddress: receiverAddress,
+                trackingIds: cleanTrackingIds
+            };
+        } else {
+            return {
                 customerName: receiverName,
                 contactPerson: contactPerson,
                 customerPhone: receiverPhone,
                 customerReturnAddress: receiverAddress,
-                trackingIds: trackingIds.map(t => t.trim()).filter(Boolean) // Clean up empty ones before save
-            });
+                trackingIds: cleanTrackingIds
+            };
+        }
+    };
+
+    const handleSaveAndPrint = async () => {
+        try {
+            setIsSaving(true);
+
+            // 1. Save updated info to DB
+            await onSave(buildSavePayload());
 
             // 2. Prepare payloads for print service
             const payloads: ShippingLabelPayload[] = trackingIds.map((tid, index) => ({
@@ -97,28 +114,29 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                 totalBoxes: trackingIds.length
             }));
 
-            // 3. Trigger Print
-            await printCustomerShippingLabel(payloads);
+            // 3. Get HTML and show preview
+            const html = await getCustomerShippingLabelHTML(payloads);
+            setPreviewHtml(html);
 
         } catch (error) {
-            console.error("Failed to save or print shipment tag", error);
-            alert("เกิดข้อผิดพลาดในการบันทึกหรือพริ้นต์");
+            console.error("Failed to save or generate preview", error);
+            alert("เกิดข้อผิดพลาดในการบันทึกหรือสร้าง Preview");
         } finally {
             setIsSaving(false);
-            onClose(); // Close modal after printing
+        }
+    };
+
+    const handlePrintFromPreview = () => {
+        const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.print();
         }
     };
 
     const handleSaveClick = async () => {
         try {
             setIsSaving(true);
-            await onSave({
-                customerName: receiverName,
-                contactPerson: contactPerson,
-                customerPhone: receiverPhone,
-                customerReturnAddress: receiverAddress,
-                trackingIds: trackingIds.map(t => t.trim()).filter(Boolean)
-            });
+            await onSave(buildSavePayload());
             alert("บันทึกข้อมูลสำเร็จ");
         } catch (error) {
             console.error(error);
@@ -128,7 +146,52 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         }
     };
 
-    return (
+    const handleCopyData = () => {
+        const jobId = rma.groupRequestId || rma.id;
+        const refNo = rma.quotationNumber || '-';
+        const cleanTrackingIds = trackingIds.map(t => t.trim()).filter(Boolean);
+        const items = allRmas && allRmas.length > 0 ? allRmas : [rma];
+
+        const actionMap: Record<string, string> = {
+            'Replaced Component': 'ศูนย์เปลี่ยนอะไหล่',
+            'Swapped Unit': 'เปลี่ยนเครื่อง (Swap)',
+            'Software Update': 'อัพเดทซอฟต์แวร์',
+            'No Fault Found': 'ไม่พบปัญหา'
+        };
+
+        let text = `เลขที่งานเคลม (Job ID): ${jobId}\n`;
+        text += `เลขอ้างอิง/ใบเสนอราคา: ${refNo}\n\n`;
+
+        // รายการสินค้า
+        text += `รายการสินค้า (${items.length} ชิ้น):\n`;
+        items.forEach((item, i) => {
+            text += `${i + 1}. ${item.brand} ${item.productModel} | S/N: ${item.serialNumber || '-'}\n`;
+            if (item.resolution?.rootCause) text += `   อาการที่พบ: ${item.resolution.rootCause}\n`;
+            if (item.resolution?.actionTaken) text += `   การดำเนินการ: ${actionMap[item.resolution.actionTaken] || item.resolution.actionTaken}\n`;
+        });
+
+        text += `\nนำส่ง...${receiverName}\n`;
+        if (contactPerson) text += `ผู้ติดต่อ: ${contactPerson}\n`;
+        if (receiverAddress) text += `${receiverAddress}\n`;
+        if (receiverPhone) text += `โทร. ${receiverPhone}\n`;
+        text += `\nพัสดุจะปรากฏในระบบภายใน 1-3 วันทำการ\nหากยังไม่ปรากฏ กรุณาตรวจสอบอีกครั้งในวันถัดไป\n`;
+
+        if (cleanTrackingIds.length > 0) {
+            text += `\n`;
+            cleanTrackingIds.forEach(tid => {
+                text += `Tracking ID: ${tid}\n`;
+                text += `https://track.thailandpost.co.th/?trackNumber=${tid}\n`;
+            });
+        }
+
+        navigator.clipboard.writeText(text.trim()).then(() => {
+            alert('คัดลอกข้อมูลเรียบร้อยแล้ว');
+        }).catch(() => {
+            alert('ไม่สามารถคัดลอกได้');
+        });
+    };
+
+    return (<>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-[#1c1c1e] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-200 dark:border-[#333]">
 
@@ -287,12 +350,51 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                             <Expand className="w-4 h-4" /> Preview ใบติดหน้ากล่อง
                         </button>
 
-                        <button className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
+                        <button
+                            onClick={handleCopyData}
+                            className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2"
+                        >
                             <Copy className="w-4 h-4" /> คัดลอกข้อมูล
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-    );
+        {/* Preview Overlay */}
+        {previewHtml && (
+            <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
+                {/* Toolbar */}
+                <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
+                    <h2 className="text-gray-800 font-semibold text-base flex-1">📋 Preview ใบปะหน้ากล่อง</h2>
+                    <button
+                        onClick={handleCopyData}
+                        className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                    >
+                        <Copy className="w-4 h-4" /> คัดลอกข้อมูล
+                    </button>
+                    <button
+                        onClick={handlePrintFromPreview}
+                        className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                    >
+                        🖨️ พิมพ์เอกสาร
+                    </button>
+                    <button
+                        onClick={() => setPreviewHtml(null)}
+                        className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                    >
+                        <X className="w-4 h-4" /> ปิด
+                    </button>
+                </div>
+                {/* Preview Content - A4 size */}
+                <div className="flex-1 overflow-auto flex justify-center py-4 px-4">
+                    <iframe
+                        id="preview-iframe"
+                        srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${previewHtml}</body></html>`}
+                        className="border-0 shadow-2xl bg-white"
+                        style={{ width: '794px', height: '1123px', minWidth: '794px' }}
+                    />
+                </div>
+            </div>
+        )}
+    </>);
 };

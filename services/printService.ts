@@ -1,7 +1,8 @@
 
-import { RMA } from '../types';
+import { RMA, Team } from '../types';
 import { translations } from '../i18n/translations';
 import { MockDb } from './mockDb';
+import { LINE_ACCOUNTS } from '../lineConfig';
 
 const formatAccessory = (acc: string) => {
   if (acc.startsWith('acc_hdd::')) return `HDD (${acc.split('::')[1]})`;
@@ -695,14 +696,24 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
 
     // Format the assigned team to be displayed with the sender name
     let teamName = '';
-    let teamPhone = '092-273-xxxx'; // Default/Mock team phone
+    let teamPhoneLines = '';
     if (rma.team) {
-      if (rma.team === 'HIKVISION') { teamName = 'Team A: Hikvision'; teamPhone = '061-111-2222'; }
-      else if (rma.team === 'DAHUA') { teamName = 'Team B: Dahua'; teamPhone = '061-333-4444'; }
-      else if (rma.team === 'TEAM_C') { teamName = 'Team C: Network & UNV'; teamPhone = '061-555-6666'; }
-      else if (rma.team === 'TEAM_E') { teamName = 'Team E: UPS'; teamPhone = '061-777-8888'; }
-      else if (rma.team === 'TEAM_G') { teamName = 'Team G: Online Platform'; teamPhone = '061-999-0000'; }
-      else { teamName = `Team ${rma.team}`; }
+      // Find the LINE account that contains this team
+      const lineAccount = LINE_ACCOUNTS.find(la => la.teams.includes(rma.team as Team));
+      if (lineAccount) {
+        // Build team name from LINE account label
+        if (rma.team === 'HIKVISION') teamName = 'Team A: Hikvision';
+        else if (rma.team === 'DAHUA') teamName = 'Team B: Dahua';
+        else if (rma.team === 'TEAM_C') teamName = 'Team C: Network & UNV';
+        else if (rma.team === 'TEAM_E') teamName = 'Team E: UPS';
+        else if (rma.team === 'TEAM_G') teamName = 'Team G: Online Platform';
+        else teamName = `Team ${rma.team}`;
+
+        // Build phone lines from all recipients
+        teamPhoneLines = lineAccount.recipients.map(r => `${r.name}: ${r.phone}`).join('<br/>');
+      } else {
+        teamName = `Team ${rma.team}`;
+      }
     }
 
     const pageBreak = index < payloads.length - 1 ? 'page-break-after: always;' : '';
@@ -710,51 +721,49 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
     return `
     <div class="shipping-label" style="${pageBreak}">
       <div class="st-container">
-        
         <!-- ROW 1: SENDER & JOB ID -->
         <div class="st-row-1">
-          <div class="st-sender-box">
-            <div class="st-sender-left">
+          <!-- LEFT: Logo + Name + Details -->
+          <div class="st-sender-col">
+            <div class="st-brand-block">
               <div class="st-page-badge">${currentBox}/${totalBoxes}</div>
               ${settings.logoUrl ? `<img src="${settings.logoUrl}" class="st-sender-logo" alt="Logo" />` : ''}
-            </div>
-            <div class="st-sender-info">
-              <div class="st-sender-name">${settings.nameTh}</div>
-              <div class="st-sender-team">แผนกเคลม: ${teamName}</div>
-              <div class="st-sender-details">
-                ${settings.address}<br/>
-                โทร: ${settings.tel}
+              <div class="st-brand-text">
+                <div class="st-sender-name">${settings.nameTh}</div>
+                <div class="st-sender-team">แผนกเคลม: ${teamName}</div>
               </div>
+            </div>
+            <div class="st-sender-details">
+              ${settings.address}<br/>
+              โทร: ${settings.tel}
+              ${teamPhoneLines ? `<br/><span style="font-size: 10px; color: #1d4ed8; font-weight: 500;">${teamPhoneLines}</span>` : ''}
             </div>
           </div>
+          <!-- RIGHT: QR + Job ID (full height) -->
           <div class="st-job-box">
-            <div class="st-job-content">
-              <div class="st-job-label">JOB ID</div>
-              <div class="st-job-value" style="font-size: ${displayId.length > 15 ? '12px' : displayId.length > 12 ? '14px' : '18px'};">
-                  ${displayId}
-              </div>
-            </div>
             <div class="st-job-qr-container">
               <img src="${qrDataUrl}" class="st-qr-img" alt="QR" />
-              <div class="st-qr-text">สแกน JOB ID</div>
+              <div class="st-job-label">JOB ID</div>
+              <div class="st-job-value" style="font-size: ${displayId.length > 15 ? '12px' : displayId.length > 12 ? '14px' : '16px'};">
+                  ${displayId}
+              </div>
             </div>
           </div>
         </div>
 
         <!-- ROW 2: TRACKING -->
         <div class="st-row-2">
-          <div class="st-track-info">
-            <div class="st-track-label">EMS / Tracking No.</div>
-            <div class="st-track-val">${trackingId || '-'}</div>
+          <div class="st-track-qr-container">
+            <img src="${qrTrackingUrl}" class="st-qr-img" alt="QR Tracking" />
           </div>
           <div class="st-track-center">
             <div class="st-track-placeholder">
               <span style="letter-spacing: 1px;">ติด Tracking Label ที่นี่</span>
             </div>
           </div>
-          <div class="st-track-qr-container">
-            <img src="${qrTrackingUrl}" class="st-qr-img" alt="QR Tracking" />
-            <div class="st-qr-text">สแกน EMS</div>
+          <div class="st-track-info">
+            <div class="st-track-label">EMS / Tracking No.</div>
+            <div class="st-track-val">${trackingId || '-'}</div>
           </div>
         </div>
 
@@ -799,17 +808,16 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         font-family: 'Sarabun', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         color: #1d1d1f;
         width: 210mm;        /* A4 Width */
-        height: 148mm;       /* Half A4 Height (A5 Landscape) */
-        padding: 10mm;       /* Outer padding */
+        height: auto;        /* Auto height for content */
+        min-height: 148mm;   /* Minimum half A4 */
+        padding: 8mm;        /* Outer padding */
         margin: 0;
         position: relative;
-        overflow: hidden;
         box-sizing: border-box;
       }
       
       .st-container {
         width: 100%;
-        height: 100%;
         background-color: #fff;
         border: 2px solid #e5e5ea;
         border-radius: 16px;
@@ -817,37 +825,32 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         flex-direction: column;
         box-sizing: border-box;
         overflow: hidden;
-        /* Subtle shadow for preview, removed in print */
         box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
       }
 
       /* --- ROW 1: HEADER (SENDER & JOB ID) --- */
       .st-row-1 {
         display: flex;
-        height: 38mm;
         border-bottom: 2px solid #e5e5ea;
         background-color: #fff;
       }
-      
-      .st-sender-box {
+      .st-sender-col {
         flex: 1;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center; /* Centered visually */
-        gap: 16px;
-      }
-      .st-sender-left {
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+      }
+      .st-brand-block {
+        display: flex;
         align-items: center;
-        gap: 4px;
-        min-width: 50px;
+        gap: 12px;
       }
       .st-sender-logo {
-        height: 40px;
-        max-width: 80px;
+        height: 64px;
+        max-width: 110px;
         object-fit: contain;
-        border-radius: 8px;
       }
       .st-page-badge {
         background: #f3f4f6;
@@ -859,52 +862,46 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         border-radius: 6px;
         border: 1px solid #e5e7eb;
       }
-      .st-sender-info {
-        flex: 1;
-        padding-top: 2px;
+      .st-brand-text {
+        display: flex;
+        flex-direction: column;
       }
       .st-sender-name {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
         color: #111827;
-        margin-bottom: 2px;
         letter-spacing: -0.01em;
       }
       .st-sender-team {
         font-size: 13px;
         font-weight: 600;
-        color: #2563eb; /* Primary blue accent */
-        margin-bottom: 3px;
+        color: #2563eb;
+        margin-top: 2px;
       }
       .st-sender-details {
-        font-size: 12px;
+        font-size: 11px;
         color: #4b5563;
-        line-height: 1.4;
+        line-height: 1.5;
       }
 
       .st-job-box {
-        width: 78mm; /* Increased width to fit long IDs */
-        background-color: #fce7f3; /* Very soft pink/magenta */
+        width: 72mm;
+        background-color: #fce7f3;
         border-left: 2px solid #e5e5ea;
         display: flex;
-        align-items: center;
-        padding: 10px 14px;
-        gap: 10px;
-      }
-      .st-job-content {
-        flex: 1;
-        display: flex;
         flex-direction: column;
+        align-items: center;
         justify-content: center;
-        overflow: hidden;
+        padding: 10px 14px;
+        gap: 2px;
       }
       .st-job-label {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        color: #be185d; /* Deep pink */
+        color: #be185d;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        margin-bottom: 4px;
+        margin-top: 4px;
       }
       .st-job-value {
         font-weight: 800;
@@ -912,19 +909,20 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         font-family: 'Inter', monospace;
         letter-spacing: -0.02em;
         line-height: 1.1;
-        white-space: nowrap; /* Prevent ugly hypen word breaks */
+        white-space: nowrap;
+        text-align: center;
       }
       .st-job-qr-container {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
+        gap: 2px;
       }
 
       /* --- ROW 2: TRACKING --- */
       .st-row-2 {
         display: flex;
-        height: 38mm;
+        height: 36mm;
         border-bottom: 2px dashed #d1d5db;
         background-color: #f9fafb;
       }
@@ -934,7 +932,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         display: flex;
         flex-direction: column;
         justify-content: center;
-        border-right: 2px solid #e5e5ea;
+        border-left: 2px solid #e5e5ea;
         background-color: #fff;
       }
       .st-track-label {
@@ -946,8 +944,8 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         margin-bottom: 4px;
       }
       .st-track-val {
-        font-size: 20px;
-        font-weight: 800;
+        font-size: 14px;
+        font-weight: 700;
         color: #111827;
         font-family: 'Inter', monospace;
         letter-spacing: 0.5px;
@@ -958,7 +956,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 8px;
+        padding: 10px;
       }
       .st-track-placeholder {
         border: 2px dashed #cbd5e1;
@@ -975,14 +973,14 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
       }
       
       .st-track-qr-container {
-        width: 42mm; 
-        border-left: 2px solid #e5e5ea;
+        width: 46mm; 
+        border-right: 2px solid #e5e5ea;
         background-color: #fff;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 6px;
+        padding: 10px;
       }
 
       /* Shared QR Styles */
@@ -1001,15 +999,13 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
 
       /* --- ROW 3: RECEIVER --- */
       .st-row-3 {
-        flex: 1;
-        padding: 14px 16px;
+        padding: 14px 16px 16px;
         background-color: #fff;
         display: flex;
         flex-direction: column;
       }
       .st-receiver-card {
-        flex: 1;
-        border: 2px solid #111827; /* Strong border for emphasis */
+        border: 2px solid #111827;
         border-radius: 12px;
         display: flex;
         flex-direction: column;
@@ -1028,8 +1024,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         letter-spacing: 0.05em;
       }
       .st-receiver-content {
-        padding: 12px 16px;
-        flex: 1;
+        padding: 14px 18px 16px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -1097,7 +1092,32 @@ export const printCustomerShippingLabel = async (payloads: ShippingLabelPayload[
   try {
     if (!payloads || payloads.length === 0) return;
     const html = await getCustomerShippingLabelHTML(payloads);
-    executePrint(html, payloads[0].rma.id + '_Shipping_Label');
+    
+    // Build copy text from payloads
+    const rma = payloads[0].rma;
+    const jobId = rma.groupRequestId || rma.id;
+    const refNo = rma.quotationNumber || '-';
+    const receiverName = payloads[0].receiverName || '';
+    const contactPerson = payloads[0].contactPerson || '';
+    const receiverPhone = payloads[0].receiverPhone || '';
+    const receiverAddress = payloads[0].receiverAddress || '';
+    const trackingIds = payloads.map(p => p.trackingId).filter(Boolean);
+
+    let copyText = `เลขที่งานเคลม (Job ID): ${jobId}\n`;
+    copyText += `เลขอ้างอิง/ใบเสนอราคา: ${refNo}\n\n`;
+    copyText += `นำส่ง...${receiverName}\n`;
+    if (contactPerson) copyText += `ผู้ติดต่อ: ${contactPerson}\n`;
+    if (receiverAddress) copyText += `${receiverAddress}\n`;
+    if (receiverPhone) copyText += `โทร. ${receiverPhone}\n`;
+    copyText += `\nพัสดุจะปรากฏในระบบภายใน 1-3 วันทำการ\nหากยังไม่ปรากฏ กรุณาตรวจสอบอีกครั้งในวันถัดไป\n`;
+    if (trackingIds.length > 0) {
+      copyText += `\n`;
+      trackingIds.forEach(tid => {
+        copyText += `Tracking ID: ${tid}\nhttps://track.thailandpost.co.th/?trackNumber=${tid}\n`;
+      });
+    }
+
+    executePreview(html, rma.id + '_Shipping_Label', copyText.trim());
   } catch (err) {
     console.error("Error generating shipping label:", err);
     alert("Error generating document. Please try again.");
@@ -1163,4 +1183,125 @@ const executePrint = (html: string, titleName: string) => {
       }
     }, 1000);
   }, 500);
+};
+
+const executePreview = (html: string, titleName: string, copyText: string) => {
+  const previewWindow = window.open('', '_blank');
+  if (!previewWindow) {
+    alert('ไม่สามารถเปิดหน้าต่าง Preview ได้ กรุณาอนุญาต Popup');
+    return;
+  }
+
+  const escapedCopyText = copyText.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+
+  previewWindow.document.write(`
+    <html>
+    <head>
+      <title>Preview - ${titleName}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Inter:wght@500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          background: #f1f5f9; 
+          font-family: 'Sarabun', sans-serif;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .preview-toolbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: #1e293b;
+          padding: 12px 24px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .preview-toolbar h1 {
+          color: #fff;
+          font-size: 16px;
+          font-weight: 600;
+          flex: 1;
+        }
+        .toolbar-btn {
+          padding: 8px 20px;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s;
+        }
+        .btn-print {
+          background: #3b82f6;
+          color: #fff;
+        }
+        .btn-print:hover { background: #2563eb; }
+        .btn-copy {
+          background: #10b981;
+          color: #fff;
+        }
+        .btn-copy:hover { background: #059669; }
+        .btn-close {
+          background: #64748b;
+          color: #fff;
+        }
+        .btn-close:hover { background: #475569; }
+        .preview-content {
+          padding: 20px;
+          display: flex;
+          justify-content: center;
+        }
+        .copy-toast {
+          position: fixed;
+          top: 70px;
+          right: 24px;
+          background: #065f46;
+          color: #fff;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          opacity: 0;
+          transition: opacity 0.3s;
+          z-index: 200;
+        }
+        .copy-toast.show { opacity: 1; }
+        @media print {
+          .preview-toolbar { display: none !important; }
+          .preview-content { padding: 0; }
+          body { background: #fff; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="preview-toolbar">
+        <h1>📋 Preview ใบปะหน้ากล่อง</h1>
+        <button class="toolbar-btn btn-copy" onclick="copyData()">📋 คัดลอกข้อมูล</button>
+        <button class="toolbar-btn btn-print" onclick="window.print()">🖨️ พิมพ์เอกสาร</button>
+        <button class="toolbar-btn btn-close" onclick="window.close()">✕ ปิด</button>
+      </div>
+      <div id="copy-toast" class="copy-toast">✅ คัดลอกเรียบร้อยแล้ว</div>
+      <div class="preview-content">
+        ${html}
+      </div>
+      <script>
+        function copyData() {
+          navigator.clipboard.writeText('${escapedCopyText}').then(function() {
+            var toast = document.getElementById('copy-toast');
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 2000);
+          }).catch(function() {
+            alert('ไม่สามารถคัดลอกได้');
+          });
+        }
+      </script>
+    </body>
+    </html>
+  `);
+  previewWindow.document.close();
 };
