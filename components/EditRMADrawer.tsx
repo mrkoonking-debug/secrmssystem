@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RMA, RMAStatus, Team, DelayReason, ResolutionDetails } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock } from 'lucide-react';
+import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock, Search, Package, Wrench, Undo2, PackageCheck, ClipboardCheck, Settings2 } from 'lucide-react';
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
@@ -36,6 +36,12 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
     // Soft Lock State - lock closed jobs
     const [isLocked, setIsLocked] = useState(false);
+
+    // Event-Driven Workflow
+    const [showManualStatus, setShowManualStatus] = useState(false);
+    const [showVendorResultPopup, setShowVendorResultPopup] = useState(false);
+    const [showCloseSummary, setShowCloseSummary] = useState(false);
+    const [vendorForm, setVendorForm] = useState({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: '' });
 
     // Team State
     const [tempTeam, setTempTeam] = useState<Team | ''>('');
@@ -304,8 +310,6 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         { value: "Other", label: t('submit.other') }
     ];
 
-    const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit";
-    const isActionDisabled = formData.status === RMAStatus.PENDING || formData.status === RMAStatus.DIAGNOSING;
 
     return (
         <div className="max-w-5xl mx-auto py-6 px-4 animate-fade-in">
@@ -506,17 +510,107 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                 </div>
             </div>
 
-            {/* SECTION 3: สถานะและการดำเนินการ */}
+{/* SECTION 3: สถานะและการดำเนินการ */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
                 <h2 className="font-semibold text-lg flex items-center gap-3 mb-6 text-[#1d1d1f] dark:text-white">
                     <span className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center text-sm font-bold">3</span>
                     {t('track.statusResolution')}
                 </h2>
                 <div className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-50">
-                        <div className="relative z-50">
-                            <GlassSelect label={t('track.statusLabel')} value={formData.status || ''} onChange={val => handleFormChange('status', val)} options={statusOptions} searchable recentKey="status" />
+                    {/* ROW 1: Status Badge + Team */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* Status Badge + Transition Buttons */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('track.statusLabel')}</label>
+                            <div className={`px-4 py-3.5 rounded-2xl text-sm font-bold border flex items-center gap-2 ${
+                                formData.status === RMAStatus.PENDING ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' :
+                                formData.status === RMAStatus.DIAGNOSING ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600/40 text-blue-700 dark:text-blue-300' :
+                                formData.status === RMAStatus.WAITING_PARTS ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-600/40 text-orange-700 dark:text-orange-300' :
+                                formData.status === RMAStatus.REPAIRED ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600/40 text-green-700 dark:text-green-300' :
+                                formData.status === RMAStatus.CLOSED ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-600/40 text-purple-700 dark:text-purple-300' :
+                                'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600/40 text-red-700 dark:text-red-300'
+                            }`}>
+                                {formData.status === RMAStatus.PENDING && <AlertCircle className="w-4 h-4" />}
+                                {formData.status === RMAStatus.DIAGNOSING && <Search className="w-4 h-4" />}
+                                {formData.status === RMAStatus.WAITING_PARTS && <Package className="w-4 h-4" />}
+                                {formData.status === RMAStatus.REPAIRED && <CheckCircle2 className="w-4 h-4" />}
+                                {formData.status === RMAStatus.CLOSED && <Lock className="w-4 h-4" />}
+                                {formData.status === RMAStatus.REJECTED && <X className="w-4 h-4" />}
+                                {t(`status.${formData.status}`)}
+                            </div>
+
+                            {/* Transition Buttons */}
+                            <div className="mt-3 space-y-2">
+                                <label className="block text-xs font-semibold text-gray-500 uppercase ml-2">ขั้นตอนถัดไป</label>
+
+                                {formData.status === RMAStatus.PENDING && (
+                                    <button type="button" onClick={() => handleFormChange('status', RMAStatus.DIAGNOSING)}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
+                                        <Search className="w-4 h-4" /> 🔍 เริ่มตรวจสอบ
+                                    </button>
+                                )}
+
+                                {formData.status === RMAStatus.DIAGNOSING && (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <button type="button" onClick={() => {
+                                            if (!formData.resolution?.rootCause) {
+                                                if (!confirm('ยังไม่ได้กรอก "อาการที่พบ" ต้องการส่งเคลมศูนย์เลยหรือไม่?')) return;
+                                            }
+                                            handleFormChange('status', RMAStatus.WAITING_PARTS);
+                                        }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-orange-300 dark:border-orange-600/40 bg-orange-50/50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-sm font-medium transition-colors">
+                                            <Package className="w-4 h-4" /> 📦 ส่งเคลมศูนย์
+                                        </button>
+                                        <button type="button" onClick={() => {
+                                            handleFormChange('status', RMAStatus.REPAIRED);
+                                            handleResolutionChange('actionTaken', 'Software Update');
+                                        }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-green-300 dark:border-green-600/40 bg-green-50/50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20 text-green-700 dark:text-green-300 text-sm font-medium transition-colors">
+                                            <Wrench className="w-4 h-4" /> 🔧 แก้ไข Config/Firmware (จบที่ร้าน)
+                                        </button>
+                                        <button type="button" onClick={() => {
+                                            handleFormChange('status', RMAStatus.REPAIRED);
+                                            handleResolutionChange('actionTaken', 'No Fault Found');
+                                        }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600/40 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-700/30 text-gray-600 dark:text-gray-400 text-sm font-medium transition-colors">
+                                            <Undo2 className="w-4 h-4" /> ↩️ ไม่พบอาการเสีย (ส่งคืน)
+                                        </button>
+                                    </div>
+                                )}
+
+                                {formData.status === RMAStatus.WAITING_PARTS && (
+                                    <button type="button" onClick={() => {
+                                        setVendorForm({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: formData.resolution?.vendorTicketRef || '' });
+                                        setShowVendorResultPopup(true);
+                                    }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
+                                        <PackageCheck className="w-4 h-4" /> 📥 รับของคืนจากศูนย์
+                                    </button>
+                                )}
+
+                                {formData.status === RMAStatus.REPAIRED && (
+                                    <button type="button" onClick={() => setShowCloseSummary(true)}
+                                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold shadow-lg shadow-green-500/20 transition-all transform active:scale-[0.98]">
+                                        <ClipboardCheck className="w-4 h-4" /> ✅ ตรวจสอบและปิดงาน
+                                    </button>
+                                )}
+
+                                {formData.status !== RMAStatus.CLOSED && (
+                                    <button type="button" onClick={() => setShowManualStatus(!showManualStatus)}
+                                        className="mt-1 ml-2 text-[11px] text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1">
+                                        <Settings2 className="w-3 h-3" /> {showManualStatus ? 'ซ่อน' : 'เปลี่ยนสถานะด้วยตนเอง'}
+                                    </button>
+                                )}
+
+                                {showManualStatus && formData.status !== RMAStatus.CLOSED && (
+                                    <div className="relative z-50 mt-1">
+                                        <GlassSelect label="" value={formData.status || ''} onChange={val => handleFormChange('status', val)} options={statusOptions} searchable recentKey="status" />
+                                    </div>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Team Picker (unchanged) */}
                         <div>
                             <div className="flex justify-between items-center mb-2 ml-2">
                                 <label className="text-xs font-semibold text-gray-500 uppercase">{t('track.assignedTeam')}</label>
@@ -552,56 +646,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         </div>
                     </div>
 
-                    <div className="relative z-40">
-                        <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={(val) => handleResolutionChange('actionTaken', val)} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" disabled={isActionDisabled} />
-                        {isActionDisabled && !formData.resolution?.actionTaken && (
-                            <p className="mt-1.5 ml-2 text-xs text-amber-500 dark:text-amber-400">💡 จะเลือกได้เมื่อเปลี่ยนสถานะเป็น "ส่งศูนย์" หรือ "ปิดงาน"</p>
-                        )}
-                        {isActionDisabled && formData.resolution?.actionTaken && (
-                            <div className="mt-2 flex items-center gap-3 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-700/40 rounded-xl px-4 py-3">
-                                <div className="flex-1">
-                                    <p className="text-xs font-medium text-red-700 dark:text-red-300">มีข้อมูลการดำเนินการค้างอยู่ — สถานะปัจจุบันยังอยู่ขั้นตรวจสอบ</p>
-                                    <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">กดล้างเพื่อเริ่มข้อมูลใหม่ หรือเปลี่ยนสถานะกลับไปขั้นถัดไป</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (!confirm('ต้องการล้างข้อมูล "วิธีแก้ไข/ดำเนินการ" ทั้งหมดหรือไม่?')) return;
-                                        setFormData(prev => prev ? ({
-                                            ...prev,
-                                            resolution: prev.resolution ? {
-                                                ...prev.resolution,
-                                                actionTaken: '',
-                                                actionDetails: '',
-                                                replacedSerialNumber: ''
-                                            } : prev.resolution
-                                        }) : null);
-                                        setCustomAction('');
-                                    }}
-                                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
-                                >
-                                    🗑️ ล้างข้อมูล
-                                </button>
-                            </div>
-                        )}
-                        {formData.resolution?.actionTaken === 'Other' && (
-                            <input type="text" value={customAction} onChange={(e) => setCustomAction(e.target.value)} className="mt-2 w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="Specify action taken..." autoFocus />
-                        )}
-                        {formData.resolution?.actionTaken === 'Replaced Component' && (
-                            <div className="mt-2">
-                                <label className="block text-xs font-semibold text-orange-500 uppercase mb-1.5 ml-2">รายละเอียดการเปลี่ยนอะไหล่</label>
-                                <input type="text" value={formData.resolution?.actionDetails || ''} onChange={(e) => handleResolutionChange('actionDetails', e.target.value)} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-orange-300 dark:border-orange-500/30 text-[#1d1d1f] dark:text-white" placeholder="เช่น เปลี่ยน Mainboard, เปลี่ยน Power Supply" autoFocus />
-                            </div>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className={`block text-xs font-semibold uppercase mb-2 ml-2 flex items-center gap-1 ${showNewSerialInput ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                            <RefreshCw className="w-3.5 h-3.5" /> {t('track.newSerial')}
-                        </label>
-                        <input type="text" value={formData.resolution?.replacedSerialNumber || ''} onChange={(e) => handleResolutionChange('replacedSerialNumber', e.target.value)} disabled={!showNewSerialInput} className={`w-full rounded-2xl px-4 py-3.5 text-sm outline-none border transition-colors ${showNewSerialInput ? 'bg-white dark:bg-[#2c2c2e] border-green-300 dark:border-green-500/30 text-[#1d1d1f] dark:text-white' : 'bg-gray-100 dark:bg-[#2c2c2e] border-gray-200 dark:border-[#424245] text-gray-400 cursor-not-allowed'}`} placeholder={showNewSerialInput ? "Enter New S/N" : "N/A"} />
-                    </div>
-
+                    {/* ROW 2: Resolution Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('track.rootCause')}</label>
@@ -612,6 +657,22 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             <input type="text" value={formData.resolution?.vendorTicketRef || ''} onChange={(e) => handleResolutionChange('vendorTicketRef', e.target.value)} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="e.g. RMA-SYN-9988" />
                         </div>
                     </div>
+
+                    {/* actionTaken summary - shown read-only when set */}
+                    {formData.resolution?.actionTaken && (
+                        <div className="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/10">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">ผลการดำเนินการ</label>
+                            <div className="space-y-1.5 text-sm text-[#1d1d1f] dark:text-white">
+                                <p><span className="text-gray-500 text-xs">วิธีดำเนินการ:</span> <strong>{actionOptions.find(o => o.value === formData.resolution?.actionTaken)?.label || formData.resolution?.actionTaken}</strong></p>
+                                {formData.resolution?.actionDetails && (
+                                    <p><span className="text-gray-500 text-xs">รายละเอียด:</span> {formData.resolution.actionDetails}</p>
+                                )}
+                                {formData.resolution?.replacedSerialNumber && (
+                                    <p><span className="text-gray-500 text-xs">S/N ใหม่:</span> <span className="font-mono">{formData.resolution.replacedSerialNumber}</span></p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -750,6 +811,117 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             <button onClick={() => setShowAccReview(false)} className="px-5 py-2.5 text-sm font-medium rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">ยกเลิก</button>
                             <button onClick={() => { setShowAccReview(false); setIsAccessoriesLocked(true); }} className="px-5 py-2.5 text-sm font-semibold rounded-full text-white bg-[#0071e3] hover:bg-[#0077ED] transition-colors flex items-center gap-2">
                                 <Check className="w-4 h-4" /> ยืนยันการเปลี่ยนแปลง
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* VENDOR RESULT POPUP */}
+            {showVendorResultPopup && createPortal(
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-fade-in font-sans">
+                    <div className="bg-white dark:bg-[#1e1e20] w-full max-w-lg rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 bg-blue-50/50 dark:bg-blue-900/10">
+                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
+                                <PackageCheck className="w-6 h-6 text-blue-500" /> 📥 ลงผลจากศูนย์
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">กรอกรายละเอียดที่ศูนย์แจ้งมา</p>
+                        </div>
+                        <div className="p-8 space-y-5 overflow-y-auto">
+                            <div className="relative z-50">
+                                <GlassSelect label="วิธีดำเนินการ" value={vendorForm.actionTaken} onChange={val => setVendorForm(p => ({ ...p, actionTaken: val }))} options={actionOptions.filter(o => o.value !== '')} placeholder="เลือกวิธีดำเนินการ" searchable />
+                            </div>
+                            {vendorForm.actionTaken === 'Replaced Component' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-orange-500 uppercase mb-1.5 ml-2">รายละเอียดการเปลี่ยนอะไหล่</label>
+                                    <input type="text" value={vendorForm.actionDetails} onChange={e => setVendorForm(p => ({ ...p, actionDetails: e.target.value }))} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-orange-300 dark:border-orange-500/30 text-[#1d1d1f] dark:text-white" placeholder="เช่น เปลี่ยน Mainboard" />
+                                </div>
+                            )}
+                            {vendorForm.actionTaken === 'Swapped Unit' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-green-500 uppercase mb-1.5 ml-2 flex items-center gap-1"><RefreshCw className="w-3.5 h-3.5" /> S/N สินค้าตัวใหม่</label>
+                                    <input type="text" value={vendorForm.replacedSerialNumber} onChange={e => setVendorForm(p => ({ ...p, replacedSerialNumber: e.target.value }))} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-green-300 dark:border-green-500/30 text-[#1d1d1f] dark:text-white" placeholder="Enter New S/N" />
+                                </div>
+                            )}
+                            {vendorForm.actionTaken === 'Other' && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5 ml-2">ระบุวิธีดำเนินการ</label>
+                                    <input type="text" value={vendorForm.actionDetails} onChange={e => setVendorForm(p => ({ ...p, actionDetails: e.target.value }))} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="ระบุ..." />
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5 ml-2">เลข RMA Vendor</label>
+                                <input type="text" value={vendorForm.vendorTicketRef} onChange={e => setVendorForm(p => ({ ...p, vendorTicketRef: e.target.value }))} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="e.g. RMA-SYN-9988" />
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#2c2c2e] flex justify-end gap-3">
+                            <button onClick={() => setShowVendorResultPopup(false)} className="px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">ยกเลิก</button>
+                            <button onClick={() => {
+                                if (!vendorForm.actionTaken) { alert('กรุณาเลือกวิธีดำเนินการ'); return; }
+                                // Apply vendor form to resolution
+                                setFormData(prev => prev ? ({
+                                    ...prev,
+                                    status: RMAStatus.REPAIRED,
+                                    resolution: {
+                                        ...prev.resolution!,
+                                        actionTaken: vendorForm.actionTaken === 'Other' ? vendorForm.actionDetails : vendorForm.actionTaken,
+                                        actionDetails: vendorForm.actionTaken === 'Replaced Component' ? vendorForm.actionDetails : (prev.resolution?.actionDetails || ''),
+                                        replacedSerialNumber: vendorForm.replacedSerialNumber || (prev.resolution?.replacedSerialNumber || ''),
+                                        vendorTicketRef: vendorForm.vendorTicketRef || (prev.resolution?.vendorTicketRef || '')
+                                    }
+                                }) : null);
+                                if (vendorForm.actionTaken === 'Other') setCustomAction(vendorForm.actionDetails);
+                                setShowVendorResultPopup(false);
+                            }} className="px-8 py-2.5 rounded-full text-sm font-bold text-white bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+                                <Check className="w-4 h-4" /> บันทึกผล
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* CLOSE JOB SUMMARY POPUP */}
+            {showCloseSummary && createPortal(
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-fade-in font-sans">
+                    <div className="bg-white dark:bg-[#1e1e20] w-full max-w-lg rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 bg-green-50/50 dark:bg-green-900/10">
+                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
+                                <ClipboardCheck className="w-6 h-6 text-green-500" /> 📋 สรุปก่อนปิดงาน
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">ตรวจสอบข้อมูลก่อนปิดงาน เมื่อปิดแล้วข้อมูลจะถูกล็อค</p>
+                        </div>
+                        <div className="p-8 space-y-4 overflow-y-auto">
+                            <div className="rounded-xl bg-gray-50 dark:bg-white/5 p-4 border border-gray-100 dark:border-white/10 space-y-2.5 text-sm">
+                                <div className="flex justify-between"><span className="text-gray-500">สินค้า</span><strong className="text-[#1d1d1f] dark:text-white">{formData.brand} {formData.productModel}</strong></div>
+                                <div className="flex justify-between"><span className="text-gray-500">S/N</span><span className="font-mono text-[#1d1d1f] dark:text-white">{formData.serialNumber}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">อาการที่ลูกค้าแจ้ง</span><span className="text-[#1d1d1f] dark:text-white">{formData.issueDescription || '-'}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-500">อาการที่พบ</span><span className="text-[#1d1d1f] dark:text-white">{formData.resolution?.rootCause || '-'}</span></div>
+                                <hr className="border-gray-200 dark:border-gray-700" />
+                                <div className="flex justify-between"><span className="text-gray-500">วิธีดำเนินการ</span><strong className="text-[#1d1d1f] dark:text-white">{actionOptions.find(o => o.value === formData.resolution?.actionTaken)?.label || formData.resolution?.actionTaken || '-'}</strong></div>
+                                {formData.resolution?.actionDetails && (
+                                    <div className="flex justify-between"><span className="text-gray-500">รายละเอียด</span><span className="text-[#1d1d1f] dark:text-white">{formData.resolution.actionDetails}</span></div>
+                                )}
+                                {formData.resolution?.replacedSerialNumber && (
+                                    <div className="flex justify-between"><span className="text-gray-500">S/N ใหม่</span><span className="font-mono text-[#1d1d1f] dark:text-white">{formData.resolution.replacedSerialNumber}</span></div>
+                                )}
+                                {formData.resolution?.vendorTicketRef && (
+                                    <div className="flex justify-between"><span className="text-gray-500">เลข RMA Vendor</span><span className="text-[#1d1d1f] dark:text-white">{formData.resolution.vendorTicketRef}</span></div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700/30">
+                                <span className="text-lg">⚠️</span>
+                                <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">เมื่อปิดงานแล้ว ข้อมูลจะถูกล็อค ต้องปลดล็อคก่อนถึงจะแก้ไขได้</p>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#2c2c2e] flex justify-end gap-3">
+                            <button onClick={() => setShowCloseSummary(false)} className="px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">ย้อนกลับแก้ไข</button>
+                            <button onClick={() => {
+                                handleFormChange('status', RMAStatus.CLOSED);
+                                setShowCloseSummary(false);
+                            }} className="px-8 py-2.5 rounded-full text-sm font-bold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/20 transition-all flex items-center gap-2 transform active:scale-95">
+                                <Check className="w-4 h-4" /> ✅ ยืนยันปิดงาน
                             </button>
                         </div>
                     </div>
