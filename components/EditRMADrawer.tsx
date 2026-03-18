@@ -517,119 +517,108 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     (s === RMAStatus.REPAIRED && rma.history?.some(h => h.description?.includes('WAITING_PARTS'))) ||
                     (s === RMAStatus.CLOSED && rma.history?.some(h => h.description?.includes('WAITING_PARTS')));
                 
-                // Before DIAGNOSING, path is not yet decided
                 const pathDecided = s !== RMAStatus.PENDING && s !== RMAStatus.DIAGNOSING;
                 const directPath = pathDecided && !wentThroughVendor;
                 const vendorPath = pathDecided && wentThroughVendor;
 
-                // Status progression map
                 const statusLevel: Record<string, number> = {
-                    [RMAStatus.PENDING]: 0,
-                    [RMAStatus.DIAGNOSING]: 1,
-                    [RMAStatus.WAITING_PARTS]: 2,
-                    [RMAStatus.REPAIRED]: 3,
-                    [RMAStatus.CLOSED]: 4,
+                    [RMAStatus.PENDING]: 0, [RMAStatus.DIAGNOSING]: 1,
+                    [RMAStatus.WAITING_PARTS]: 2, [RMAStatus.REPAIRED]: 3, [RMAStatus.CLOSED]: 4,
                 };
                 const level = statusLevel[s] ?? 0;
 
-                // Node helper
-                const Node = ({ icon, label, active, done, pulse, className = '' }: { icon: string; label: string; active: boolean; done: boolean; pulse?: boolean; className?: string }) => (
-                    <div className={`flex flex-col items-center ${className}`}>
+                const Dot = ({ icon, label, done, active, pulse }: { icon: string; label: string; done: boolean; active: boolean; pulse?: boolean }) => (
+                    <div className="flex flex-col items-center gap-1.5">
                         <div className="relative">
-                            {pulse && <div className="absolute inset-0 w-11 h-11 -m-[1.5px] rounded-full bg-blue-400 opacity-25 animate-ping" style={{ animationDuration: '2s' }} />}
-                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${
-                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md' :
-                                active ? 'bg-white dark:bg-[#2c2c2e] border-[3px] border-blue-500 shadow-lg shadow-blue-500/20' :
-                                'bg-gray-100 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700'
+                            {pulse && <div className="absolute -inset-1 rounded-full bg-blue-400/30 animate-ping" style={{ animationDuration: '2s' }} />}
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg transition-all duration-500 ${
+                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/20' :
+                                active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-lg shadow-blue-500/25' :
+                                'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
                             }`}>
                                 {done ? <Check className="w-4 h-4 text-white" /> : <span className={active ? '' : 'grayscale opacity-30'}>{icon}</span>}
                             </div>
                         </div>
-                        <span className={`mt-1.5 text-[10px] font-bold text-center leading-tight ${
+                        <span className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight whitespace-nowrap ${
                             done ? 'text-blue-500 dark:text-blue-400' : active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
                         }`}>{label}</span>
                     </div>
                 );
 
-                // Connector helper
-                const Line = ({ active, className = '' }: { active: boolean; className?: string }) => (
-                    <div className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${active ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-gray-700'} ${className}`} />
+                const HLine = ({ active }: { active: boolean }) => (
+                    <div className={`h-[2px] flex-1 min-w-[12px] rounded-full transition-all duration-700 ${
+                        active ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'
+                    }`} />
                 );
 
                 return (
-                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-4 sm:px-6 py-5 mb-6 border border-gray-100 dark:border-[#333] overflow-hidden">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-4">
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-5 sm:px-8 py-6 mb-6 border border-gray-100 dark:border-[#333]">
+                        <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-5">
                             <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                                 <ArrowRight className="w-3 h-3 text-white" />
                             </div>
                             ความคืบหน้า
                         </h3>
 
-                        <div className="relative">
-                            {/* Row 1: Common start — รับเรื่อง → ตรวจสอบ */}
-                            <div className="flex items-center mb-1">
-                                <div style={{ width: '20%' }} className="flex justify-center">
-                                    <Node icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} pulse={level === 0} />
-                                </div>
-                                <Line active={level >= 1} />
-                                <div style={{ width: '20%' }} className="flex justify-center">
-                                    <Node icon="🔍" label="ตรวจสอบ" done={level > 1} active={level === 1} pulse={level === 1} />
-                                </div>
-                                {/* Spacer for alignment with branch rows */}
-                                <div style={{ width: '60%' }} />
+                        {/* ---- Flowchart Grid ---- */}
+                        <div className="grid gap-y-2" style={{ gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr auto 1fr auto', gridTemplateRows: 'auto auto auto' }}>
+
+                            {/* === ROW 1: รับเรื่อง → ตรวจสอบ (then empty) === */}
+                            <div className="flex justify-center" style={{ gridColumn: '1', gridRow: '1' }}>
+                                <Dot icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} pulse={level === 0} />
+                            </div>
+                            <div className="flex items-center px-1" style={{ gridColumn: '2', gridRow: '1' }}>
+                                <HLine active={level >= 1} />
+                            </div>
+                            <div className="flex justify-center" style={{ gridColumn: '3', gridRow: '1' }}>
+                                <Dot icon="🔍" label="ตรวจสอบ" done={level > 1} active={level === 1} pulse={level === 1} />
+                            </div>
+                            {/* Empty cells for row 1 alignment */}
+                            <div style={{ gridColumn: '4 / 10', gridRow: '1' }} />
+
+                            {/* === ROW 2: (vendor path) branch → ส่งผู้นำเข้า → ได้รับคืน → ปิดงาน === */}
+                            <div style={{ gridColumn: '1 / 3', gridRow: '2' }} />
+                            {/* Vertical connector + horizontal start */}
+                            <div className={`flex items-center justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '3', gridRow: '2' }}>
+                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${vendorPath || level >= 2 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
+                            </div>
+                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '4', gridRow: '2' }}>
+                                <HLine active={vendorPath && level >= 2} />
+                            </div>
+                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '5', gridRow: '2' }}>
+                                <Dot icon="📦" label="ส่งผู้นำเข้า" done={vendorPath && level > 2} active={level === 2} pulse={level === 2} />
+                            </div>
+                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '6', gridRow: '2' }}>
+                                <HLine active={vendorPath && level >= 3} />
+                            </div>
+                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '7', gridRow: '2' }}>
+                                <Dot icon="📥" label="ได้รับคืน" done={vendorPath && level > 3} active={vendorPath && level === 3} pulse={vendorPath && level === 3} />
+                            </div>
+                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '8', gridRow: '2' }}>
+                                <HLine active={level >= 4} />
+                            </div>
+                            <div className="flex justify-center" style={{ gridColumn: '9', gridRow: '2' }}>
+                                <Dot icon="✅" label="ปิดงาน" done={level >= 4} active={level === 4} />
                             </div>
 
-                            {/* Row 2: Vendor path — ส่งผู้นำเข้า → ได้รับคืน */}
-                            <div className={`flex items-center transition-opacity duration-500 ${directPath ? 'opacity-25' : 'opacity-100'}`}>
-                                <div style={{ width: '20%' }} />
-                                {/* Branch connector from ตรวจสอบ */}
-                                <div className="flex items-center" style={{ width: '5%' }}>
-                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${vendorPath && level >= 2 ? 'bg-gradient-to-r from-blue-500 to-orange-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                </div>
-                                <div style={{ width: '25%' }} className="flex justify-center">
-                                    <Node icon="📦" label="ส่งผู้นำเข้า" done={vendorPath && level > 2} active={level === 2 && vendorPath} pulse={level === 2} />
-                                </div>
-                                <Line active={vendorPath && level >= 3} />
-                                <div style={{ width: '25%' }} className="flex justify-center">
-                                    <Node icon="📥" label="ได้รับคืน" done={vendorPath && level > 3} active={vendorPath && level === 3} pulse={vendorPath && level === 3} />
-                                </div>
-                                {/* Connector to ปิดงาน */}
-                                <div className="flex items-center" style={{ width: '5%' }}>
-                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${vendorPath && level >= 4 ? 'bg-gradient-to-r from-cyan-500 to-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                </div>
-                                <div style={{ width: '20%' }} className="flex justify-center">
-                                    <Node icon="✅" label="ปิดงาน" done={level >= 4} active={level === 4} pulse={false} />
-                                </div>
+                            {/* === ROW 3: (direct path) branch → จบที่ร้าน ──────→ (merge to ปิดงาน) === */}
+                            <div style={{ gridColumn: '1 / 3', gridRow: '3' }} />
+                            <div className={`flex items-center justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '3', gridRow: '3' }}>
+                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${directPath ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
                             </div>
-
-                            {/* Row 3: Direct path — จบที่ร้าน */}
-                            <div className={`flex items-center transition-opacity duration-500 ${vendorPath ? 'opacity-25' : 'opacity-100'}`}>
-                                <div style={{ width: '20%' }} />
-                                {/* Branch connector from ตรวจสอบ */}
-                                <div className="flex items-center" style={{ width: '5%' }}>
-                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${directPath && level >= 3 ? 'bg-gradient-to-r from-blue-500 to-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                </div>
-                                <div style={{ width: '25%' }} className="flex justify-center">
-                                    <Node icon="🔧" label="จบที่ร้าน" done={directPath && level >= 3} active={directPath && level === 3} pulse={directPath && level === 3} />
-                                </div>
-                                {/* Long connector to ปิดงาน */}
-                                <Line active={directPath && level >= 4} className="" />
-                                <div style={{ width: '25%' }} />
-                                <div style={{ width: '5%' }} />
-                                <div style={{ width: '20%' }} />
+                            <div className={`flex items-center px-1 transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '4', gridRow: '3' }}>
+                                <HLine active={directPath && level >= 3} />
                             </div>
-
-                            {/* Vertical connectors (SVG overlay) */}
-                            <svg className="absolute pointer-events-none" style={{ top: '2.1rem', left: '28%', width: '4%', height: 'calc(100% - 2.5rem)' }}>
-                                {/* Line from ตรวจสอบ down to both branches */}
-                                <line x1="50%" y1="0" x2="50%" y2="35%" className={`transition-all duration-500 ${level >= 2 || directPath ? 'stroke-blue-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
-                                <line x1="50%" y1="60%" x2="50%" y2="100%" className={`transition-all duration-500 ${directPath ? 'stroke-emerald-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
-                            </svg>
-
-                            {/* Merge connector — from จบที่ร้าน back up to ปิดงาน */}
-                            <svg className="absolute pointer-events-none" style={{ top: '2.1rem', right: '8%', width: '4%', height: 'calc(100% - 2.5rem)' }}>
-                                <line x1="50%" y1="35%" x2="50%" y2="100%" className={`transition-all duration-500 ${directPath && level >= 4 ? 'stroke-emerald-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
-                            </svg>
+                            <div className={`flex justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '5', gridRow: '3' }}>
+                                <Dot icon="🔧" label="จบที่ร้าน" done={directPath && level >= 3} active={directPath && level === 3} pulse={directPath && level === 3} />
+                            </div>
+                            <div className={`flex items-center px-1 transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '6 / 8', gridRow: '3' }}>
+                                <HLine active={directPath && level >= 4} />
+                            </div>
+                            {/* Vertical merge to ปิดงาน */}
+                            <div className={`flex items-center justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '9', gridRow: '3' }}>
+                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${directPath && level >= 4 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
+                            </div>
                         </div>
                     </div>
                 );
