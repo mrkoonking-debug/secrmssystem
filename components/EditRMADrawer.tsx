@@ -607,14 +607,14 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     </>
                                 )}
 
-                                {formData.status !== RMAStatus.CLOSED && (
+                                {(formData.status !== RMAStatus.CLOSED || !isLocked) && (
                                     <button type="button" onClick={() => setShowManualStatus(!showManualStatus)}
                                         className="mt-1 ml-2 text-[11px] text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1">
                                         <Settings2 className="w-3 h-3" /> {showManualStatus ? 'ซ่อน' : 'เปลี่ยนสถานะด้วยตนเอง'}
                                     </button>
                                 )}
 
-                                {showManualStatus && formData.status !== RMAStatus.CLOSED && (
+                                {showManualStatus && (formData.status !== RMAStatus.CLOSED || !isLocked) && (
                                     <div className="relative z-50 mt-1">
                                         <GlassSelect label="" value={formData.status || ''} onChange={val => handleFormChange('status', val)} options={statusOptions} searchable recentKey="status" />
                                     </div>
