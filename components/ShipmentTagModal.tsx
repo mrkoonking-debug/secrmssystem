@@ -155,13 +155,6 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         const cleanTrackingIds = trackingIds.map(t => t.trim()).filter(Boolean);
         const items = allRmas && allRmas.length > 0 ? allRmas : [rma];
 
-        const actionMap: Record<string, string> = {
-            'Replaced Component': 'ศูนย์เปลี่ยนอะไหล่',
-            'Swapped Unit': 'เปลี่ยนเครื่อง (Swap)',
-            'Software Update': 'อัพเดทซอฟต์แวร์',
-            'No Fault Found': 'ไม่พบปัญหา'
-        };
-
         let text = `เลขที่งานเคลม (Job ID): ${jobId}\n`;
         text += `เลขอ้างอิง/ใบเสนอราคา: ${refNo}\n\n`;
 
@@ -169,8 +162,8 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         text += `รายการสินค้า (${items.length} ชิ้น):\n`;
         items.forEach((item, i) => {
             text += `${i + 1}. ${item.brand} ${item.productModel} | S/N: ${item.serialNumber || '-'}\n`;
-            if (item.resolution?.rootCause) text += `   อาการที่พบ: ${item.resolution.rootCause}\n`;
-            if (item.resolution?.actionTaken) text += `   การดำเนินการ: ${actionMap[item.resolution.actionTaken] || item.resolution.actionTaken}\n`;
+            text += `   อาการที่ลูกค้าแจ้ง: ${item.issueDescription || '-'}\n`;
+            text += `   อาการที่พบ: ${item.resolution?.rootCause || '-'}\n`;
         });
 
         text += `\nนำส่ง...${receiverName}\n`;
