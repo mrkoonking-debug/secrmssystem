@@ -541,16 +541,21 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
                             {/* Transition Buttons */}
                             <div className="mt-3 space-y-2">
-                                <label className="block text-xs font-semibold text-gray-500 uppercase ml-2">ขั้นตอนถัดไป</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase ml-2 mb-1">ขั้นตอนถัดไป</label>
 
                                 {formData.status === RMAStatus.PENDING && (
-                                    <button type="button" onClick={() => handleFormChange('status', RMAStatus.DIAGNOSING)}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
-                                        <Search className="w-4 h-4" /> 🔍 เริ่มตรวจสอบ
-                                    </button>
+                                    <>
+                                        <p className="text-[11px] text-gray-400 ml-2 mb-1">กดเพื่อเริ่มตรวจสอบอาการสินค้า</p>
+                                        <button type="button" onClick={() => handleFormChange('status', RMAStatus.DIAGNOSING)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
+                                            <Search className="w-4 h-4" /> 🔍 เริ่มตรวจสอบ
+                                        </button>
+                                    </>
                                 )}
 
                                 {formData.status === RMAStatus.DIAGNOSING && (
+                                    <>
+                                    <p className="text-[11px] text-gray-400 ml-2 mb-1">ตรวจสอบเสร็จแล้ว เลือกขั้นตอนที่เหมาะสม</p>
                                     <div className="grid grid-cols-1 gap-2">
                                         <button type="button" onClick={() => {
                                             if (!formData.resolution?.rootCause) {
@@ -576,23 +581,30 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             <Undo2 className="w-4 h-4" /> ↩️ ไม่พบอาการเสีย (ส่งคืน)
                                         </button>
                                     </div>
+                                    </>
                                 )}
 
                                 {formData.status === RMAStatus.WAITING_PARTS && (
-                                    <button type="button" onClick={() => {
-                                        setVendorForm({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: formData.resolution?.vendorTicketRef || '' });
-                                        setShowVendorResultPopup(true);
-                                    }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
-                                        <PackageCheck className="w-4 h-4" /> 📥 รับของคืนจากศูนย์
-                                    </button>
+                                    <>
+                                        <p className="text-[11px] text-gray-400 ml-2 mb-1">ของกลับจากศูนย์แล้ว กดเพื่อลงข้อมูลผลจากศูนย์</p>
+                                        <button type="button" onClick={() => {
+                                            setVendorForm({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: formData.resolution?.vendorTicketRef || '' });
+                                            setShowVendorResultPopup(true);
+                                        }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-600/40 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium transition-colors">
+                                            <PackageCheck className="w-4 h-4" /> 📥 รับของคืนจากศูนย์
+                                        </button>
+                                    </>
                                 )}
 
                                 {formData.status === RMAStatus.REPAIRED && (
-                                    <button type="button" onClick={() => setShowCloseSummary(true)}
-                                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold shadow-lg shadow-green-500/20 transition-all transform active:scale-[0.98]">
-                                        <ClipboardCheck className="w-4 h-4" /> ✅ ตรวจสอบและปิดงาน
-                                    </button>
+                                    <>
+                                        <p className="text-[11px] text-gray-400 ml-2 mb-1">ตรวจสอบข้อมูลทั้งหมดก่อนปิดงาน กดเพื่อดูสรุปและยืนยัน</p>
+                                        <button type="button" onClick={() => setShowCloseSummary(true)}
+                                            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-bold shadow-lg shadow-green-500/20 transition-all transform active:scale-[0.98]">
+                                            <ClipboardCheck className="w-4 h-4" /> ✅ ตรวจสอบและปิดงาน
+                                        </button>
+                                    </>
                                 )}
 
                                 {formData.status !== RMAStatus.CLOSED && (
