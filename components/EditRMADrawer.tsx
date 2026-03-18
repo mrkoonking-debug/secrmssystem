@@ -554,8 +554,35 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
                     <div className="relative z-40">
                         <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={(val) => handleResolutionChange('actionTaken', val)} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" disabled={isActionDisabled} />
-                        {isActionDisabled && (
+                        {isActionDisabled && !formData.resolution?.actionTaken && (
                             <p className="mt-1.5 ml-2 text-xs text-amber-500 dark:text-amber-400">💡 จะเลือกได้เมื่อเปลี่ยนสถานะเป็น "ส่งศูนย์" หรือ "ปิดงาน"</p>
+                        )}
+                        {isActionDisabled && formData.resolution?.actionTaken && (
+                            <div className="mt-2 flex items-center gap-3 bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-700/40 rounded-xl px-4 py-3">
+                                <div className="flex-1">
+                                    <p className="text-xs font-medium text-red-700 dark:text-red-300">มีข้อมูลการดำเนินการค้างอยู่ — สถานะปัจจุบันยังอยู่ขั้นตรวจสอบ</p>
+                                    <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">กดล้างเพื่อเริ่มข้อมูลใหม่ หรือเปลี่ยนสถานะกลับไปขั้นถัดไป</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!confirm('ต้องการล้างข้อมูล "วิธีแก้ไข/ดำเนินการ" ทั้งหมดหรือไม่?')) return;
+                                        setFormData(prev => prev ? ({
+                                            ...prev,
+                                            resolution: prev.resolution ? {
+                                                ...prev.resolution,
+                                                actionTaken: '',
+                                                actionDetails: '',
+                                                replacedSerialNumber: ''
+                                            } : prev.resolution
+                                        }) : null);
+                                        setCustomAction('');
+                                    }}
+                                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
+                                >
+                                    🗑️ ล้างข้อมูล
+                                </button>
+                            </div>
                         )}
                         {formData.resolution?.actionTaken === 'Other' && (
                             <input type="text" value={customAction} onChange={(e) => setCustomAction(e.target.value)} className="mt-2 w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="Specify action taken..." autoFocus />
