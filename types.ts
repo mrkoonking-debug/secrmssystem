@@ -57,6 +57,7 @@ export interface ResolutionDetails {
   vendorTicketRef?: string;// เลขใบงานของศูนย์นอก (ถ้าส่งต่อ Synnex/SIS)
   technicalNotes: string;  // บันทึกเชิงเทคนิคสำหรับช่างด้วยกัน
   replacedSerialNumber?: string; // *** NEW: S/N ใหม่กรณีเปลี่ยนตัว ***
+  actionDetails?: string;  // รายละเอียดการดำเนินการ เช่น "เปลี่ยน Mainboard"
 }
 
 // 7. สาเหตุความล่าช้า (Enum)

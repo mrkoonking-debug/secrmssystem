@@ -34,6 +34,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [showAccReview, setShowAccReview] = useState(false);
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
+    // Soft Lock State - lock closed jobs
+    const [isLocked, setIsLocked] = useState(false);
+
     // Team State
     const [tempTeam, setTempTeam] = useState<Team | ''>('');
     const [mainGroup, setMainGroup] = useState<'A' | 'B' | 'C' | ''>('');
@@ -45,6 +48,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             setIsReviewing(false);
             setDiffs([]);
             setCustomDist(rma.distributor || '');
+
+            // Initialize lock state for closed jobs
+            setIsLocked(rma.status === RMAStatus.CLOSED);
 
             // Initialize customAction if current actionTaken is not in predefined options
             const predefinedActions = ["Replaced Component", "Swapped Unit", "Software Update", "No Fault Found", "Other"];
@@ -272,6 +278,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
         try {
             await onSave(rma.id, updates, diffs);
+            setIsLocked(true); // Auto-lock back after save
             onClose();
         } catch (error) {
             console.error("Failed to save RMA updates:", error);
@@ -319,6 +326,24 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     <ArrowRight className="w-4 h-4 rotate-180" /> กลับ
                 </button>
             </div>
+
+            {/* SOFT LOCK BANNER */}
+            {isLocked && (
+                <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-600/40 rounded-2xl px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div>
+                            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">งานนี้ปิดแล้ว — ข้อมูลถูกล็อค</p>
+                            <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">กดปลดล็อคเพื่อแก้ไขข้อมูล</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setIsLocked(false)} className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium text-sm flex items-center gap-2 transition-colors whitespace-nowrap">
+                        🔓 ปลดล็อคเพื่อแก้ไข
+                    </button>
+                </div>
+            )}
+
+            <fieldset disabled={isLocked} className={isLocked ? 'opacity-60 pointer-events-none' : ''}>
 
             {/* SECTION 1: ข้อมูลสินค้า */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
@@ -530,6 +555,12 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={(val) => handleResolutionChange('actionTaken', val)} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" />
                         {formData.resolution?.actionTaken === 'Other' && (
                             <input type="text" value={customAction} onChange={(e) => setCustomAction(e.target.value)} className="mt-2 w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="Specify action taken..." autoFocus />
+                        )}
+                        {formData.resolution?.actionTaken === 'Replaced Component' && (
+                            <div className="mt-2">
+                                <label className="block text-xs font-semibold text-orange-500 uppercase mb-1.5 ml-2">รายละเอียดการเปลี่ยนอะไหล่</label>
+                                <input type="text" value={formData.resolution?.actionDetails || ''} onChange={(e) => handleResolutionChange('actionDetails', e.target.value)} className="w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-orange-300 dark:border-orange-500/30 text-[#1d1d1f] dark:text-white" placeholder="เช่น เปลี่ยน Mainboard, เปลี่ยน Power Supply" autoFocus />
+                            </div>
                         )}
                     </div>
 
@@ -770,6 +801,8 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     }}
                 />
             )}
+
+            </fieldset>
         </div>
     );
 };
