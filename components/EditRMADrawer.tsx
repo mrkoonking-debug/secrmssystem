@@ -509,103 +509,127 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     </div>
                 </div>
             </div>
-            {/* FLOW TRACKER */}
+            {/* FLOW TRACKER — Branching Flowchart */}
             {(() => {
                 const s = formData.status;
                 const wentThroughVendor = s === RMAStatus.WAITING_PARTS || 
                     rma.history?.some(h => h.description?.includes('WAITING_PARTS')) ||
                     (s === RMAStatus.REPAIRED && rma.history?.some(h => h.description?.includes('WAITING_PARTS'))) ||
                     (s === RMAStatus.CLOSED && rma.history?.some(h => h.description?.includes('WAITING_PARTS')));
+                
+                // Before DIAGNOSING, path is not yet decided
+                const pathDecided = s !== RMAStatus.PENDING && s !== RMAStatus.DIAGNOSING;
+                const directPath = pathDecided && !wentThroughVendor;
+                const vendorPath = pathDecided && wentThroughVendor;
 
-                const steps = wentThroughVendor
-                    ? [
-                        { key: 'PENDING', label: 'รับเรื่อง', icon: '📋', color: 'from-gray-400 to-gray-500' },
-                        { key: 'DIAGNOSING', label: 'ตรวจสอบ', icon: '🔍', color: 'from-blue-400 to-blue-600' },
-                        { key: 'WAITING_PARTS', label: 'ส่งผู้นำเข้า', icon: '📦', color: 'from-orange-400 to-orange-600' },
-                        { key: 'REPAIRED', label: 'ได้รับคืน', icon: '📥', color: 'from-cyan-400 to-cyan-600' },
-                        { key: 'CLOSED', label: 'ปิดงาน', icon: '✅', color: 'from-green-400 to-emerald-600' },
-                    ]
-                    : [
-                        { key: 'PENDING', label: 'รับเรื่อง', icon: '📋', color: 'from-gray-400 to-gray-500' },
-                        { key: 'DIAGNOSING', label: 'ตรวจสอบ', icon: '🔍', color: 'from-blue-400 to-blue-600' },
-                        { key: 'REPAIRED', label: 'จบที่ร้าน', icon: '🔧', color: 'from-emerald-400 to-emerald-600' },
-                        { key: 'CLOSED', label: 'ปิดงาน', icon: '✅', color: 'from-green-400 to-emerald-600' },
-                    ];
+                // Status progression map
+                const statusLevel: Record<string, number> = {
+                    [RMAStatus.PENDING]: 0,
+                    [RMAStatus.DIAGNOSING]: 1,
+                    [RMAStatus.WAITING_PARTS]: 2,
+                    [RMAStatus.REPAIRED]: 3,
+                    [RMAStatus.CLOSED]: 4,
+                };
+                const level = statusLevel[s] ?? 0;
 
-                const statusOrder: Record<string, number> = {};
-                steps.forEach((step, i) => { statusOrder[step.key] = i; });
-                const currentIdx = statusOrder[s as string] ?? -1;
-                const progressPct = currentIdx > 0 ? (currentIdx / (steps.length - 1)) * 100 : 0;
+                // Node helper
+                const Node = ({ icon, label, active, done, pulse, className = '' }: { icon: string; label: string; active: boolean; done: boolean; pulse?: boolean; className?: string }) => (
+                    <div className={`flex flex-col items-center ${className}`}>
+                        <div className="relative">
+                            {pulse && <div className="absolute inset-0 w-11 h-11 -m-[1.5px] rounded-full bg-blue-400 opacity-25 animate-ping" style={{ animationDuration: '2s' }} />}
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${
+                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md' :
+                                active ? 'bg-white dark:bg-[#2c2c2e] border-[3px] border-blue-500 shadow-lg shadow-blue-500/20' :
+                                'bg-gray-100 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700'
+                            }`}>
+                                {done ? <Check className="w-4 h-4 text-white" /> : <span className={active ? '' : 'grayscale opacity-30'}>{icon}</span>}
+                            </div>
+                        </div>
+                        <span className={`mt-1.5 text-[10px] font-bold text-center leading-tight ${
+                            done ? 'text-blue-500 dark:text-blue-400' : active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
+                        }`}>{label}</span>
+                    </div>
+                );
+
+                // Connector helper
+                const Line = ({ active, className = '' }: { active: boolean; className?: string }) => (
+                    <div className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${active ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-gray-700'} ${className}`} />
+                );
 
                 return (
-                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-4 sm:px-8 py-6 mb-6 border border-gray-100 dark:border-[#333] overflow-hidden">
-                        {/* Path badge */}
-                        <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                                    <ArrowRight className="w-3 h-3 text-white" />
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-4 sm:px-6 py-5 mb-6 border border-gray-100 dark:border-[#333] overflow-hidden">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-4">
+                            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                <ArrowRight className="w-3 h-3 text-white" />
+                            </div>
+                            ความคืบหน้า
+                        </h3>
+
+                        <div className="relative">
+                            {/* Row 1: Common start — รับเรื่อง → ตรวจสอบ */}
+                            <div className="flex items-center mb-1">
+                                <div style={{ width: '20%' }} className="flex justify-center">
+                                    <Node icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} pulse={level === 0} />
                                 </div>
-                                ความคืบหน้า
-                            </h3>
-                            {s !== RMAStatus.PENDING && (
-                                <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-                                    wentThroughVendor 
-                                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30' 
-                                        : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800/30'
-                                }`}>
-                                    {wentThroughVendor ? '📦 ส่งผู้นำเข้า' : '🔧 จบที่ร้าน'}
-                                </span>
-                            )}
-                        </div>
+                                <Line active={level >= 1} />
+                                <div style={{ width: '20%' }} className="flex justify-center">
+                                    <Node icon="🔍" label="ตรวจสอบ" done={level > 1} active={level === 1} pulse={level === 1} />
+                                </div>
+                                {/* Spacer for alignment with branch rows */}
+                                <div style={{ width: '60%' }} />
+                            </div>
 
-                        {/* Steps */}
-                        <div className="relative flex items-start justify-between">
-                            {/* Background track */}
-                            <div className="absolute top-6 h-1 rounded-full bg-gray-100 dark:bg-gray-800 z-0" style={{ left: `${100 / steps.length / 2}%`, right: `${100 / steps.length / 2}%` }} />
-                            {/* Active track */}
-                            <div className="absolute top-6 h-1 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 z-[1] transition-all duration-700 ease-out" 
-                                style={{ 
-                                    left: `${100 / steps.length / 2}%`, 
-                                    width: progressPct > 0 ? `${progressPct * (1 - 1 / steps.length)}%` : '0%' 
-                                }} 
-                            />
+                            {/* Row 2: Vendor path — ส่งผู้นำเข้า → ได้รับคืน */}
+                            <div className={`flex items-center transition-opacity duration-500 ${directPath ? 'opacity-25' : 'opacity-100'}`}>
+                                <div style={{ width: '20%' }} />
+                                {/* Branch connector from ตรวจสอบ */}
+                                <div className="flex items-center" style={{ width: '5%' }}>
+                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${vendorPath && level >= 2 ? 'bg-gradient-to-r from-blue-500 to-orange-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                </div>
+                                <div style={{ width: '25%' }} className="flex justify-center">
+                                    <Node icon="📦" label="ส่งผู้นำเข้า" done={vendorPath && level > 2} active={level === 2 && vendorPath} pulse={level === 2} />
+                                </div>
+                                <Line active={vendorPath && level >= 3} />
+                                <div style={{ width: '25%' }} className="flex justify-center">
+                                    <Node icon="📥" label="ได้รับคืน" done={vendorPath && level > 3} active={vendorPath && level === 3} pulse={vendorPath && level === 3} />
+                                </div>
+                                {/* Connector to ปิดงาน */}
+                                <div className="flex items-center" style={{ width: '5%' }}>
+                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${vendorPath && level >= 4 ? 'bg-gradient-to-r from-cyan-500 to-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                </div>
+                                <div style={{ width: '20%' }} className="flex justify-center">
+                                    <Node icon="✅" label="ปิดงาน" done={level >= 4} active={level === 4} pulse={false} />
+                                </div>
+                            </div>
 
-                            {steps.map((step, i) => {
-                                const isDone = i < currentIdx;
-                                const isCurrent = i === currentIdx;
-                                return (
-                                    <div key={step.key} className="flex flex-col items-center z-10 relative" style={{ width: `${100 / steps.length}%` }}>
-                                        {/* Circle */}
-                                        <div className="relative">
-                                            {isCurrent && (
-                                                <div className="absolute inset-0 w-12 h-12 -m-[2px] rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 opacity-30 animate-ping" style={{ animationDuration: '2s' }} />
-                                            )}
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl relative transition-all duration-500 ${
-                                                isDone 
-                                                    ? `bg-gradient-to-br ${step.color} text-white shadow-md` 
-                                                    : isCurrent 
-                                                        ? `bg-white dark:bg-[#2c2c2e] border-[3px] border-blue-500 shadow-xl shadow-blue-500/25` 
-                                                        : 'bg-gray-50 dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600'
-                                            }`}>
-                                                {isDone ? (
-                                                    <Check className="w-5 h-5 text-white" />
-                                                ) : (
-                                                    <span className={isCurrent ? '' : 'grayscale opacity-40'}>{step.icon}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {/* Label */}
-                                        <span className={`mt-2.5 text-[11px] font-bold text-center leading-tight transition-all duration-300 ${
-                                            isDone ? 'text-gray-500 dark:text-gray-400' :
-                                            isCurrent ? 'text-[#1d1d1f] dark:text-white' :
-                                            'text-gray-300 dark:text-gray-600'
-                                        }`}>{step.label}</span>
-                                        {isCurrent && (
-                                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                        )}
-                                    </div>
-                                );
-                            })}
+                            {/* Row 3: Direct path — จบที่ร้าน */}
+                            <div className={`flex items-center transition-opacity duration-500 ${vendorPath ? 'opacity-25' : 'opacity-100'}`}>
+                                <div style={{ width: '20%' }} />
+                                {/* Branch connector from ตรวจสอบ */}
+                                <div className="flex items-center" style={{ width: '5%' }}>
+                                    <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${directPath && level >= 3 ? 'bg-gradient-to-r from-blue-500 to-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                                </div>
+                                <div style={{ width: '25%' }} className="flex justify-center">
+                                    <Node icon="🔧" label="จบที่ร้าน" done={directPath && level >= 3} active={directPath && level === 3} pulse={directPath && level === 3} />
+                                </div>
+                                {/* Long connector to ปิดงาน */}
+                                <Line active={directPath && level >= 4} className="" />
+                                <div style={{ width: '25%' }} />
+                                <div style={{ width: '5%' }} />
+                                <div style={{ width: '20%' }} />
+                            </div>
+
+                            {/* Vertical connectors (SVG overlay) */}
+                            <svg className="absolute pointer-events-none" style={{ top: '2.1rem', left: '28%', width: '4%', height: 'calc(100% - 2.5rem)' }}>
+                                {/* Line from ตรวจสอบ down to both branches */}
+                                <line x1="50%" y1="0" x2="50%" y2="35%" className={`transition-all duration-500 ${level >= 2 || directPath ? 'stroke-blue-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
+                                <line x1="50%" y1="60%" x2="50%" y2="100%" className={`transition-all duration-500 ${directPath ? 'stroke-emerald-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
+                            </svg>
+
+                            {/* Merge connector — from จบที่ร้าน back up to ปิดงาน */}
+                            <svg className="absolute pointer-events-none" style={{ top: '2.1rem', right: '8%', width: '4%', height: 'calc(100% - 2.5rem)' }}>
+                                <line x1="50%" y1="35%" x2="50%" y2="100%" className={`transition-all duration-500 ${directPath && level >= 4 ? 'stroke-emerald-500' : 'stroke-gray-300 dark:stroke-gray-600'}`} strokeWidth="2" />
+                            </svg>
                         </div>
                     </div>
                 );
