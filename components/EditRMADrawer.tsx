@@ -509,6 +509,76 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     </div>
                 </div>
             </div>
+            {/* FLOW TRACKER */}
+            {(() => {
+                const s = formData.status;
+                // Determine if this RMA went through vendor path
+                const wentThroughVendor = s === RMAStatus.WAITING_PARTS || 
+                    rma.history?.some(h => h.description?.includes('WAITING_PARTS')) ||
+                    (s === RMAStatus.REPAIRED && rma.history?.some(h => h.description?.includes('WAITING_PARTS'))) ||
+                    (s === RMAStatus.CLOSED && rma.history?.some(h => h.description?.includes('WAITING_PARTS')));
+
+                const steps = wentThroughVendor
+                    ? [
+                        { key: 'PENDING', label: 'รับเรื่อง', icon: '📋' },
+                        { key: 'DIAGNOSING', label: 'ตรวจสอบ', icon: '🔍' },
+                        { key: 'WAITING_PARTS', label: 'ส่งผู้นำเข้า', icon: '📦' },
+                        { key: 'REPAIRED', label: 'ได้รับคืน', icon: '📥' },
+                        { key: 'CLOSED', label: 'ปิดงาน', icon: '✅' },
+                    ]
+                    : [
+                        { key: 'PENDING', label: 'รับเรื่อง', icon: '📋' },
+                        { key: 'DIAGNOSING', label: 'ตรวจสอบ', icon: '🔍' },
+                        { key: 'REPAIRED', label: 'จบที่ร้าน', icon: '🔧' },
+                        { key: 'CLOSED', label: 'ปิดงาน', icon: '✅' },
+                    ];
+
+                const statusOrder: Record<string, number> = {};
+                steps.forEach((step, i) => { statusOrder[step.key] = i; });
+                const currentIdx = statusOrder[s as string] ?? -1;
+
+                return (
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-6 mb-6 border border-gray-100 dark:border-[#333]">
+                        <div className="flex items-center justify-between relative">
+                            {/* Connector line */}
+                            <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 z-0" style={{ left: '10%', right: '10%' }} />
+                            <div className="absolute top-5 left-0 h-0.5 bg-blue-500 z-[1] transition-all duration-500" style={{ left: '10%', width: currentIdx > 0 ? `${(currentIdx / (steps.length - 1)) * 80}%` : '0%' }} />
+
+                            {steps.map((step, i) => {
+                                const isDone = i < currentIdx;
+                                const isCurrent = i === currentIdx;
+                                const isFuture = i > currentIdx;
+                                return (
+                                    <div key={step.key} className="flex flex-col items-center z-10 relative" style={{ width: `${100 / steps.length}%` }}>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all duration-300 ${
+                                            isDone ? 'bg-blue-500 border-blue-500 text-white scale-90' :
+                                            isCurrent ? 'bg-white dark:bg-[#2c2c2e] border-blue-500 shadow-lg shadow-blue-500/20 scale-110 ring-4 ring-blue-500/10' :
+                                            'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 scale-90'
+                                        }`}>
+                                            {isDone ? '✓' : step.icon}
+                                        </div>
+                                        <span className={`mt-2 text-[11px] font-semibold text-center leading-tight ${
+                                            isDone ? 'text-blue-500' :
+                                            isCurrent ? 'text-[#1d1d1f] dark:text-white' :
+                                            'text-gray-400'
+                                        }`}>{step.label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {wentThroughVendor && (
+                            <div className="mt-3 text-center">
+                                <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">เส้นทาง: ส่งผู้นำเข้า</span>
+                            </div>
+                        )}
+                        {!wentThroughVendor && s !== RMAStatus.PENDING && (
+                            <div className="mt-3 text-center">
+                                <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">เส้นทาง: จบที่ร้าน</span>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
 {/* SECTION 3: สถานะและการดำเนินการ */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
