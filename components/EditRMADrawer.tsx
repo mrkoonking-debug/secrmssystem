@@ -305,6 +305,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     ];
 
     const showNewSerialInput = formData.resolution?.actionTaken === "Swapped Unit";
+    const isActionDisabled = formData.status === RMAStatus.PENDING || formData.status === RMAStatus.DIAGNOSING;
 
     return (
         <div className="max-w-5xl mx-auto py-6 px-4 animate-fade-in">
@@ -552,7 +553,10 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     </div>
 
                     <div className="relative z-40">
-                        <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={(val) => handleResolutionChange('actionTaken', val)} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" />
+                        <GlassSelect label={t('track.actionTaken')} value={formData.resolution?.actionTaken || ''} onChange={(val) => handleResolutionChange('actionTaken', val)} options={actionOptions} placeholder={t('track.selectAction')} searchable recentKey="actionTaken" disabled={isActionDisabled} />
+                        {isActionDisabled && (
+                            <p className="mt-1.5 ml-2 text-xs text-amber-500 dark:text-amber-400">💡 จะเลือกได้เมื่อเปลี่ยนสถานะเป็น "ส่งศูนย์" หรือ "ปิดงาน"</p>
+                        )}
                         {formData.resolution?.actionTaken === 'Other' && (
                             <input type="text" value={customAction} onChange={(e) => setCustomAction(e.target.value)} className="mt-2 w-full px-4 py-3.5 text-sm rounded-2xl outline-none bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] text-[#1d1d1f] dark:text-white" placeholder="Specify action taken..." autoFocus />
                         )}
