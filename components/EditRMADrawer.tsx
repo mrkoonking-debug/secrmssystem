@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RMA, RMAStatus, Team, DelayReason, ResolutionDetails } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock, Search, Package, Wrench, Undo2, PackageCheck, ClipboardCheck, Settings2 } from 'lucide-react';
+import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock, Search, Package, Wrench, Undo2, PackageCheck, ClipboardCheck, Settings2, Maximize2 } from 'lucide-react';
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
@@ -41,6 +41,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [showManualStatus, setShowManualStatus] = useState(false);
     const [showVendorResultPopup, setShowVendorResultPopup] = useState(false);
     const [showCloseSummary, setShowCloseSummary] = useState(false);
+    const [showFlowFullscreen, setShowFlowFullscreen] = useState(false);
     const [vendorForm, setVendorForm] = useState({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: '' });
 
     // Team State
@@ -553,12 +554,18 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
                 return (
                     <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-5 sm:px-8 py-6 mb-6 border border-gray-100 dark:border-[#333]">
-                        <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-5">
-                            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                                <ArrowRight className="w-3 h-3 text-white" />
-                            </div>
-                            ความคืบหน้า
-                        </h3>
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                    <ArrowRight className="w-3 h-3 text-white" />
+                                </div>
+                                ความคืบหน้า
+                            </h3>
+                            <button onClick={() => setShowFlowFullscreen(true)} className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 px-2.5 py-1.5 rounded-lg transition-all">
+                                <Maximize2 className="w-3 h-3" />
+                                ดูเต็มจอ
+                            </button>
+                        </div>
 
                         {/* ---- Flowchart Grid ---- */}
                         <div className="grid gap-y-2" style={{ gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr auto 1fr auto', gridTemplateRows: 'auto auto auto' }}>
@@ -623,6 +630,184 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     </div>
                 );
             })()}
+
+            {/* FULLSCREEN FLOW VIEWER */}
+            {showFlowFullscreen && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowFlowFullscreen(false)}>
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md px-6 py-4 border-b border-gray-100 dark:border-gray-800 rounded-t-3xl flex items-center justify-between z-10">
+                            <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                    <ArrowRight className="w-4 h-4 text-white" />
+                                </div>
+                                ความคืบหน้างาน
+                            </h2>
+                            <button onClick={() => setShowFlowFullscreen(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="px-6 py-6">
+                            {/* Large Flowchart */}
+                            {(() => {
+                                const s = formData.status;
+                                const wentThroughVendor = s === RMAStatus.WAITING_PARTS || 
+                                    rma.history?.some(h => h.description?.includes('WAITING_PARTS')) ||
+                                    (s === RMAStatus.REPAIRED && rma.history?.some(h => h.description?.includes('WAITING_PARTS'))) ||
+                                    (s === RMAStatus.CLOSED && rma.history?.some(h => h.description?.includes('WAITING_PARTS')));
+                                const pathDecided = s !== RMAStatus.PENDING && s !== RMAStatus.DIAGNOSING;
+                                const directPath = pathDecided && !wentThroughVendor;
+                                const vendorPath = pathDecided && wentThroughVendor;
+                                const statusLevel: Record<string, number> = {
+                                    [RMAStatus.PENDING]: 0, [RMAStatus.DIAGNOSING]: 1,
+                                    [RMAStatus.WAITING_PARTS]: 2, [RMAStatus.REPAIRED]: 3, [RMAStatus.CLOSED]: 4,
+                                };
+                                const level = statusLevel[s] ?? 0;
+
+                                const BigDot = ({ icon, label, done, active, sub }: { icon: string; label: string; done: boolean; active: boolean; sub?: string }) => (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="relative">
+                                            {active && <div className="absolute -inset-1.5 rounded-full bg-blue-400/25 animate-ping" style={{ animationDuration: '2s' }} />}
+                                            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all duration-500 ${
+                                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-lg shadow-blue-500/25' :
+                                                active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-xl shadow-blue-500/30' :
+                                                'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
+                                            }`}>
+                                                {done ? <Check className="w-6 h-6 text-white" /> : <span className={active ? '' : 'grayscale opacity-30'}>{icon}</span>}
+                                            </div>
+                                        </div>
+                                        <span className={`text-xs font-bold text-center ${
+                                            done ? 'text-blue-500' : active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
+                                        }`}>{label}</span>
+                                        {sub && <span className="text-[10px] text-gray-400 -mt-1">{sub}</span>}
+                                    </div>
+                                );
+
+                                const BigLine = ({ active }: { active: boolean }) => (
+                                    <div className={`h-[3px] flex-1 min-w-[20px] rounded-full transition-all duration-700 ${
+                                        active ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'
+                                    }`} />
+                                );
+
+                                return (
+                                    <div className="mb-8">
+                                        {/* Path indicator */}
+                                        {pathDecided && (
+                                            <div className="flex justify-center mb-6">
+                                                <span className={`text-xs font-bold px-4 py-2 rounded-full ${
+                                                    vendorPath 
+                                                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30'
+                                                        : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800/30'
+                                                }`}>
+                                                    {vendorPath ? '📦 เส้นทาง: ส่งผู้นำเข้า' : '🔧 เส้นทาง: จบที่ร้าน'}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Large flowchart grid */}
+                                        <div className="grid gap-y-3" style={{ gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr auto 1fr auto', gridTemplateRows: 'auto auto auto' }}>
+                                            <div className="flex justify-center" style={{ gridColumn: '1', gridRow: '1' }}>
+                                                <BigDot icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} />
+                                            </div>
+                                            <div className="flex items-center px-2" style={{ gridColumn: '2', gridRow: '1' }}>
+                                                <BigLine active={level >= 1} />
+                                            </div>
+                                            <div className="flex justify-center" style={{ gridColumn: '3', gridRow: '1' }}>
+                                                <BigDot icon="🔍" label="ตรวจสอบ" done={level > 1} active={level === 1} />
+                                            </div>
+                                            <div style={{ gridColumn: '4 / 10', gridRow: '1' }} />
+
+                                            {/* Vendor path row */}
+                                            <div style={{ gridColumn: '1 / 3', gridRow: '2' }} />
+                                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '3', gridRow: '2' }}>
+                                                <div className={`w-[3px] h-4 rounded-full ${vendorPath || level >= 2 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
+                                            </div>
+                                            <div className={`flex items-center px-2 transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '4', gridRow: '2' }}>
+                                                <BigLine active={vendorPath && level >= 2} />
+                                            </div>
+                                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '5', gridRow: '2' }}>
+                                                <BigDot icon="📦" label="ส่งผู้นำเข้า" done={vendorPath && level > 2} active={level === 2} />
+                                            </div>
+                                            <div className={`flex items-center px-2 transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '6', gridRow: '2' }}>
+                                                <BigLine active={vendorPath && level >= 3} />
+                                            </div>
+                                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '7', gridRow: '2' }}>
+                                                <BigDot icon="📥" label="ได้รับคืน" done={vendorPath && level > 3} active={vendorPath && level === 3} />
+                                            </div>
+                                            <div className={`flex items-center px-2 transition-opacity duration-500 ${directPath ? 'opacity-15' : ''}`} style={{ gridColumn: '8', gridRow: '2' }}>
+                                                <BigLine active={level >= 4} />
+                                            </div>
+                                            <div className="flex justify-center" style={{ gridColumn: '9', gridRow: '2' }}>
+                                                <BigDot icon="✅" label="ปิดงาน" done={level >= 4} active={level === 4} />
+                                            </div>
+
+                                            {/* Direct path row */}
+                                            <div style={{ gridColumn: '1 / 3', gridRow: '3' }} />
+                                            <div className={`flex justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-15' : ''}`} style={{ gridColumn: '3', gridRow: '3' }}>
+                                                <div className={`w-[3px] h-4 rounded-full ${directPath ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
+                                            </div>
+                                            <div className={`flex items-center px-2 transition-opacity duration-500 ${vendorPath ? 'opacity-15' : ''}`} style={{ gridColumn: '4', gridRow: '3' }}>
+                                                <BigLine active={directPath && level >= 3} />
+                                            </div>
+                                            <div className={`flex justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-15' : ''}`} style={{ gridColumn: '5', gridRow: '3' }}>
+                                                <BigDot icon="🔧" label="จบที่ร้าน" done={directPath && level >= 3} active={directPath && level === 3} />
+                                            </div>
+                                            <div className={`flex items-center px-2 transition-opacity duration-500 ${vendorPath ? 'opacity-15' : ''}`} style={{ gridColumn: '6 / 8', gridRow: '3' }}>
+                                                <BigLine active={directPath && level >= 4} />
+                                            </div>
+                                            <div className={`flex justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-15' : ''}`} style={{ gridColumn: '9', gridRow: '3' }}>
+                                                <div className={`w-[3px] h-4 rounded-full ${directPath && level >= 4 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Timeline History */}
+                            <div>
+                                <h3 className="text-sm font-bold text-[#1d1d1f] dark:text-white mb-4 flex items-center gap-2">
+                                    <ClipboardCheck className="w-4 h-4 text-blue-500" />
+                                    ประวัติการดำเนินงาน
+                                </h3>
+                                {rma.history && rma.history.length > 0 ? (
+                                    <div className="space-y-0">
+                                        {[...rma.history].reverse().map((event, idx) => {
+                                            const isFirst = idx === 0;
+                                            const typeColors: Record<string, string> = {
+                                                'STATUS_CHANGE': 'bg-blue-500',
+                                                'NOTE': 'bg-amber-500',
+                                                'SYSTEM': 'bg-gray-400',
+                                                'CUSTOMER_ACTION': 'bg-green-500',
+                                            };
+                                            return (
+                                                <div key={event.id || idx} className="flex gap-3">
+                                                    {/* Timeline line + dot */}
+                                                    <div className="flex flex-col items-center">
+                                                        <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${isFirst ? 'ring-4 ring-blue-100 dark:ring-blue-900/30 ' : ''}${typeColors[event.type] || 'bg-gray-400'}`} />
+                                                        {idx < rma.history.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700 min-h-[20px]" />}
+                                                    </div>
+                                                    {/* Content */}
+                                                    <div className={`pb-4 flex-1 ${isFirst ? '' : 'opacity-70'}`}>
+                                                        <p className="text-sm font-semibold text-[#1d1d1f] dark:text-white">{event.description}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[11px] text-gray-400">{event.date}</span>
+                                                            {event.user && <span className="text-[11px] text-gray-400">• {event.user}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-400 text-center py-6">ยังไม่มีประวัติการดำเนินงาน</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
 {/* SECTION 3: สถานะและการดำเนินการ */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
