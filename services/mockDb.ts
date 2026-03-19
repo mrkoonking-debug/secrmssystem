@@ -48,6 +48,14 @@ let _authReadyResolve: () => void;
 const authReadyPromise = new Promise<void>((resolve) => { _authReadyResolve = resolve; });
 
 if (isConfigured && auth) {
+  // Helper: resolve role from Firestore user document
+  const resolveUserRole = (email: string | null | undefined, userData: any): string => {
+    // Super admins always get 'admin'
+    if (email === 'support@sectechnology.co.th' || email === 'admin@sec-claim.com') return 'admin';
+    // Everyone else: use Firestore role (but only 'admin' if explicitly set, default to 'staff')
+    return userData?.role || 'staff';
+  };
+
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -56,7 +64,7 @@ if (isConfigured && auth) {
         uid: user.uid,
         name: userData.name || user.email?.split('@')[0],
         email: user.email,
-        role: (user.email === 'support@sectechnology.co.th' || user.email === 'admin@sec-claim.com') ? 'admin' : (userData.role || 'staff'),
+        role: resolveUserRole(user.email, userData),
         team: userData.team || 'ALL'
       };
     } else {
@@ -92,15 +100,17 @@ export const MockDb = {
       const cred = await signInWithEmailAndPassword(auth, u, p);
       const email = cred.user.email;
 
-      // Force Admin Role for Super Admin
-      const role = (email === 'support@sectechnology.co.th' || email === 'admin@sec-claim.com') ? 'admin' : 'staff';
+      // Read role from Firestore user document (same logic as onAuthStateChanged)
+      const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      const role = (email === 'support@sectechnology.co.th' || email === 'admin@sec-claim.com') ? 'admin' : (userData?.role || 'staff');
 
       currentUser = {
         uid: cred.user.uid,
-        name: email?.split('@')[0],
+        name: userData?.name || email?.split('@')[0],
         email: email,
         role: role,
-        team: 'ALL'
+        team: userData?.team || 'ALL'
       };
       return { success: true };
     } catch (e: any) {
