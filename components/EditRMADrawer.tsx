@@ -539,10 +539,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     </div>
                 </div>
             </div>
-            {/* FLOW TRACKER — Branching Flowchart */}
+            {/* FLOW TRACKER — Clean Linear Flowchart */}
             {(() => {
                 const s = formData.status;
-                // Reliable vendor path detection: check current status + actual data fields
                 const wentThroughVendor = s === RMAStatus.WAITING_PARTS || 
                     formData.serviceType === 'EXTERNAL' ||
                     !!(formData.resolution?.vendorTicketRef) ||
@@ -559,29 +558,19 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                 };
                 const level = statusLevel[s] ?? 0;
 
-                const Dot = ({ icon, label, done, active, pulse }: { icon: string; label: string; done: boolean; active: boolean; pulse?: boolean }) => (
-                    <div className="flex flex-col items-center gap-1.5">
-                        <div className="relative">
-                            {pulse && <div className="absolute -inset-1 rounded-full bg-blue-400/30 animate-ping" style={{ animationDuration: '2s' }} />}
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg transition-all duration-500 ${
-                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/20' :
-                                active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-lg shadow-blue-500/25' :
-                                'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
-                            }`}>
-                                {done ? <Check className="w-4 h-4 text-white" /> : <span className={active ? '' : 'grayscale opacity-30'}>{icon}</span>}
-                            </div>
-                        </div>
-                        <span className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight whitespace-nowrap ${
-                            done ? 'text-blue-500 dark:text-blue-400' : active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
-                        }`}>{label}</span>
-                    </div>
-                );
-
-                const HLine = ({ active }: { active: boolean }) => (
-                    <div className={`h-[2px] flex-1 min-w-[12px] rounded-full transition-all duration-700 ${
-                        active ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'
-                    }`} />
-                );
+                const steps: { icon: string; label: string; done: boolean; active: boolean }[] = [
+                    { icon: '\u{1F4CB}', label: '\u0E23\u0E31\u0E1A\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07', done: level > 0, active: level === 0 },
+                    { icon: '\u{1F50D}', label: '\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A', done: level > 1, active: level === 1 },
+                ];
+                if (vendorPath) {
+                    steps.push({ icon: '\u{1F4E6}', label: '\u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 2, active: level === 2 });
+                    steps.push({ icon: '\u{1F4E5}', label: '\u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A\u0E04\u0E37\u0E19', done: level > 3, active: level === 3 });
+                } else if (directPath) {
+                    steps.push({ icon: '\u{1F527}', label: '\u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19', done: level >= 3, active: level === 3 });
+                } else {
+                    steps.push({ icon: '\u2753', label: '\u0E23\u0E2D\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19', done: false, active: false });
+                }
+                steps.push({ icon: '\u2705', label: '\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19', done: level >= 4, active: level === 4 });
 
                 return (
                     <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-5 sm:px-8 py-6 mb-6 border border-gray-100 dark:border-[#333]">
@@ -590,74 +579,52 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                                     <ArrowRight className="w-3 h-3 text-white" />
                                 </div>
-                                ความคืบหน้า
+                                \u0E04\u0E27\u0E32\u0E21\u0E04\u0E37\u0E1A\u0E2B\u0E19\u0E49\u0E32
                             </h3>
                             <button onClick={() => setShowFlowFullscreen(true)} className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 px-2.5 py-1.5 rounded-lg transition-all">
                                 <Maximize2 className="w-3 h-3" />
-                                ดูเต็มจอ
+                                \u0E14\u0E39\u0E40\u0E15\u0E47\u0E21\u0E08\u0E2D
                             </button>
                         </div>
 
-                        {/* ---- Flowchart Grid ---- */}
-                        <div className="grid gap-y-2" style={{ gridTemplateColumns: 'auto 1fr auto 1fr auto 1fr auto 1fr auto', gridTemplateRows: 'auto auto auto' }}>
-
-                            {/* === ROW 1: รับเรื่อง → ตรวจสอบ (then empty) === */}
-                            <div className="flex justify-center" style={{ gridColumn: '1', gridRow: '1' }}>
-                                <Dot icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} pulse={level === 0} />
-                            </div>
-                            <div className="flex items-center px-1" style={{ gridColumn: '2', gridRow: '1' }}>
-                                <HLine active={level >= 1} />
-                            </div>
-                            <div className="flex justify-center" style={{ gridColumn: '3', gridRow: '1' }}>
-                                <Dot icon="🔍" label="ตรวจสอบ" done={level > 1} active={level === 1} pulse={level === 1} />
-                            </div>
-                            {/* Empty cells for row 1 alignment */}
-                            <div style={{ gridColumn: '4 / 10', gridRow: '1' }} />
-
-                            {/* === ROW 2: (vendor path) branch → ส่งผู้นำเข้า → ได้รับคืน → ปิดงาน === */}
-                            <div style={{ gridColumn: '1 / 3', gridRow: '2' }} />
-                            {/* Vertical connector + horizontal start */}
-                            <div className={`flex items-center justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '3', gridRow: '2' }}>
-                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${vendorPath || level >= 2 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
-                            </div>
-                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '4', gridRow: '2' }}>
-                                <HLine active={vendorPath && level >= 2} />
-                            </div>
-                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '5', gridRow: '2' }}>
-                                <Dot icon="📦" label="ส่งผู้นำเข้า" done={vendorPath && level > 2} active={level === 2} pulse={level === 2} />
-                            </div>
-                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '6', gridRow: '2' }}>
-                                <HLine active={vendorPath && level >= 3} />
-                            </div>
-                            <div className={`flex justify-center transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '7', gridRow: '2' }}>
-                                <Dot icon="📥" label="ได้รับคืน" done={vendorPath && level > 3} active={vendorPath && level === 3} pulse={vendorPath && level === 3} />
-                            </div>
-                            <div className={`flex items-center px-1 transition-opacity duration-500 ${directPath ? 'opacity-20' : ''}`} style={{ gridColumn: '8', gridRow: '2' }}>
-                                <HLine active={level >= 4} />
-                            </div>
-                            <div className="flex justify-center" style={{ gridColumn: '9', gridRow: '2' }}>
-                                <Dot icon="✅" label="ปิดงาน" done={level >= 4} active={level === 4} />
-                            </div>
-
-                            {/* === ROW 3: (direct path) branch → จบที่ร้าน ──────→ (merge to ปิดงาน) === */}
-                            <div style={{ gridColumn: '1 / 3', gridRow: '3' }} />
-                            <div className={`flex items-center justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '3', gridRow: '3' }}>
-                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${directPath ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
-                            </div>
-                            <div className={`flex items-center px-1 transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '4', gridRow: '3' }}>
-                                <HLine active={directPath && level >= 3} />
-                            </div>
-                            <div className={`flex justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '5', gridRow: '3' }}>
-                                <Dot icon="🔧" label="จบที่ร้าน" done={directPath && level >= 3} active={directPath && level === 3} pulse={directPath && level === 3} />
-                            </div>
-                            <div className={`flex items-center px-1 transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '6 / 8', gridRow: '3' }}>
-                                <HLine active={directPath && level >= 4} />
-                            </div>
-                            {/* Vertical merge to ปิดงาน */}
-                            <div className={`flex items-center justify-center transition-opacity duration-500 ${vendorPath ? 'opacity-20' : ''}`} style={{ gridColumn: '9', gridRow: '3' }}>
-                                <div className={`w-[2px] h-3 rounded-full transition-all duration-500 ${directPath && level >= 4 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
-                            </div>
+                        <div className="flex items-center gap-0">
+                            {steps.map((step, i) => (
+                                <React.Fragment key={i}>
+                                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                        <div className="relative">
+                                            {step.active && <div className="absolute -inset-1 rounded-full bg-blue-400/30 animate-ping" style={{ animationDuration: '2s' }} />}
+                                            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-base transition-all duration-500 ${
+                                                step.done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/20' :
+                                                step.active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-lg shadow-blue-500/25' :
+                                                'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
+                                            }`}>
+                                                {step.done ? <Check className="w-4 h-4 text-white" /> : <span className={step.active ? '' : 'grayscale opacity-40'}>{step.icon}</span>}
+                                            </div>
+                                        </div>
+                                        <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight max-w-[56px] ${
+                                            step.done ? 'text-blue-500 dark:text-blue-400' : step.active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
+                                        }`}>{step.label}</span>
+                                    </div>
+                                    {i < steps.length - 1 && (
+                                        <div className={`h-[2px] flex-1 min-w-[8px] rounded-full transition-all duration-700 mx-0.5 ${
+                                            step.done ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'
+                                        }`} />
+                                    )}
+                                </React.Fragment>
+                            ))}
                         </div>
+
+                        {pathDecided && (
+                            <div className="flex justify-center mt-4">
+                                <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${
+                                    vendorPath 
+                                        ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-500 border border-orange-200 dark:border-orange-800/30'
+                                        : 'bg-green-50 dark:bg-green-900/20 text-green-500 border border-green-200 dark:border-green-800/30'
+                                }`}>
+                                    {vendorPath ? '\u{1F4E6} \u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32' : '\u{1F527} \u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 );
             })()}
@@ -665,14 +632,14 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             {/* FULLSCREEN FLOW VIEWER */}
             {showFlowFullscreen && createPortal(
                 <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowFlowFullscreen(false)}>
-                    <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
                         {/* Header */}
                         <div className="sticky top-0 bg-white/90 dark:bg-[#1c1c1e]/90 backdrop-blur-md px-6 py-4 border-b border-gray-100 dark:border-gray-800 rounded-t-3xl flex items-center justify-between z-10">
                             <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                                     <ArrowRight className="w-4 h-4 text-white" />
                                 </div>
-                                ความคืบหน้างาน
+                                \u0E04\u0E27\u0E32\u0E21\u0E04\u0E37\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19
                             </h2>
                             <button onClick={() => setShowFlowFullscreen(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                                 <X className="w-4 h-4" />
@@ -680,7 +647,6 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         </div>
 
                         <div className="px-6 py-6">
-                            {/* Vertical Flowchart */}
                             {(() => {
                                 const s = formData.status;
                                 const wentThroughVendor = s === RMAStatus.WAITING_PARTS || 
@@ -697,40 +663,29 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 };
                                 const level = statusLevel[s] ?? 0;
 
-                                // Find history event for a status
-                                const findEvent = (statusKey: string) => {
-                                    return rma.history?.find(h => h.description?.includes(statusKey));
+                                const fmtDate = (d?: string) => {
+                                    if (!d) return '';
+                                    try { return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+                                    catch { return ''; }
                                 };
 
-                                const Step = ({ icon, label, done, active, dimmed, date }: { icon: string; label: string; done: boolean; active: boolean; dimmed?: boolean; date?: string }) => (
-                                    <div className={`flex items-center gap-4 transition-opacity duration-500 ${dimmed ? 'opacity-20' : ''}`}>
-                                        <div className="relative flex-shrink-0">
-                                            {active && <div className="absolute -inset-1.5 rounded-full bg-blue-400/25 animate-ping" style={{ animationDuration: '2s' }} />}
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${
-                                                done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-lg shadow-blue-500/20' :
-                                                active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-lg shadow-blue-500/25' :
-                                                'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
-                                            }`}>
-                                                {done ? <Check className="w-5 h-5 text-white" /> : <span className={active ? '' : 'grayscale opacity-30'}>{icon}</span>}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <span className={`text-sm font-bold ${
-                                                done ? 'text-blue-500 dark:text-blue-400' : active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
-                                            }`}>{label}</span>
-                                            {date && <p className="text-[11px] text-gray-400 mt-0.5">{date}</p>}
-                                            {active && <span className="inline-block ml-2 text-[10px] font-semibold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">ขั้นตอนปัจจุบัน</span>}
-                                        </div>
-                                    </div>
-                                );
-
-                                const VLine = ({ active, dimmed }: { active: boolean; dimmed?: boolean }) => (
-                                    <div className={`ml-[23px] w-[2px] h-6 rounded-full transition-all duration-500 ${dimmed ? 'opacity-20' : ''} ${active ? 'bg-gradient-to-b from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'}`} />
-                                );
+                                interface FlowStep { icon: string; label: string; done: boolean; active: boolean; date?: string; sub?: string }
+                                const flowSteps: FlowStep[] = [
+                                    { icon: '\u{1F4CB}', label: '\u0E23\u0E31\u0E1A\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07', done: level > 0, active: level === 0, date: fmtDate(rma.createdAt) },
+                                    { icon: '\u{1F50D}', label: '\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19', done: level > 1, active: level === 1 },
+                                ];
+                                if (vendorPath) {
+                                    flowSteps.push({ icon: '\u{1F4E6}', label: '\u0E2A\u0E48\u0E07\u0E40\u0E04\u0E25\u0E21\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 2, active: level === 2, sub: formData.distributor || rma.distributor });
+                                    flowSteps.push({ icon: '\u{1F4E5}', label: '\u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A\u0E04\u0E37\u0E19\u0E08\u0E32\u0E01\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 3, active: level === 3 });
+                                } else if (directPath) {
+                                    flowSteps.push({ icon: '\u{1F527}', label: '\u0E41\u0E01\u0E49\u0E44\u0E02\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19 / \u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2D\u0E32\u0E01\u0E32\u0E23\u0E40\u0E2A\u0E35\u0E22', done: level >= 3, active: level === 3 });
+                                } else {
+                                    flowSteps.push({ icon: '\u2753', label: '\u0E23\u0E2D\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E43\u0E08\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07', done: false, active: false });
+                                }
+                                flowSteps.push({ icon: '\u2705', label: '\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19 / \u0E2A\u0E48\u0E07\u0E04\u0E37\u0E19\u0E25\u0E39\u0E01\u0E04\u0E49\u0E32', done: level >= 4, active: level === 4, date: fmtDate(rma.resolvedAt) });
 
                                 return (
                                     <div className="mb-8">
-                                        {/* Path badge */}
                                         {pathDecided && (
                                             <div className="flex justify-center mb-6">
                                                 <span className={`text-xs font-bold px-4 py-2 rounded-full ${
@@ -738,47 +693,42 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                         ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30'
                                                         : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800/30'
                                                 }`}>
-                                                    {vendorPath ? '📦 เส้นทาง: ส่งผู้นำเข้า' : '🔧 เส้นทาง: จบที่ร้าน'}
+                                                    {vendorPath ? '\u{1F4E6} \u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07: \u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32' : '\u{1F527} \u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07: \u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19'}
                                                 </span>
                                             </div>
                                         )}
 
-                                        <div className="space-y-0">
-                                            {/* Step 1: รับเรื่อง */}
-                                            <Step icon="📋" label="รับเรื่อง" done={level > 0} active={level === 0} date={rma.createdAt} />
-                                            <VLine active={level >= 1} />
-
-                                            {/* Step 2: ตรวจสอบ */}
-                                            <Step icon="🔍" label="ตรวจสอบที่ร้าน" done={level > 1} active={level === 1} date={findEvent('DIAGNOSING')?.date} />
-                                            <VLine active={level >= 2 || directPath} />
-
-                                            {/* Branch: Vendor path */}
-                                            <div className={`pl-6 border-l-2 ml-[23px] transition-all duration-500 ${vendorPath ? 'border-orange-400 dark:border-orange-600' : directPath ? 'border-gray-200 dark:border-gray-700 opacity-20' : 'border-gray-200 dark:border-gray-700'}`}>
-                                                <div className="py-2">
-                                                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                                        <span className={directPath ? 'opacity-50' : ''}>📦 เส้นทาง: ส่งผู้นำเข้า</span>
-                                                    </p>
-                                                    <Step icon="📦" label="ส่งเคลมผู้นำเข้า" done={vendorPath && level > 2} active={vendorPath && level === 2} dimmed={directPath} date={findEvent('WAITING_PARTS')?.date} />
-                                                    <VLine active={vendorPath && level >= 3} dimmed={directPath} />
-                                                    <Step icon="📥" label="ได้รับคืนจากผู้นำเข้า" done={vendorPath && level > 3} active={vendorPath && level === 3} dimmed={directPath} date={findEvent('REPAIRED')?.date && vendorPath ? findEvent('REPAIRED')?.date : undefined} />
+                                        {flowSteps.map((step, i) => (
+                                            <div key={i}>
+                                                <div className="flex items-start gap-4">
+                                                    <div className="relative flex-shrink-0">
+                                                        {step.active && <div className="absolute -inset-1.5 rounded-full bg-blue-400/25 animate-ping" style={{ animationDuration: '2s' }} />}
+                                                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${
+                                                            step.done ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-lg shadow-blue-500/20' :
+                                                            step.active ? 'bg-white dark:bg-[#232326] border-[3px] border-blue-500 shadow-lg shadow-blue-500/25' :
+                                                            'bg-gray-100 dark:bg-[#2a2a2c] border-2 border-gray-200 dark:border-gray-700'
+                                                        }`}>
+                                                            {step.done ? <Check className="w-5 h-5 text-white" /> : <span className={step.active ? '' : 'grayscale opacity-40'}>{step.icon}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 pt-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-sm font-bold ${
+                                                                step.done ? 'text-blue-500 dark:text-blue-400' : step.active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
+                                                            }`}>{step.label}</span>
+                                                            {step.active && <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19</span>}
+                                                        </div>
+                                                        {step.date && <p className="text-[11px] text-gray-400 mt-0.5">{step.date}</p>}
+                                                        {step.sub && <p className="text-[11px] text-orange-400 mt-0.5">\u2192 {step.sub}</p>}
+                                                    </div>
                                                 </div>
+                                                {i < flowSteps.length - 1 && (
+                                                    <div className={`ml-[21px] w-[2px] h-5 rounded-full transition-all duration-500 ${
+                                                        step.done ? 'bg-gradient-to-b from-blue-500 to-cyan-500' : 'bg-gray-200 dark:bg-[#333]'
+                                                    }`} />
+                                                )}
                                             </div>
-
-                                            {/* Branch: Direct path */}
-                                            <div className={`pl-6 border-l-2 ml-[23px] transition-all duration-500 ${directPath ? 'border-emerald-400 dark:border-emerald-600' : vendorPath ? 'border-gray-200 dark:border-gray-700 opacity-20' : 'border-gray-200 dark:border-gray-700'}`}>
-                                                <div className="py-2">
-                                                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                                        <span className={vendorPath ? 'opacity-50' : ''}>🔧 เส้นทาง: จบที่ร้าน</span>
-                                                    </p>
-                                                    <Step icon="🔧" label="แก้ไขที่ร้าน / ไม่พบอาการเสีย" done={directPath && level >= 3} active={directPath && level === 3} dimmed={vendorPath} date={directPath ? findEvent('REPAIRED')?.date : undefined} />
-                                                </div>
-                                            </div>
-
-                                            <VLine active={level >= 4} />
-
-                                            {/* Step: ปิดงาน */}
-                                            <Step icon="✅" label="ปิดงาน / ส่งคืนลูกค้า" done={level >= 4} active={level === 4} date={rma.resolvedAt} />
-                                        </div>
+                                        ))}
                                     </div>
                                 );
                             })()}
@@ -787,7 +737,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             <div>
                                 <h3 className="text-sm font-bold text-[#1d1d1f] dark:text-white mb-4 flex items-center gap-2">
                                     <ClipboardCheck className="w-4 h-4 text-blue-500" />
-                                    ประวัติการดำเนินงาน
+                                    \u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19
                                 </h3>
                                 {rma.history && rma.history.length > 0 ? (
                                     <div className="space-y-0">
@@ -799,19 +749,21 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                 'SYSTEM': 'bg-gray-400',
                                                 'CUSTOMER_ACTION': 'bg-green-500',
                                             };
+                                            const fmtEvtDate = (d: string) => {
+                                                try { return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+                                                catch { return d; }
+                                            };
                                             return (
                                                 <div key={event.id || idx} className="flex gap-3">
-                                                    {/* Timeline line + dot */}
                                                     <div className="flex flex-col items-center">
-                                                        <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${isFirst ? 'ring-4 ring-blue-100 dark:ring-blue-900/30 ' : ''}${typeColors[event.type] || 'bg-gray-400'}`} />
-                                                        {idx < rma.history.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700 min-h-[20px]" />}
+                                                        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${isFirst ? 'ring-4 ring-blue-100 dark:ring-blue-900/30 ' : ''}${typeColors[event.type] || 'bg-gray-400'}`} />
+                                                        {idx < rma.history.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700 min-h-[16px]" />}
                                                     </div>
-                                                    {/* Content */}
-                                                    <div className={`pb-4 flex-1 ${isFirst ? '' : 'opacity-70'}`}>
-                                                        <p className="text-sm font-semibold text-[#1d1d1f] dark:text-white">{event.description}</p>
+                                                    <div className={`pb-3 flex-1 ${isFirst ? '' : 'opacity-60'}`}>
+                                                        <p className="text-[13px] font-semibold text-[#1d1d1f] dark:text-white">{event.description}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-[11px] text-gray-400">{event.date}</span>
-                                                            {event.user && <span className="text-[11px] text-gray-400">• {event.user}</span>}
+                                                            <span className="text-[11px] text-gray-400">{fmtEvtDate(event.date)}</span>
+                                                            {event.user && <span className="text-[11px] text-gray-400">\u2022 {event.user}</span>}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -819,16 +771,15 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         })}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-400 text-center py-6">ยังไม่มีประวัติการดำเนินงาน</p>
+                                    <p className="text-sm text-gray-400 text-center py-6">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19</p>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>,
-                document.body
-            )}
+            document.body)}
 
-{/* SECTION 3: สถานะและการดำเนินการ */}
+            {/* SECTION 3: สถานะและการดำเนินการ */}
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] p-8 mb-6 border border-gray-100 dark:border-[#333]">
                 <h2 className="font-semibold text-lg flex items-center gap-3 mb-6 text-[#1d1d1f] dark:text-white">
                     <span className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center text-sm font-bold">3</span>
