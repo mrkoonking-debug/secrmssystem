@@ -107,7 +107,24 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     };
 
     const handleFormChange = (field: keyof RMA, value: any) => {
-        setFormData(prev => prev ? ({ ...prev, [field]: value }) : null);
+        setFormData(prev => {
+            if (!prev) return null;
+            const next = { ...prev, [field]: value };
+            
+            // When status moves backward to PENDING or DIAGNOSING, clear resolution data & serviceType
+            if (field === 'status' && (value === RMAStatus.PENDING || value === RMAStatus.DIAGNOSING)) {
+                next.serviceType = undefined;
+                next.resolution = {
+                    ...prev.resolution!,
+                    actionTaken: '',
+                    actionDetails: '',
+                    replacedSerialNumber: '',
+                    vendorTicketRef: '',
+                };
+            }
+            
+            return next;
+        });
     };
 
     const handleResolutionChange = (field: keyof ResolutionDetails, value: any) => {
