@@ -559,18 +559,18 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                 const level = statusLevel[s] ?? 0;
 
                 const steps: { icon: string; label: string; done: boolean; active: boolean }[] = [
-                    { icon: '\u{1F4CB}', label: '\u0E23\u0E31\u0E1A\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07', done: level > 0, active: level === 0 },
-                    { icon: '\u{1F50D}', label: '\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A', done: level > 1, active: level === 1 },
+                    { icon: '📋', label: 'รับเรื่อง', done: level > 0, active: level === 0 },
+                    { icon: '🔍', label: 'ตรวจสอบ', done: level > 1, active: level === 1 },
                 ];
                 if (vendorPath) {
-                    steps.push({ icon: '\u{1F4E6}', label: '\u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 2, active: level === 2 });
-                    steps.push({ icon: '\u{1F4E5}', label: '\u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A\u0E04\u0E37\u0E19', done: level > 3, active: level === 3 });
+                    steps.push({ icon: '📦', label: 'ส่งผู้นำเข้า', done: level > 2, active: level === 2 });
+                    steps.push({ icon: '📥', label: 'ได้รับคืน', done: level > 3, active: level === 3 });
                 } else if (directPath) {
-                    steps.push({ icon: '\u{1F527}', label: '\u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19', done: level >= 3, active: level === 3 });
+                    steps.push({ icon: '🔧', label: 'จบที่ร้าน', done: level >= 3, active: level === 3 });
                 } else {
-                    steps.push({ icon: '\u2753', label: '\u0E23\u0E2D\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19', done: false, active: false });
+                    steps.push({ icon: '❓', label: 'รอตัดสิน', done: false, active: false });
                 }
-                steps.push({ icon: '\u2705', label: '\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19', done: level >= 4, active: level === 4 });
+                steps.push({ icon: '✅', label: 'ปิดงาน', done: level >= 4, active: level === 4 });
 
                 return (
                     <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] px-5 sm:px-8 py-6 mb-6 border border-gray-100 dark:border-[#333]">
@@ -579,11 +579,11 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                                     <ArrowRight className="w-3 h-3 text-white" />
                                 </div>
-                                \u0E04\u0E27\u0E32\u0E21\u0E04\u0E37\u0E1A\u0E2B\u0E19\u0E49\u0E32
+                                ความคืบหน้า
                             </h3>
                             <button onClick={() => setShowFlowFullscreen(true)} className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-500 hover:text-blue-600 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 px-2.5 py-1.5 rounded-lg transition-all">
                                 <Maximize2 className="w-3 h-3" />
-                                \u0E14\u0E39\u0E40\u0E15\u0E47\u0E21\u0E08\u0E2D
+                                ดูเต็มจอ
                             </button>
                         </div>
 
@@ -621,7 +621,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-500 border border-orange-200 dark:border-orange-800/30'
                                         : 'bg-green-50 dark:bg-green-900/20 text-green-500 border border-green-200 dark:border-green-800/30'
                                 }`}>
-                                    {vendorPath ? '\u{1F4E6} \u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32' : '\u{1F527} \u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19'}
+                                    {vendorPath ? '📦 ส่งผู้นำเข้า' : '🔧 จบที่ร้าน'}
                                 </span>
                             </div>
                         )}
@@ -639,7 +639,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                                     <ArrowRight className="w-4 h-4 text-white" />
                                 </div>
-                                \u0E04\u0E27\u0E32\u0E21\u0E04\u0E37\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19
+                                ความคืบหน้างาน
                             </h2>
                             <button onClick={() => setShowFlowFullscreen(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                                 <X className="w-4 h-4" />
@@ -671,18 +671,18 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
 
                                 interface FlowStep { icon: string; label: string; done: boolean; active: boolean; date?: string; sub?: string }
                                 const flowSteps: FlowStep[] = [
-                                    { icon: '\u{1F4CB}', label: '\u0E23\u0E31\u0E1A\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07', done: level > 0, active: level === 0, date: fmtDate(rma.createdAt) },
-                                    { icon: '\u{1F50D}', label: '\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19', done: level > 1, active: level === 1 },
+                                    { icon: '📋', label: 'รับเรื่อง', done: level > 0, active: level === 0, date: fmtDate(rma.createdAt) },
+                                    { icon: '🔍', label: 'ตรวจสอบที่ร้าน', done: level > 1, active: level === 1 },
                                 ];
                                 if (vendorPath) {
-                                    flowSteps.push({ icon: '\u{1F4E6}', label: '\u0E2A\u0E48\u0E07\u0E40\u0E04\u0E25\u0E21\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 2, active: level === 2, sub: formData.distributor || rma.distributor });
-                                    flowSteps.push({ icon: '\u{1F4E5}', label: '\u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A\u0E04\u0E37\u0E19\u0E08\u0E32\u0E01\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32', done: level > 3, active: level === 3 });
+                                    flowSteps.push({ icon: '📦', label: 'ส่งเคลมผู้นำเข้า', done: level > 2, active: level === 2, sub: formData.distributor || rma.distributor });
+                                    flowSteps.push({ icon: '📥', label: 'ได้รับคืนจากผู้นำเข้า', done: level > 3, active: level === 3 });
                                 } else if (directPath) {
-                                    flowSteps.push({ icon: '\u{1F527}', label: '\u0E41\u0E01\u0E49\u0E44\u0E02\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19 / \u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2D\u0E32\u0E01\u0E32\u0E23\u0E40\u0E2A\u0E35\u0E22', done: level >= 3, active: level === 3 });
+                                    flowSteps.push({ icon: '🔧', label: 'แก้ไขที่ร้าน / ไม่พบอาการเสีย', done: level >= 3, active: level === 3 });
                                 } else {
-                                    flowSteps.push({ icon: '\u2753', label: '\u0E23\u0E2D\u0E15\u0E31\u0E14\u0E2A\u0E34\u0E19\u0E43\u0E08\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07', done: false, active: false });
+                                    flowSteps.push({ icon: '❓', label: 'รอตัดสินใจเส้นทาง', done: false, active: false });
                                 }
-                                flowSteps.push({ icon: '\u2705', label: '\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19 / \u0E2A\u0E48\u0E07\u0E04\u0E37\u0E19\u0E25\u0E39\u0E01\u0E04\u0E49\u0E32', done: level >= 4, active: level === 4, date: fmtDate(rma.resolvedAt) });
+                                flowSteps.push({ icon: '✅', label: 'ปิดงาน / ส่งคืนลูกค้า', done: level >= 4, active: level === 4, date: fmtDate(rma.resolvedAt) });
 
                                 return (
                                     <div className="mb-8">
@@ -693,7 +693,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                         ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30'
                                                         : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800/30'
                                                 }`}>
-                                                    {vendorPath ? '\u{1F4E6} \u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07: \u0E2A\u0E48\u0E07\u0E1C\u0E39\u0E49\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32' : '\u{1F527} \u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07: \u0E08\u0E1A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E32\u0E19'}
+                                                    {vendorPath ? '📦 เส้นทาง: ส่งผู้นำเข้า' : '🔧 เส้นทาง: จบที่ร้าน'}
                                                 </span>
                                             </div>
                                         )}
@@ -716,10 +716,10 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                             <span className={`text-sm font-bold ${
                                                                 step.done ? 'text-blue-500 dark:text-blue-400' : step.active ? 'text-[#1d1d1f] dark:text-white' : 'text-gray-300 dark:text-gray-600'
                                                             }`}>{step.label}</span>
-                                                            {step.active && <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19</span>}
+                                                            {step.active && <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">ปัจจุบัน</span>}
                                                         </div>
                                                         {step.date && <p className="text-[11px] text-gray-400 mt-0.5">{step.date}</p>}
-                                                        {step.sub && <p className="text-[11px] text-orange-400 mt-0.5">\u2192 {step.sub}</p>}
+                                                        {step.sub && <p className="text-[11px] text-orange-400 mt-0.5">→ {step.sub}</p>}
                                                     </div>
                                                 </div>
                                                 {i < flowSteps.length - 1 && (
@@ -737,7 +737,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             <div>
                                 <h3 className="text-sm font-bold text-[#1d1d1f] dark:text-white mb-4 flex items-center gap-2">
                                     <ClipboardCheck className="w-4 h-4 text-blue-500" />
-                                    \u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19
+                                    ประวัติการดำเนินงาน
                                 </h3>
                                 {rma.history && rma.history.length > 0 ? (
                                     <div className="space-y-0">
@@ -763,7 +763,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                                         <p className="text-[13px] font-semibold text-[#1d1d1f] dark:text-white">{event.description}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <span className="text-[11px] text-gray-400">{fmtEvtDate(event.date)}</span>
-                                                            {event.user && <span className="text-[11px] text-gray-400">\u2022 {event.user}</span>}
+                                                            {event.user && <span className="text-[11px] text-gray-400">• {event.user}</span>}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -771,7 +771,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         })}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-400 text-center py-6">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19</p>
+                                    <p className="text-sm text-gray-400 text-center py-6">ยังไม่มีประวัติการดำเนินงาน</p>
                                 )}
                             </div>
                         </div>
