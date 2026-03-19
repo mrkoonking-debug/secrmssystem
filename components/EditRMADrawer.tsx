@@ -111,16 +111,28 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
             if (!prev) return null;
             const next = { ...prev, [field]: value };
             
-            // When status moves backward to PENDING or DIAGNOSING, clear resolution data & serviceType
-            if (field === 'status' && (value === RMAStatus.PENDING || value === RMAStatus.DIAGNOSING)) {
-                next.serviceType = undefined;
-                next.resolution = {
-                    ...prev.resolution!,
-                    actionTaken: '',
-                    actionDetails: '',
-                    replacedSerialNumber: '',
-                    vendorTicketRef: '',
+            // When status moves backward, clear resolution data & serviceType
+            if (field === 'status') {
+                const statusOrder: Record<string, number> = {
+                    [RMAStatus.PENDING]: 0,
+                    [RMAStatus.DIAGNOSING]: 1,
+                    [RMAStatus.WAITING_PARTS]: 2,
+                    [RMAStatus.REPAIRED]: 3,
+                    [RMAStatus.CLOSED]: 4,
                 };
+                const oldLevel = statusOrder[prev.status] ?? 0;
+                const newLevel = statusOrder[value] ?? 0;
+                
+                if (newLevel < oldLevel) {
+                    next.serviceType = undefined;
+                    next.resolution = {
+                        ...prev.resolution!,
+                        actionTaken: '',
+                        actionDetails: '',
+                        replacedSerialNumber: '',
+                        vendorTicketRef: '',
+                    };
+                }
             }
             
             return next;
