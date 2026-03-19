@@ -559,8 +559,8 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
           <div class="item-desc">การดำเนินการ: ${actionText}</div>
           <div class="item-desc">อุปกรณ์ที่คืน: ${accString}</div>
           <div class="item-sn">S/N: ${item.serialNumber}</div>
-          ${item.resolution?.replacedSerialNumber && item.resolution?.actionTaken !== 'replaced_component'
-        ? `<div class="item-sn-new">New S/N: ${item.resolution.replacedSerialNumber}</div>`
+          ${item.resolution?.replacedSerialNumber
+        ? `<div class="item-sn-new">S/N ใหม่: ${item.resolution.replacedSerialNumber}</div>`
         : ''}
         </td>
         <td></td>
