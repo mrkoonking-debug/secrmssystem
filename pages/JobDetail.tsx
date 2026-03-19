@@ -581,7 +581,11 @@ export const JobDetail: React.FC = () => {
                                             textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
                                             textLines.push(`   S/N: ${r.serialNumber}`);
                                             textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution?.actionTaken)}`);
+                                            if (r.resolution?.actionTaken) {
+                                                textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                                if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                                if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                            }
                                             if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     } else {
@@ -594,7 +598,11 @@ export const JobDetail: React.FC = () => {
                                             textLines.push(`   S/N: ${r.serialNumber}`);
                                             textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
                                             textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution?.actionTaken)}`);
+                                            if (r.resolution?.actionTaken) {
+                                                textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                                if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                                if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                            }
                                             if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     }
