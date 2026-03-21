@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus } from '../types';
@@ -27,6 +27,7 @@ export const JobDetail: React.FC = () => {
     const [docPreviewHtml, setDocPreviewHtml] = useState<string | null>(null);
     const [docPreviewType, setDocPreviewType] = useState<'DISTRIBUTOR' | 'CUSTOMER'>('DISTRIBUTOR');
     const [docPreviewRmas, setDocPreviewRmas] = useState<RMA[]>([]);
+    const docPreviewRenderRef = useRef<HTMLDivElement>(null);
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -543,19 +544,123 @@ export const JobDetail: React.FC = () => {
             {docPreviewHtml && (
                 <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
                     {/* Toolbar */}
-                    <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
-                        <h2 className="text-gray-800 font-semibold text-base flex-1">📋 Preview เอกสาร</h2>
+                    <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
+                        <h2 className="text-gray-800 dark:text-white font-semibold text-base flex-1">📋 Preview เอกสาร</h2>
+                        {/* Copy Text Only (Facebook friendly) */}
+                        <button
+                            onClick={() => {
+                                const rma0 = docPreviewRmas[0];
+                                const jobIdVal = rma0?.groupRequestId || rma0?.id || '-';
+                                const quotationVal = rma0?.quotationNumber || '-';
+                                let textLines: string[] = [];
+                                textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
+                                textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
+                                const actionMap: Record<string, string> = {
+                                    'Replaced Component': 'ศูนย์เปลี่ยนอะไหล่',
+                                    'Swapped Unit': 'เปลี่ยนเครื่อง (Swap)',
+                                    'Software Update': 'อัพเดทซอฟต์แวร์',
+                                    'No Fault Found': 'ไม่พบอาการเสีย(ส่งคืน)'
+                                };
+                                const formatAction = (action?: string) => action ? (actionMap[action] || action) : '-';
+                                if (docPreviewType === 'CUSTOMER') {
+                                    textLines.push(`ลูกค้า: ${rma0?.customerName || '-'}`);
+                                    textLines.push('');
+                                    textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
+                                    docPreviewRmas.forEach((r, i) => {
+                                        textLines.push(`รายการ ${i + 1}:`);
+                                        textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
+                                        textLines.push(`   S/N: ${r.serialNumber}`);
+                                        textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                        if (r.resolution?.actionTaken) {
+                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                            if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                            if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                        }
+                                        if (i < docPreviewRmas.length - 1) textLines.push('');
+                                    });
+                                } else {
+                                    textLines.push(`ผู้นำเข้า: ${rma0?.distributor || '-'}`);
+                                    textLines.push('');
+                                    textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
+                                    docPreviewRmas.forEach((r, i) => {
+                                        textLines.push(`รายการ ${i + 1}:`);
+                                        textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
+                                        textLines.push(`   S/N: ${r.serialNumber}`);
+                                        textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
+                                        textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                        if (r.resolution?.actionTaken) {
+                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                            if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                            if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                        }
+                                        if (i < docPreviewRmas.length - 1) textLines.push('');
+                                    });
+                                }
+                                navigator.clipboard.writeText(textLines.join('\n')).then(() => {
+                                    alert('✅ คัดลอกข้อความแล้ว!');
+                                }).catch(() => alert('ไม่สามารถคัดลอกได้'));
+                            }}
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            title="คัดลอกเฉพาะข้อความ (ใช้กับ Facebook ได้)"
+                        >
+                            <Copy className="w-4 h-4" /> ข้อความ
+                        </button>
+                        {/* Copy Image Only */}
                         <button
                             onClick={async () => {
+                                if (!docPreviewHtml) return;
+                                const wrapper = document.createElement('div');
+                                wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+                                const container = document.createElement('div');
+                                container.style.cssText = 'width:794px;min-height:1123px;background:white;padding:0;margin:0;box-sizing:border-box;';
+                                container.innerHTML = docPreviewHtml;
+                                wrapper.appendChild(container);
+                                document.body.appendChild(wrapper);
                                 try {
-                                    const iframe = document.getElementById('doc-preview-iframe') as HTMLIFrameElement;
-                                    const iframeDoc = iframe?.contentWindow?.document;
-                                    if (!iframeDoc?.body) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
-
-                                    // Capture image
-                                    const canvas = await html2canvas(iframeDoc.body, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-                                    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
-
+                                    await new Promise(r => setTimeout(r, 100)); // wait for render
+                                    const target = container.querySelector('.print-doc') as HTMLElement || container;
+                                    const canvas = await html2canvas(target, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
+                                    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
+                                    try {
+                                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                        alert('✅ คัดลอกรูปภาพแล้ว!');
+                                    } catch {
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = `rma-doc-${jobId}.png`;
+                                        link.click();
+                                        URL.revokeObjectURL(url);
+                                        alert('⬇️ ดาวน์โหลดรูปภาพแล้ว (บราวเซอร์ไม่รองรับ Copy รูปโดยตรง)');
+                                    }
+                                } catch (err) {
+                                    console.error('Copy image failed:', err);
+                                    alert('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง');
+                                } finally {
+                                    document.body.removeChild(wrapper);
+                                }
+                            }}
+                            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            title="คัดลอกเฉพาะรูปภาพ"
+                        >
+                            <Copy className="w-4 h-4" /> รูปภาพ
+                        </button>
+                        {/* Copy Both (LINE friendly) */}
+                        <button
+                            onClick={async () => {
+                                if (!docPreviewHtml) return;
+                                const wrapper = document.createElement('div');
+                                wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+                                const container = document.createElement('div');
+                                container.style.cssText = 'width:794px;min-height:1123px;background:white;padding:0;margin:0;box-sizing:border-box;';
+                                container.innerHTML = docPreviewHtml;
+                                wrapper.appendChild(container);
+                                document.body.appendChild(wrapper);
+                                try {
+                                    await new Promise(r => setTimeout(r, 100));
+                                    const target = container.querySelector('.print-doc') as HTMLElement || container;
+                                    const canvas = await html2canvas(target, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
+                                    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
                                     // Build text summary
                                     const rma0 = docPreviewRmas[0];
                                     const jobIdVal = rma0?.groupRequestId || rma0?.id || '-';
@@ -563,7 +668,6 @@ export const JobDetail: React.FC = () => {
                                     let textLines: string[] = [];
                                     textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
                                     textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
-
                                     const actionMap: Record<string, string> = {
                                         'Replaced Component': 'ศูนย์เปลี่ยนอะไหล่',
                                         'Swapped Unit': 'เปลี่ยนเครื่อง (Swap)',
@@ -571,7 +675,6 @@ export const JobDetail: React.FC = () => {
                                         'No Fault Found': 'ไม่พบอาการเสีย(ส่งคืน)'
                                     };
                                     const formatAction = (action?: string) => action ? (actionMap[action] || action) : '-';
-                                    
                                     if (docPreviewType === 'CUSTOMER') {
                                         textLines.push(`ลูกค้า: ${rma0?.customerName || '-'}`);
                                         textLines.push('');
@@ -607,23 +710,35 @@ export const JobDetail: React.FC = () => {
                                         });
                                     }
                                     const copyText = textLines.join('\n');
-
-                                    // Write both image + text to clipboard
-                                    await navigator.clipboard.write([
-                                        new ClipboardItem({
-                                            'image/png': blob,
-                                            'text/plain': new Blob([copyText], { type: 'text/plain' })
-                                        })
-                                    ]);
-                                    alert('✅ ก๊อปปี้รูปภาพและข้อความแล้ว! วางใน LINE ได้เลย');
+                                    try {
+                                        await navigator.clipboard.write([
+                                            new ClipboardItem({
+                                                'image/png': blob,
+                                                'text/plain': new Blob([copyText], { type: 'text/plain' })
+                                            })
+                                        ]);
+                                        alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
+                                    } catch {
+                                        await navigator.clipboard.writeText(copyText);
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = `rma-doc-${jobId}.png`;
+                                        link.click();
+                                        URL.revokeObjectURL(url);
+                                        alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก');
+                                    }
                                 } catch (err) {
                                     console.error('Copy failed:', err);
                                     alert('ไม่สามารถก๊อปปี้ได้ ลองใหม่อีกครั้ง');
+                                } finally {
+                                    document.body.removeChild(wrapper);
                                 }
                             }}
-                            className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            title="คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)"
                         >
-                            <Copy className="w-4 h-4" /> คัดลอก
+                            <Copy className="w-4 h-4" /> ทั้งหมด (LINE)
                         </button>
                         <button
                             onClick={() => {
@@ -642,7 +757,7 @@ export const JobDetail: React.FC = () => {
                         </button>
                     </div>
                     {/* Preview Content - A4 */}
-                    <div className="flex-1 overflow-auto flex justify-center py-4 px-4">
+                    <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
                         <iframe
                             id="doc-preview-iframe"
                             srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${docPreviewHtml}</body></html>`}

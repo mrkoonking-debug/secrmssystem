@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { X, Package, Trash2, Expand, RefreshCw, Copy, Mail, Plus, Save, Truck } from 'lucide-react';
 import { RMA } from '../types';
 import { ShippingLabelPayload, getCustomerShippingLabelHTML } from '../services/printService';
@@ -34,6 +35,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
 
     const [isSaving, setIsSaving] = useState(false);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+    const previewRenderRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -360,13 +362,80 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         {previewHtml && (
             <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
                 {/* Toolbar */}
-                <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
-                    <h2 className="text-gray-800 font-semibold text-base flex-1">📋 Preview ใบปะหน้ากล่อง</h2>
+                <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
+                    <h2 className="text-gray-800 dark:text-white font-semibold text-base flex-1">📋 Preview ใบปะหน้ากล่อง</h2>
+                    {/* Copy Text Only (Facebook friendly) */}
                     <button
                         onClick={handleCopyData}
-                        className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        title="คัดลอกเฉพาะข้อความ (ใช้กับ Facebook ได้)"
                     >
-                        <Copy className="w-4 h-4" /> คัดลอกข้อมูล
+                        <Copy className="w-4 h-4" /> ข้อความ
+                    </button>
+                    {/* Copy Image Only */}
+                    <button
+                        onClick={async () => {
+                            try {
+                                if (!previewRenderRef.current) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
+                                const canvas = await html2canvas(previewRenderRef.current, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
+                                const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                alert('✅ คัดลอกรูปภาพแล้ว!');
+                            } catch (err) {
+                                console.error('Copy image failed:', err);
+                                alert('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง');
+                            }
+                        }}
+                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        title="คัดลอกเฉพาะรูปภาพ"
+                    >
+                        <Copy className="w-4 h-4" /> รูปภาพ
+                    </button>
+                    {/* Copy Both (LINE friendly) */}
+                    <button
+                        onClick={async () => {
+                            try {
+                                if (!previewRenderRef.current) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
+                                const canvas = await html2canvas(previewRenderRef.current, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
+                                const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+                                // Build text
+                                const jobId = rma.groupRequestId || rma.id;
+                                const refNo = rma.quotationNumber || '-';
+                                const cleanTrackingIds = trackingIds.map(t => t.trim()).filter(Boolean);
+                                const items = allRmas && allRmas.length > 0 ? allRmas : [rma];
+                                let text = `เลขที่งานเคลม (Job ID): ${jobId}\n`;
+                                text += `เลขอ้างอิง/ใบเสนอราคา: ${refNo}\n\n`;
+                                text += `รายการสินค้า (${items.length} ชิ้น):\n`;
+                                items.forEach((item, i) => {
+                                    text += `${i + 1}. ${item.brand} ${item.productModel} | S/N: ${item.serialNumber || '-'}\n`;
+                                });
+                                text += `\nนำส่ง...${receiverName}\n`;
+                                if (contactPerson) text += `ผู้ติดต่อ: ${contactPerson}\n`;
+                                if (receiverAddress) text += `${receiverAddress}\n`;
+                                if (receiverPhone) text += `โทร. ${receiverPhone}\n`;
+                                if (cleanTrackingIds.length > 0) {
+                                    text += `\n`;
+                                    cleanTrackingIds.forEach(tid => {
+                                        text += `หมายเลขพัสดุ: ${tid}\n`;
+                                        text += `https://track.thailandpost.co.th/?trackNumber=${tid}\n`;
+                                    });
+                                }
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({
+                                        'image/png': blob,
+                                        'text/plain': new Blob([text.trim()], { type: 'text/plain' })
+                                    })
+                                ]);
+                                alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
+                            } catch (err) {
+                                console.error('Copy failed:', err);
+                                alert('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง');
+                            }
+                        }}
+                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        title="คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)"
+                    >
+                        <Copy className="w-4 h-4" /> ทั้งหมด (LINE)
                     </button>
                     <button
                         onClick={handlePrintFromPreview}
@@ -382,7 +451,9 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                     </button>
                 </div>
                 {/* Preview Content - A4 size */}
-                <div className="flex-1 overflow-auto flex justify-center py-4 px-4">
+                {/* Hidden render target for html2canvas */}
+                <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -100, opacity: 0, pointerEvents: 'none' }}><div ref={previewRenderRef} style={{ width: '794px', minHeight: '1123px', background: 'white', padding: 0, margin: 0, boxSizing: 'border-box' }} dangerouslySetInnerHTML={{ __html: previewHtml || '' }} /></div>
+                <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
                     <iframe
                         id="preview-iframe"
                         srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${previewHtml}</body></html>`}
