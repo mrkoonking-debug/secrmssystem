@@ -11,6 +11,7 @@ import { printDistributorDocuments, printCustomerDocuments, getDistributorDocume
 import { Printer, Copy, X as XIcon } from 'lucide-react';
 import { ShipmentTagModal } from '../components/ShipmentTagModal';
 import html2canvas from 'html2canvas';
+import { renderHtmlToBlob } from '../services/renderToImage';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -609,35 +610,21 @@ export const JobDetail: React.FC = () => {
                         <button
                             onClick={async () => {
                                 if (!docPreviewHtml) return;
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
-                                const container = document.createElement('div');
-                                container.style.cssText = 'width:794px;min-height:1123px;background:white;padding:0;margin:0;box-sizing:border-box;';
-                                container.innerHTML = docPreviewHtml;
-                                wrapper.appendChild(container);
-                                document.body.appendChild(wrapper);
                                 try {
-                                    await new Promise(r => setTimeout(r, 100)); // wait for render
-                                    const target = container.querySelector('.print-doc') as HTMLElement || container;
-                                    const canvas = await html2canvas(target, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
+                                    const blob = await renderHtmlToBlob(docPreviewHtml);
                                     try {
                                         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                                         alert('✅ คัดลอกรูปภาพแล้ว!');
                                     } catch {
                                         const url = URL.createObjectURL(blob);
-                                        const link = document.createElement('a');
-                                        link.href = url;
-                                        link.download = `rma-doc-${jobId}.png`;
-                                        link.click();
+                                        const a = document.createElement('a');
+                                        a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
                                         URL.revokeObjectURL(url);
-                                        alert('⬇️ ดาวน์โหลดรูปภาพแล้ว (บราวเซอร์ไม่รองรับ Copy รูปโดยตรง)');
+                                        alert('⬇️ ดาวน์โหลดรูปภาพแล้ว');
                                     }
                                 } catch (err) {
                                     console.error('Copy image failed:', err);
-                                    alert('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง');
-                                } finally {
-                                    document.body.removeChild(wrapper);
+                                    alert(`DEBUG copy img: ${err instanceof Error ? err.message : String(err)}`);
                                 }
                             }}
                             className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
@@ -649,18 +636,8 @@ export const JobDetail: React.FC = () => {
                         <button
                             onClick={async () => {
                                 if (!docPreviewHtml) return;
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
-                                const container = document.createElement('div');
-                                container.style.cssText = 'width:794px;min-height:1123px;background:white;padding:0;margin:0;box-sizing:border-box;';
-                                container.innerHTML = docPreviewHtml;
-                                wrapper.appendChild(container);
-                                document.body.appendChild(wrapper);
                                 try {
-                                    await new Promise(r => setTimeout(r, 100));
-                                    const target = container.querySelector('.print-doc') as HTMLElement || container;
-                                    const canvas = await html2canvas(target, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
+                                    const blob = await renderHtmlToBlob(docPreviewHtml);
                                     // Build text summary
                                     const rma0 = docPreviewRmas[0];
                                     const jobIdVal = rma0?.groupRequestId || rma0?.id || '-';
@@ -717,22 +694,18 @@ export const JobDetail: React.FC = () => {
                                                 'text/plain': new Blob([copyText], { type: 'text/plain' })
                                             })
                                         ]);
-                                        alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
+                                        alert('✅ คัดลอกทั้งหมดแล้ว!');
                                     } catch {
                                         await navigator.clipboard.writeText(copyText);
                                         const url = URL.createObjectURL(blob);
-                                        const link = document.createElement('a');
-                                        link.href = url;
-                                        link.download = `rma-doc-${jobId}.png`;
-                                        link.click();
+                                        const a = document.createElement('a');
+                                        a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
                                         URL.revokeObjectURL(url);
                                         alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก');
                                     }
                                 } catch (err) {
                                     console.error('Copy failed:', err);
-                                    alert('ไม่สามารถก๊อปปี้ได้ ลองใหม่อีกครั้ง');
-                                } finally {
-                                    document.body.removeChild(wrapper);
+                                    alert(`DEBUG copy all: ${err instanceof Error ? err.message : String(err)}`);
                                 }
                             }}
                             className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"

@@ -6,6 +6,7 @@ import { RMA } from '../types';
 import { getImporterFormHTML, getCustomerFormHTML } from '../services/printService';
 import { ArrowLeft, Printer, Download, Loader2, Image as ImageIcon, X, Check, Copy } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { renderHtmlToBlob } from '../services/renderToImage';
 
 export const DocumentPreview: React.FC = () => {
     const { type, id } = useParams<{ type: string; id: string }>();
@@ -163,24 +164,18 @@ export const DocumentPreview: React.FC = () => {
                     {/* Copy Image Only */}
                     <button
                         onClick={async () => {
-                            if (!hiddenRenderRef.current) return;
+                            if (!htmlContent) return;
                             try {
-                                const element = hiddenRenderRef.current.querySelector('.print-doc') as HTMLElement;
-                                if (!element) { alert('ไม่พบเอกสาร กรุณารีเฟรชแล้วลองใหม่'); return; }
-                                const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
+                                const blob = await renderHtmlToBlob(htmlContent);
                                 try {
                                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                                     alert('✅ คัดลอกรูปภาพแล้ว!');
                                 } catch {
-                                    // Fallback: download as file
                                     const url = URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.download = `rma-${id}-${type}.png`;
-                                    link.click();
+                                    const a = document.createElement('a');
+                                    a.href = url; a.download = `rma-${id}-${type}.png`; a.click();
                                     URL.revokeObjectURL(url);
-                                    alert('⬇️ บราวเซอร์ไม่รองรับ Copy รูปโดยตรง ดาวน์โหลดไฟล์แทนแล้ว');
+                                    alert('⬇️ ดาวน์โหลดรูปภาพแล้ว');
                                 }
                             } catch (err) {
                                 console.error('Copy image failed:', err);
@@ -195,12 +190,9 @@ export const DocumentPreview: React.FC = () => {
                     {/* Copy Both (LINE) */}
                     <button
                         onClick={async () => {
-                            if (!hiddenRenderRef.current || !rma) return;
+                            if (!htmlContent || !rma) return;
                             try {
-                                const element = hiddenRenderRef.current.querySelector('.print-doc') as HTMLElement;
-                                if (!element) { alert('ไม่พบเอกสาร กรุณารีเฟรชแล้วลองใหม่'); return; }
-                                const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'));
+                                const blob = await renderHtmlToBlob(htmlContent);
                                 let textLines: string[] = [];
                                 const jobIdVal = rma.groupRequestId || rma.id || '-';
                                 const quotationVal = rma.quotationNumber || '-';
@@ -225,15 +217,12 @@ export const DocumentPreview: React.FC = () => {
                                     ]);
                                     alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
                                 } catch {
-                                    // Fallback: copy text only + download image
                                     await navigator.clipboard.writeText(textLines.join('\n'));
                                     const url = URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.download = `rma-${id}-${type}.png`;
-                                    link.click();
+                                    const a = document.createElement('a');
+                                    a.href = url; a.download = `rma-${id}-${type}.png`; a.click();
                                     URL.revokeObjectURL(url);
-                                    alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก (บราวเซอร์ไม่รองรับ Copy ทั้งสอง)');
+                                    alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก');
                                 }
                             } catch (err) {
                                 console.error('Copy failed:', err);
@@ -254,7 +243,7 @@ export const DocumentPreview: React.FC = () => {
                     <div className="relative shadow-2xl flex-shrink-0" style={{ width: '210mm', height: '297mm', background: 'white' }}><div className="w-full h-full" dangerouslySetInnerHTML={{ __html: htmlContent }} /></div>
                 </div>
             </div>
-            <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -100, opacity: 0, pointerEvents: 'none' }}><div ref={hiddenRenderRef} style={{ width: '210mm', minHeight: '297mm', background: 'white', padding: 0, margin: 0, boxSizing: 'border-box' }} dangerouslySetInnerHTML={{ __html: htmlContent }} /></div>
+
 
             {showImageModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-fade-in">
