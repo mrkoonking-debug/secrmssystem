@@ -121,17 +121,19 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
+                <div data-tour="tour-brand">
                     <GlassSelect label={t('submit.brand')} value={currentItem.brand} onChange={val => { setCurrentItem(p => ({ ...p, brand: val })); setErrors(p => ({ ...p, brand: '' })); }} options={brandOptions} searchable recentKey="brand" hasError={!!errors.brand} />
+                    {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 เช่น Hikvision, Dahua, Uniview</p>}
                     {currentItem.brand === 'Other' && <input value={customBrand} onChange={e => setCustomBrand(e.target.value)} className={`mt-2 ${getInputClass(!!errors.customBrand)}`} placeholder={t('placeholders.specifyBrand')} />}
                 </div>
 
-                <div className="relative">
+                <div className="relative" data-tour="tour-model-serial">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.model')}</label>
                     <div className="relative">
                         <input value={currentItem.model} onChange={e => setCurrentItem({ ...currentItem, model: e.target.value })} className={`${getInputClass(!!errors.model)} pr-10`} placeholder={t('submit.enterModel')} />
                         <button type="button" onClick={() => { setScanTarget('model'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
                     </div>
+                    {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 ดูจากสติกเกอร์บนตัวเครื่อง หรือกด 📷 สแกน</p>}
                 </div>
 
                 <div className="relative">
@@ -140,7 +142,8 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                         <input value={currentItem.serial} onChange={e => setCurrentItem({ ...currentItem, serial: e.target.value })} className={`${getInputClass(!!errors.serial)} pr-10`} placeholder={t('submit.enterSn')} />
                         <button type="button" onClick={() => { setScanTarget('serial'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.serialHint')}</p>
+                    {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 หมายเลข S/N อยู่บนสติกเกอร์ด้านหลังเครื่อง</p>}
+                    {mode !== 'customer' && <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.serialHint')}</p>}
                 </div>
             </div>
 
@@ -156,8 +159,9 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                     </div>
                 )}
 
-                <div className={mode === 'customer' ? 'col-span-2' : ''}>
+                <div className={mode === 'customer' ? 'col-span-2' : ''} data-tour="tour-accessories">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.accessories')}</label>
+                    {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mb-2 ml-2 flex items-center gap-1">💡 เลือกสิ่งที่ส่งมาพร้อมเครื่อง (ไม่จำเป็นต้องเลือก ข้ามได้)</p>}
                     <div className="flex flex-wrap gap-2 mb-2">
                         {COMMON_ACCESSORIES.map(acc => {
                             const hddCount = acc === 'acc_hdd' ? currentItem.accessories.filter(a => a.startsWith('acc_hdd::')).length : 0;
@@ -192,10 +196,13 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                 </div>
             </div>
 
-            <div>
+            <div data-tour="tour-issue">
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.issueDesc')}</label>
                 <textarea value={currentItem.issue} onChange={e => setCurrentItem({ ...currentItem, issue: e.target.value })} rows={3} className={getInputClass(!!errors.issue)} placeholder={mode === 'customer' ? t('placeholders.issueCustomer') : t('placeholders.issueAdmin')} />
-                <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.issueHint')}</p>
+                {mode === 'customer'
+                    ? <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 เช่น &quot;ภาพมืด&quot;, &quot;เชื่อมต่อไม่ได้&quot;, &quot;มีเสียงดัง&quot;</p>
+                    : <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.issueHint')}</p>
+                }
             </div>
 
             {/* Device Username / Password (Optional) */}
@@ -203,16 +210,19 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.deviceUsername')}</label>
                     <input value={currentItem.deviceUsername} onChange={e => setCurrentItem({ ...currentItem, deviceUsername: e.target.value })} className={getInputClass(false)} placeholder={t('placeholders.username')} />
-                    <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.usernameHint')}</p>
+                    {mode === 'customer'
+                        ? <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 ถ้ามีรหัสเข้าเครื่อง กรุณาแจ้งด้วย ช่วยให้ซ่อมเร็วขึ้น</p>
+                        : <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.usernameHint')}</p>
+                    }
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.devicePassword')}</label>
                     <input value={currentItem.devicePassword} onChange={e => setCurrentItem({ ...currentItem, devicePassword: e.target.value })} className={getInputClass(false)} placeholder={t('placeholders.password')} />
-                    <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.passwordHint')}</p>
+                    {mode !== 'customer' && <p className="text-[11px] text-gray-400 mt-1 ml-2">{t('submit.passwordHint')}</p>}
                 </div>
             </div>
 
-            <button onClick={handleAddClick} className="w-full py-4 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98]">
+            <button data-tour="tour-add-button" onClick={handleAddClick} className="w-full py-4 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-[0.98]">
                 <Plus className="w-5 h-5" /> {t(mode === 'customer' ? 'publicSubmit.addAnother' : 'submit.addToJob')}
             </button>
 

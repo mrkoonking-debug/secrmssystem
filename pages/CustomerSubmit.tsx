@@ -7,6 +7,7 @@ import { ProductType, Team } from '../types';
 import { LINE_ACCOUNTS, SEC_ADDRESS, getLineAccountById } from '../lineConfig';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductEntryForm } from '../components/ProductEntryForm';
+import { OnboardingTour } from '../components/OnboardingTour';
 
 const INPUT_CLASS = "w-full bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e] border border-gray-200 dark:border-[#333] hover:border-blue-400/50 dark:hover:border-white/30 rounded-2xl px-4 py-4 text-[#1d1d1f] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-[#1c1c1e] focus:ring-2 focus:ring-[#0071e3]/50 focus:border-[#0071e3] transition-all outline-none";
 
@@ -471,6 +472,9 @@ export const CustomerSubmit: React.FC = () => {
                             {t('publicSubmit.productInfo')}
                         </h2>
                         <ProductEntryForm mode="customer" onAddItem={handleAddItem} />
+
+                        {/* First-time interactive tour for product entry */}
+                        <OnboardingTour />
 
                         {/* Basket List */}
                         {basket.length > 0 && (
