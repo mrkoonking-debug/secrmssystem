@@ -7,6 +7,7 @@ import { getImporterFormHTML, getCustomerFormHTML } from '../services/printServi
 import { ArrowLeft, Printer, Download, Loader2, Image as ImageIcon, X, Check, Copy } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { renderHtmlToBlob } from '../services/renderToImage';
+import { showToast } from '../services/toast';
 
 export const DocumentPreview: React.FC = () => {
     const { type, id } = useParams<{ type: string; id: string }>();
@@ -169,17 +170,17 @@ export const DocumentPreview: React.FC = () => {
                                 const blob = await renderHtmlToBlob(htmlContent);
                                 try {
                                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                    alert('✅ คัดลอกรูปภาพแล้ว!');
+                                    showToast('คัดลอกรูปภาพแล้ว!', 'success');
                                 } catch {
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url; a.download = `rma-${id}-${type}.png`; a.click();
                                     URL.revokeObjectURL(url);
-                                    alert('⬇️ ดาวน์โหลดรูปภาพแล้ว');
+                                    showToast('ดาวน์โหลดรูปภาพแล้ว', 'info');
                                 }
                             } catch (err) {
                                 console.error('Copy image failed:', err);
-                                alert('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง');
+                                showToast('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
                         className="px-3 sm:px-4 py-2 sm:py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors"
@@ -215,18 +216,18 @@ export const DocumentPreview: React.FC = () => {
                                             'text/plain': new Blob([textLines.join('\n')], { type: 'text/plain' })
                                         })
                                     ]);
-                                    alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
+                                    showToast('คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย', 'success');
                                 } catch {
                                     await navigator.clipboard.writeText(textLines.join('\n'));
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url; a.download = `rma-${id}-${type}.png`; a.click();
                                     URL.revokeObjectURL(url);
-                                    alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก');
+                                    showToast('คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก', 'info');
                                 }
                             } catch (err) {
                                 console.error('Copy failed:', err);
-                                alert('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง');
+                                showToast('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
                         className="px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-emerald-500/30"

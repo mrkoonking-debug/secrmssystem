@@ -12,6 +12,7 @@ import { Printer, Copy, X as XIcon } from 'lucide-react';
 import { ShipmentTagModal } from '../components/ShipmentTagModal';
 import html2canvas from 'html2canvas';
 import { renderHtmlToBlob } from '../services/renderToImage';
+import { showToast } from '../services/toast';
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -598,8 +599,8 @@ export const JobDetail: React.FC = () => {
                                     });
                                 }
                                 navigator.clipboard.writeText(textLines.join('\n')).then(() => {
-                                    alert('✅ คัดลอกข้อความแล้ว!');
-                                }).catch(() => alert('ไม่สามารถคัดลอกได้'));
+                                    showToast('คัดลอกข้อความแล้ว!', 'success');
+                                }).catch(() => showToast('ไม่สามารถคัดลอกได้', 'error'));
                             }}
                             className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
                             title="คัดลอกเฉพาะข้อความ (ใช้กับ Facebook ได้)"
@@ -614,17 +615,17 @@ export const JobDetail: React.FC = () => {
                                     const blob = await renderHtmlToBlob(docPreviewHtml);
                                     try {
                                         await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                        alert('✅ คัดลอกรูปภาพแล้ว!');
+                                        showToast('คัดลอกรูปภาพแล้ว!', 'success');
                                     } catch {
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
                                         a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
                                         URL.revokeObjectURL(url);
-                                        alert('⬇️ ดาวน์โหลดรูปภาพแล้ว');
+                                        showToast('ดาวน์โหลดรูปภาพแล้ว', 'info');
                                     }
                                 } catch (err) {
                                     console.error('Copy image failed:', err);
-                                    alert(`DEBUG copy img: ${err instanceof Error ? err.message : String(err)}`);
+                                    showToast('ไม่สามารถคัดลอกรูปภาพได้ กดอีกครั้ง', 'error');
                                 }
                             }}
                             className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
@@ -694,18 +695,18 @@ export const JobDetail: React.FC = () => {
                                                 'text/plain': new Blob([copyText], { type: 'text/plain' })
                                             })
                                         ]);
-                                        alert('✅ คัดลอกทั้งหมดแล้ว!');
+                                        showToast('คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย', 'success');
                                     } catch {
                                         await navigator.clipboard.writeText(copyText);
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
                                         a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
                                         URL.revokeObjectURL(url);
-                                        alert('⬇️ คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก');
+                                        showToast('คัดลอกข้อความแล้ว + ดาวน์โหลดรูปแยก', 'info');
                                     }
                                 } catch (err) {
                                     console.error('Copy failed:', err);
-                                    alert(`DEBUG copy all: ${err instanceof Error ? err.message : String(err)}`);
+                                    showToast('ไม่สามารถคัดลอกได้ กดอีกครั้ง', 'error');
                                 }
                             }}
                             className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
