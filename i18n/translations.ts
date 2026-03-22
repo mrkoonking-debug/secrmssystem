@@ -549,7 +549,7 @@ export const translations = {
       successDesc: 'กรุณานำสินค้านี้มาส่งที่ร้าน หรือส่งพัสดุพร้อมระบุรหัสอ้างอิง',
       yourRef: 'รหัสอ้างอิงของคุณ',
       backHome: 'กลับหน้าหลัก',
-      addAnother: 'เพิ่มสินค้าอีกชิ้น',
+      addAnother: 'เพิ่มรายการ',
       submitAll: 'ยืนยันข้อมูล',
       thankYou: 'ขอบคุณที่ใช้บริการ',
       disclaimer: '* ทางร้านไม่รับผิดชอบข้อมูลหายใน HDD/Storage',

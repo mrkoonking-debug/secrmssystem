@@ -7,7 +7,7 @@ import { ProductType, Team } from '../types';
 import { LINE_ACCOUNTS, SEC_ADDRESS, getLineAccountById } from '../lineConfig';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ProductEntryForm } from '../components/ProductEntryForm';
-import { OnboardingTour } from '../components/OnboardingTour';
+
 
 const INPUT_CLASS = "w-full bg-white dark:bg-[#1c1c1e] hover:bg-gray-50 dark:hover:bg-[#2c2c2e] border border-gray-200 dark:border-[#333] hover:border-blue-400/50 dark:hover:border-white/30 rounded-2xl px-4 py-4 text-[#1d1d1f] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:bg-white dark:focus:bg-[#1c1c1e] focus:ring-2 focus:ring-[#0071e3]/50 focus:border-[#0071e3] transition-all outline-none";
 
@@ -471,10 +471,29 @@ export const CustomerSubmit: React.FC = () => {
                             <span className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center text-sm font-bold">2</span>
                             {t('publicSubmit.productInfo')}
                         </h2>
-                        <ProductEntryForm mode="customer" onAddItem={handleAddItem} />
 
-                        {/* First-time interactive tour for product entry */}
-                        <OnboardingTour />
+                        {/* Step-by-step guide for customers */}
+                        <div className="mb-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/30 rounded-2xl">
+                            <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-3 flex items-center gap-2">
+                                📋 วิธีเพิ่มรายการเข้าระบบ
+                            </h3>
+                            <div className="space-y-2">
+                                {[
+                                    { num: '①', text: 'เลือกยี่ห้อสินค้า เช่น Hikvision, Dahua' },
+                                    { num: '②', text: 'กรอกรุ่นสินค้า และ Serial Number (ดูจากสติกเกอร์บนตัวเครื่อง) หรือกด 📷 สแกน' },
+                                    { num: '③', text: 'อธิบายอาการเสีย เช่น "ภาพมืด", "เชื่อมต่อไม่ได้"' },
+                                    { num: '④', text: 'กดปุ่ม "เพิ่มรายการ" ด้านล่าง เพื่อเพิ่มเข้ารายการ' },
+                                    { num: '⑤', text: 'ถ้ามีสินค้ามากกว่า 1 ชิ้น ให้กรอกข้อมูลชิ้นถัดไป แล้วกด "เพิ่มรายการ" อีกครั้ง ทำซ้ำจนครบทุกชิ้น' },
+                                ].map((s, i) => (
+                                    <div key={i} className="flex items-start gap-2.5 text-sm text-blue-800/80 dark:text-blue-200/80">
+                                        <span className="text-blue-500 font-bold text-base leading-5">{s.num}</span>
+                                        <span>{s.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <ProductEntryForm mode="customer" onAddItem={handleAddItem} />
 
                         {/* Basket List */}
                         {basket.length > 0 && (
