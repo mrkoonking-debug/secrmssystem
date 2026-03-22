@@ -1,6 +1,6 @@
 /**
- * Lightweight toast notification — shows a message briefly, then fades away.
- * No dependencies. Creates its own DOM elements and cleans up after itself.
+ * Premium toast notification — Apple-style, minimal, elegant.
+ * Auto-dismissing with smooth slide + fade animation.
  */
 
 let toastContainer: HTMLDivElement | null = null;
@@ -9,8 +9,8 @@ function getContainer(): HTMLDivElement {
   if (toastContainer && document.body.contains(toastContainer)) return toastContainer;
   toastContainer = document.createElement('div');
   toastContainer.style.cssText = `
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    z-index: 99999; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 99999; display: flex; flex-direction: column; align-items: center; gap: 10px;
     pointer-events: none;
   `;
   document.body.appendChild(toastContainer);
@@ -19,52 +19,64 @@ function getContainer(): HTMLDivElement {
 
 type ToastType = 'success' | 'error' | 'info';
 
-const TOAST_STYLES: Record<ToastType, { bg: string; border: string; icon: string }> = {
-  success: { bg: 'rgba(16,185,129,0.95)', border: 'rgba(5,150,105,0.6)', icon: '✅' },
-  error:   { bg: 'rgba(239,68,68,0.95)',   border: 'rgba(220,38,38,0.6)',  icon: '❌' },
-  info:    { bg: 'rgba(59,130,246,0.95)',   border: 'rgba(37,99,235,0.6)',  icon: 'ℹ️' },
-};
-
-export function showToast(message: string, type: ToastType = 'success', durationMs = 2500) {
+export function showToast(message: string, type: ToastType = 'success', durationMs = 2200) {
   const container = getContainer();
-  const style = TOAST_STYLES[type];
 
   const toast = document.createElement('div');
   toast.style.cssText = `
-    background: ${style.bg}; color: white;
-    border: 1px solid ${style.border};
-    padding: 12px 24px; border-radius: 14px;
-    font-family: 'Inter','Sarabun',-apple-system,sans-serif;
-    font-size: 14px; font-weight: 600; line-height: 1.4;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    pointer-events: auto; cursor: default;
+    background: rgba(28,28,30,0.92);
+    color: #f5f5f7;
+    padding: 13px 22px;
+    border-radius: 100px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Sarabun', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+    pointer-events: auto;
     display: flex; align-items: center; gap: 8px;
-    opacity: 0; transform: translateY(-12px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    max-width: 90vw; text-align: center;
+    opacity: 0; transform: translateY(-16px) scale(0.96);
+    transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    max-width: min(420px, 88vw);
+    white-space: nowrap;
   `;
-  toast.textContent = `${style.icon}  ${message}`;
 
+  // Minimal icon dot
+  const dot = document.createElement('span');
+  const dotColor = type === 'success' ? '#34d399' : type === 'error' ? '#f87171' : '#60a5fa';
+  dot.style.cssText = `
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    background: ${dotColor};
+    box-shadow: 0 0 6px ${dotColor}80;
+  `;
+
+  const text = document.createElement('span');
+  text.textContent = message;
+
+  toast.appendChild(dot);
+  toast.appendChild(text);
   container.appendChild(toast);
 
   // Animate in
   requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0) scale(1)';
+    });
   });
 
   // Animate out + remove
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-12px)';
+    toast.style.transform = 'translateY(-10px) scale(0.97)';
     setTimeout(() => {
       toast.remove();
-      // Clean up container if empty
       if (container.children.length === 0) {
         container.remove();
         toastContainer = null;
       }
-    }, 350);
+    }, 400);
   }, durationMs);
 }

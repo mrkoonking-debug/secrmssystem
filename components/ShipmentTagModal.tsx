@@ -4,6 +4,7 @@ import { X, Package, Trash2, Expand, RefreshCw, Copy, Mail, Plus, Save, Truck } 
 import { RMA } from '../types';
 import { ShippingLabelPayload, getCustomerShippingLabelHTML } from '../services/printService';
 import { useLanguage } from '../contexts/LanguageContext';
+import { showToast } from '../services/toast';
 
 interface ShipmentTagModalProps {
     isOpen: boolean;
@@ -125,7 +126,7 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
 
         } catch (error) {
             console.error("Failed to save or generate preview", error);
-            alert("เกิดข้อผิดพลาดในการบันทึกหรือสร้าง Preview");
+            showToast('เกิดข้อผิดพลาดในการสร้าง Preview', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -142,10 +143,10 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         try {
             setIsSaving(true);
             await onSave(buildSavePayload());
-            alert("บันทึกข้อมูลสำเร็จ");
+            showToast('บันทึกข้อมูลสำเร็จ', 'success');
         } catch (error) {
             console.error(error);
-            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+            showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -183,9 +184,9 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         }
 
         navigator.clipboard.writeText(text.trim()).then(() => {
-            alert('คัดลอกข้อมูลเรียบร้อยแล้ว');
+            showToast('คัดลอกข้อมูลเรียบร้อยแล้ว', 'success');
         }).catch(() => {
-            alert('ไม่สามารถคัดลอกได้');
+            showToast('ไม่สามารถคัดลอกได้', 'error');
         });
     };
 
@@ -376,14 +377,14 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                     <button
                         onClick={async () => {
                             try {
-                                if (!previewRenderRef.current) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
+                                if (!previewRenderRef.current) { showToast('ไม่สามารถก็อปปี้ได้', 'error'); return; }
                                 const canvas = await html2canvas(previewRenderRef.current, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
                                 const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
                                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                alert('✅ คัดลอกรูปภาพแล้ว!');
+                                showToast('คัดลอกรูปภาพแล้ว!', 'success');
                             } catch (err) {
                                 console.error('Copy image failed:', err);
-                                alert('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง');
+                                showToast('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
                         className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
@@ -426,10 +427,10 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                                         'text/plain': new Blob([text.trim()], { type: 'text/plain' })
                                     })
                                 ]);
-                                alert('✅ คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย');
+                                showToast('คัดลอกรูป + ข้อความแล้ว! วางใน LINE ได้เลย', 'success');
                             } catch (err) {
                                 console.error('Copy failed:', err);
-                                alert('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง');
+                                showToast('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
                         className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
