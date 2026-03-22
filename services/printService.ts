@@ -844,9 +844,11 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         gap: 6px;
       }
       .st-sender-logo {
-        height: 56px;
-        max-width: 100px;
+        height: 72px;
+        width: auto;
+        max-width: 200px;
         object-fit: contain;
+        align-self: flex-start;
       }
       .st-page-badge {
         position: absolute;

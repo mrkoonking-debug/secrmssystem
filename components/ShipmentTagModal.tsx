@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import React, { useState, useEffect } from 'react';
+import { renderHtmlToBlob } from '../services/renderToImage';
 import { X, Package, Trash2, Expand, RefreshCw, Copy, Mail, Plus, Save, Truck } from 'lucide-react';
 import { RMA } from '../types';
 import { ShippingLabelPayload, getCustomerShippingLabelHTML } from '../services/printService';
@@ -36,7 +36,6 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
 
     const [isSaving, setIsSaving] = useState(false);
     const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-    const previewRenderRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -348,13 +347,6 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                         >
                             <Expand className="w-4 h-4" /> Preview ใบติดหน้ากล่อง
                         </button>
-
-                        <button
-                            onClick={handleCopyData}
-                            className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2"
-                        >
-                            <Copy className="w-4 h-4" /> คัดลอกข้อมูล
-                        </button>
                     </div>
                 </div>
             </div>
@@ -377,9 +369,8 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                     <button
                         onClick={async () => {
                             try {
-                                if (!previewRenderRef.current) { showToast('ไม่สามารถก็อปปี้ได้', 'error'); return; }
-                                const canvas = await html2canvas(previewRenderRef.current, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+                                if (!previewHtml) { showToast('ไม่มีเอกสารสำหรับก็อปปี้', 'error'); return; }
+                                const blob = await renderHtmlToBlob(previewHtml);
                                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                                 showToast('คัดลอกรูปภาพแล้ว!', 'success');
                             } catch (err) {
@@ -396,9 +387,8 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                     <button
                         onClick={async () => {
                             try {
-                                if (!previewRenderRef.current) { alert('ไม่สามารถก๊อปปี้ได้'); return; }
-                                const canvas = await html2canvas(previewRenderRef.current, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, width: 794, height: 1123, windowWidth: 1200 });
-                                const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+                                if (!previewHtml) { showToast('ไม่มีเอกสารสำหรับก็อปปี้', 'error'); return; }
+                                const blob = await renderHtmlToBlob(previewHtml);
                                 // Build text
                                 const jobId = rma.groupRequestId || rma.id;
                                 const refNo = rma.quotationNumber || '-';
@@ -452,8 +442,6 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                     </button>
                 </div>
                 {/* Preview Content - A4 size */}
-                {/* Hidden render target for html2canvas */}
-                <div style={{ position: 'fixed', top: 0, left: 0, zIndex: -100, opacity: 0, pointerEvents: 'none' }}><div ref={previewRenderRef} style={{ width: '794px', minHeight: '1123px', background: 'white', padding: 0, margin: 0, boxSizing: 'border-box' }} dangerouslySetInnerHTML={{ __html: previewHtml || '' }} /></div>
                 <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
                     <iframe
                         id="preview-iframe"

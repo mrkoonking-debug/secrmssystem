@@ -1,80 +1,172 @@
-import html2canvas from 'html2canvas';
-
 /**
- * CSS that undoes Tailwind CDN's preflight resets.
- * These rules use the universal selector (*) with specificity 0,0,0.
- * They appear AFTER Tailwind's preflight (in source order) so they override it.
- * But the document's own CSS uses class selectors (specificity 0,1,0+) so the
- * document's styles still win for elements that have explicit border/display rules.
- */
-const TAILWIND_UNDO_CSS = `<style>
-/* Undo Tailwind preflight - restore browser defaults */
-*, *::before, *::after {
-  border-style: none;
-  border-width: 0;
-  border-color: initial;
-}
-img, svg, video, canvas { display: inline; vertical-align: baseline; }
-h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; }
-ol, ul { list-style: revert; padding: revert; }
-a { color: revert; text-decoration: revert; }
-table { border-collapse: revert; }
-</style>`;
-
-/**
- * Renders HTML content to an image blob.
- * Uses the same proven pattern as ShipmentTagModal (hidden div + html2canvas).
- * Injects CSS overrides to undo Tailwind CDN interference before the document HTML.
+ * Renders HTML content to an image blob using a fully isolated iframe.
+ * html2canvas runs INSIDE the iframe — zero Tailwind interference.
+ * Images are pre-converted to data URIs to avoid CORS/loading issues.
  */
 export async function renderHtmlToBlob(htmlContent: string): Promise<Blob> {
-  // Create temporary hidden render container
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;top:0;left:0;z-index:-100;opacity:0;pointer-events:none;';
+  // Pre-convert all image URLs to data URIs for reliable rendering
+  const processedHtml = await inlineImages(htmlContent);
+
+  return new Promise<Blob>((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:0;visibility:hidden;';
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    };
+
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Timeout 20s')); }, 20000);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) { cleanup(); clearTimeout(timer); reject(new Error('No iframe doc')); return; }
+
+    const fullHtml = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
+</head>
+<body style="margin:0;padding:0;background:#fff;">
+${processedHtml}
+</body></html>`;
+
+    iframeDoc.open();
+    iframeDoc.write(fullHtml);
+    iframeDoc.close();
+
+    iframe.onload = async () => {
+      try {
+        const iWin = iframe.contentWindow as any;
+        const iDoc = iframe.contentDocument!;
+
+        // Wait for html2canvas script
+        let tries = 0;
+        while (!iWin.html2canvas && tries < 50) {
+          await new Promise(r => setTimeout(r, 200));
+          tries++;
+        }
+        if (!iWin.html2canvas) throw new Error('html2canvas not loaded');
+
+        // Wait for fonts
+        if (iDoc.fonts) await iDoc.fonts.ready;
+
+        // Wait for any remaining images
+        const imgs = Array.from(iDoc.querySelectorAll('img')) as HTMLImageElement[];
+        await Promise.allSettled(imgs.map(img =>
+          img.complete ? Promise.resolve() : new Promise<void>(res => {
+            img.onload = () => res();
+            img.onerror = () => { img.style.display = 'none'; res(); };
+            setTimeout(res, 5000);
+          })
+        ));
+
+        // Settle time
+        await new Promise(r => setTimeout(r, 500));
+
+        // Capture
+        const target = iDoc.querySelector('.print-doc') as HTMLElement
+                     || iDoc.querySelector('.shipping-label') as HTMLElement
+                     || iDoc.body;
+
+        const canvas = await iWin.html2canvas(target, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          windowWidth: 794,
+        });
+
+        const blob = await new Promise<Blob>((res, rej) =>
+          canvas.toBlob((b: Blob | null) => b ? res(b) : rej(new Error('toBlob failed')), 'image/png')
+        );
+
+        clearTimeout(timer);
+        cleanup();
+        resolve(blob);
+      } catch (err) {
+        clearTimeout(timer);
+        cleanup();
+        reject(err);
+      }
+    };
+
+    iframe.onerror = () => { clearTimeout(timer); cleanup(); reject(new Error('iframe error')); };
+  });
+}
+
+/**
+ * Finds all <img src="..."> in the HTML string and converts them to data URIs.
+ * This ensures images render correctly inside the iframe without CORS issues.
+ */
+async function inlineImages(html: string): Promise<string> {
+  // Find all img src attributes
+  const imgRegex = /(<img[^>]*\ssrc=["'])([^"']+)(["'][^>]*>)/gi;
+  const matches: { full: string; prefix: string; url: string; suffix: string }[] = [];
+  let match;
   
-  const renderDiv = document.createElement('div');
-  renderDiv.style.cssText = 'width:794px;min-height:1123px;background:white;padding:0;margin:0;box-sizing:border-box;';
-  // Inject Tailwind-undo CSS BEFORE the document HTML.
-  // Order: Tailwind preflight (head) → our reset (body, same specificity, wins) → document CSS (body, higher specificity, wins)
-  renderDiv.innerHTML = TAILWIND_UNDO_CSS + htmlContent;
-  
-  wrapper.appendChild(renderDiv);
-  document.body.appendChild(wrapper);
-
-  try {
-    // Wait for fonts (Sarabun is pre-loaded in index.html)
-    await document.fonts.ready;
-    
-    // Wait for images
-    const images = Array.from(renderDiv.querySelectorAll('img'));
-    await Promise.allSettled(images.map(img =>
-      img.complete ? Promise.resolve() : new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => { img.style.display = 'none'; resolve(); };
-        setTimeout(resolve, 3000);
-      })
-    ));
-
-    // Settle time for layout
-    await new Promise(r => setTimeout(r, 200));
-
-    // html2canvas — same options as ShipmentTagModal
-    const canvas = await html2canvas(renderDiv, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      width: 794,
-      height: 1123,
-      windowWidth: 1200
-    });
-
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png')
-    );
-
-    return blob;
-  } finally {
-    document.body.removeChild(wrapper);
+  while ((match = imgRegex.exec(html)) !== null) {
+    matches.push({ full: match[0], prefix: match[1], url: match[2], suffix: match[3] });
   }
+
+  if (matches.length === 0) return html;
+
+  // Convert each unique URL to data URI
+  const urlCache = new Map<string, string>();
+  
+  for (const m of matches) {
+    if (urlCache.has(m.url)) continue;
+    if (m.url.startsWith('data:')) { urlCache.set(m.url, m.url); continue; }
+
+    try {
+      const dataUri = await toDataUri(m.url);
+      urlCache.set(m.url, dataUri);
+    } catch {
+      urlCache.set(m.url, m.url); // Keep original if conversion fails
+    }
+  }
+
+  // Replace URLs in HTML
+  let result = html;
+  for (const m of matches) {
+    const newUrl = urlCache.get(m.url) || m.url;
+    if (newUrl !== m.url) {
+      result = result.replace(m.url, newUrl);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Fetches an image and converts it to a data URI.
+ */
+function toDataUri(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('no ctx')); return; }
+      ctx.drawImage(img, 0, 0);
+      try {
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        reject(new Error('tainted'));
+      }
+    };
+    img.onerror = () => reject(new Error('load failed'));
+    // Resolve relative URLs
+    if (url.startsWith('/')) {
+      img.src = window.location.origin + url;
+    } else {
+      img.src = url;
+    }
+  });
 }
