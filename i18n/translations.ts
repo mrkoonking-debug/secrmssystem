@@ -89,7 +89,8 @@ export const translations = {
       acc_mouse: 'Mouse',
       acc_remote: 'Remote',
       acc_hdd: 'HDD',
-      acc_cables: 'Cables'
+      acc_cables: 'Cables',
+      unit_only: 'Unit Only'
     },
     dashboard: {
       title: 'Claim Center',
@@ -352,7 +353,8 @@ export const translations = {
       senderNameRequired: 'Sender Name is required',
       senderPhoneRequired: 'Sender Phone is required',
       senderAddressRequired: 'Sender Address is required',
-      postalCodeRequired: 'Postal Code is required'
+      postalCodeRequired: 'Postal Code is required',
+      accessoriesRequired: 'Please select at least one accessory or "Unit Only"'
     },
     placeholders: {
       name: 'Company or Person Name',
@@ -474,7 +476,8 @@ export const translations = {
       acc_mouse: 'เมาส์',
       acc_remote: 'รีโมท',
       acc_hdd: 'ฮาร์ดดิสก์',
-      acc_cables: 'สายเคเบิลอื่นๆ'
+      acc_cables: 'สายเคเบิลอื่นๆ',
+      unit_only: 'มีแต่ตัวเครื่อง'
     },
     dashboard: {
       title: 'ศูนย์จัดการงานเคลม',
@@ -739,7 +742,8 @@ export const translations = {
       senderNameRequired: 'กรุณาระบุชื่อผู้ส่ง',
       senderPhoneRequired: 'กรุณาระบุเบอร์โทรผู้ส่ง',
       senderAddressRequired: 'กรุณาระบุที่อยู่ผู้ส่ง',
-      postalCodeRequired: 'กรุณาระบุรหัสไปรษณีย์'
+      postalCodeRequired: 'กรุณาระบุรหัสไปรษณีย์',
+      accessoriesRequired: 'กรุณาเลือกอุปกรณ์ที่รับมา หรือเลือก "มีแต่ตัวเครื่อง"'
     },
     placeholders: {
       name: 'ชื่อลูกค้า / บริษัท',

@@ -239,7 +239,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         const oldAcc = (rma.accessories || []).sort().join(', ');
         const newAcc = (formData.accessories || []).sort().join(', ');
         if (oldAcc !== newAcc) {
-            const fmtAcc = (keys: string[]) => keys.length === 0 ? '(ไม่มี)' : keys.map(k => k.startsWith('acc_') ? t(`accessories_list.${k}`) : k).join(', ');
+            const fmtAcc = (keys: string[]) => keys.length === 0 ? '(ไม่มี)' : keys.map(k => k.startsWith('acc_') || k === 'unit_only' ? t(`accessories_list.${k}`) : k).join(', ');
             newDiffs.push({ field: t('submit.accessories'), old: fmtAcc(rma.accessories || []), new: fmtAcc(formData.accessories || []) });
         }
 
@@ -249,7 +249,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         if (oldSent !== newSent) {
             const fmtSent = (keys: string[]) => {
                 if (keys.length === 0) return '(ไม่ได้เลือก)';
-                return keys.map(k => k === 'unit' ? 'ตัวเครื่อง' : (k.startsWith('acc_') ? t(`accessories_list.${k}`) : k)).join(', ');
+                return keys.map(k => k === 'unit' ? 'ตัวเครื่อง' : (k.startsWith('acc_') || k === 'unit_only' ? t(`accessories_list.${k}`) : k)).join(', ');
             };
             newDiffs.push({ field: 'อุปกรณ์ที่ส่งเคลม', old: fmtSent(rma.distributorSentItems || []), new: fmtSent(formData.distributorSentItems || []) });
         }
@@ -271,6 +271,12 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         const currentAction = formData.resolution?.actionTaken === 'Other' ? customAction : formData.resolution?.actionTaken;
         if (formData.status === RMAStatus.CLOSED && (!currentAction || currentAction.trim() === '')) {
             alert('กรุณาเลือก "วิธีแก้ไข/ดำเนินการ" ก่อนปิดงาน');
+            return;
+        }
+
+        // ถ้าส่งเคลมศูนย์ ต้องเลือกอุปกรณ์ที่จะส่งอย่างน้อย 1 รายการ
+        if (formData.status === RMAStatus.WAITING_PARTS && (!formData.distributorSentItems || formData.distributorSentItems.length === 0)) {
+            alert('กรุณาเลือกอุปกรณ์ที่จะส่งเคลมไปศูนย์อย่างน้อย 1 รายการ');
             return;
         }
 
@@ -451,6 +457,19 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             )}
                         </div>
                         <div className={`flex flex-wrap gap-2 mb-2 ${isAccessoriesLocked ? 'opacity-60 pointer-events-none' : ''}`}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const current = formData.accessories || [];
+                                    handleFormChange('accessories', current.includes('unit_only') ? current.filter(a => a !== 'unit_only') : ['unit_only']);
+                                }}
+                                className={`px-4 py-2 text-xs font-medium rounded-full border transition-all flex items-center gap-2 ${(formData.accessories || []).includes('unit_only')
+                                    ? 'bg-yellow-500 text-white border-yellow-500 shadow-md'
+                                    : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#424245] text-[#1d1d1f] dark:text-gray-300 hover:border-yellow-500 hover:text-yellow-500'
+                                }`}
+                            >
+                                {t('accessories_list.unit_only')}
+                            </button>
                             {['acc_box', 'acc_adapter', 'acc_hdmi', 'acc_mouse', 'acc_remote', 'acc_hdd', 'acc_cables'].map(acc => {
                                 const hddCount = acc === 'acc_hdd' ? (formData.accessories || []).filter(a => a.startsWith('acc_hdd::')).length : 0;
                                 const isActive = (formData.accessories || []).includes(acc) || hddCount > 0;
@@ -460,7 +479,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                         type="button"
                                         onClick={() => {
                                             if (acc === 'acc_hdd') { setShowHddModal(true); return; }
-                                            const current = formData.accessories || [];
+                                            const current = (formData.accessories || []).filter(a => a !== 'unit_only');
                                             handleFormChange('accessories', isActive ? current.filter(a => a !== acc) : [...current, acc]);
                                         }}
                                         className={`px-4 py-2 text-xs font-medium rounded-full border transition-all flex items-center gap-2 ${isActive
@@ -495,7 +514,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                             <div className={`flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-[#2c2c2e] rounded-2xl border border-gray-200 dark:border-[#424245] ${isAccessoriesLocked ? 'pointer-events-none' : ''}`}>
                                 {(formData.accessories || []).map((acc, idx) => (
                                     <span key={`${acc}-${idx}`} className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#3a3a3c] text-xs font-medium rounded-xl shadow-sm border border-gray-200 dark:border-[#48484a] text-[#1d1d1f] dark:text-white">
-                                        {acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') ? t(`accessories_list.${acc}`) : acc)}
+                                        {acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') || acc === 'unit_only' ? t(`accessories_list.${acc}`) : acc)}
                                         <button type="button" onClick={() => handleFormChange('accessories', (formData.accessories || []).filter(a => a !== acc))} className="text-gray-400 hover:text-red-500 ml-1"><X className="w-3 h-3" /></button>
                                     </span>
                                 ))}
@@ -986,7 +1005,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         </button>
                         {(formData.accessories || []).map((acc, idx) => {
                             const isActive = (formData.distributorSentItems || []).includes(acc);
-                            const label = acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') ? t(`accessories_list.${acc}`) : acc);
+                            const label = acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') || acc === 'unit_only' ? t(`accessories_list.${acc}`) : acc);
                             return (
                                 <button
                                     key={`${acc}-${idx}`}
@@ -1071,7 +1090,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                 const current = formData.accessories || [];
                                 const added = current.filter(a => !accessoriesBackup.includes(a));
                                 const removed = accessoriesBackup.filter(a => !current.includes(a));
-                                const fmtLabel = (a: string) => a.startsWith('acc_hdd::') ? `HDD (${a.split('::')[1]})` : (a.startsWith('acc_') ? t(`accessories_list.${a}`) : a);
+                                const fmtLabel = (a: string) => a.startsWith('acc_hdd::') ? `HDD (${a.split('::')[1]})` : (a.startsWith('acc_') || a === 'unit_only' ? t(`accessories_list.${a}`) : a);
                                 return (
                                     <>
                                         {added.map((a, i) => (
