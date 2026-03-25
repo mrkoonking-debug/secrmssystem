@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, ArrowLeft, Package, User, X, Box, PenTool, Tag, Check, Trash2, MapPin, Phone, Printer } from 'lucide-react';
 import { MockDb } from '../services/mockDb';
+import { escapeHtml } from '../services/sanitize';
 import { ProductType, Team } from '../types';
 import { LINE_ACCOUNTS, SEC_ADDRESS, getLineAccountById } from '../lineConfig';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -195,13 +196,13 @@ export const CustomerSubmit: React.FC = () => {
                 <div class="label">
                     <div class="ref-box">
                         <div class="ref-label">${t('publicSubmit.refLabel')}</div>
-                        <div class="ref-value">${submittedRef}</div>
+                        <div class="ref-value">${escapeHtml(submittedRef)}</div>
                     </div>
                     <div class="section">
                         <div class="section-title">${t('publicSubmit.senderLabel')}</div>
-                        <div class="name">${fromName}</div>
-                        <div class="address">${fromAddress}</div>
-                        <div class="phone">${t('publicSubmit.senderPhone')}: ${fromPhone}</div>
+                        <div class="name">${escapeHtml(fromName)}</div>
+                        <div class="address">${escapeHtml(fromAddress)}</div>
+                        <div class="phone">${t('publicSubmit.senderPhone')}: ${escapeHtml(fromPhone)}</div>
                     </div>
                     <div class="divider"></div>
                     <div class="section">
@@ -400,6 +401,7 @@ export const CustomerSubmit: React.FC = () => {
                                         onChange={e => setCustomer({ ...customer, companyName: e.target.value })}
                                         className={INPUT_CLASS}
                                         placeholder={t('publicSubmit.companyPlaceholder')}
+                                        maxLength={200}
                                     />
                                     {errors.companyName && <p className="text-red-500 text-xs ml-2 mt-1">{errors.companyName}</p>}
                                 </div>
@@ -414,16 +416,19 @@ export const CustomerSubmit: React.FC = () => {
                                         onChange={e => setCustomer({ ...customer, contactName: e.target.value })}
                                         className={INPUT_CLASS}
                                         placeholder={t('publicSubmit.contactPlaceholder')}
+                                        maxLength={100}
                                     />
                                     {errors.contactName && <p className="text-red-500 text-xs ml-2 mt-1">{errors.contactName}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('publicSubmit.phone')} <span className="text-red-500">*</span></label>
                                     <input
+                                        type="tel"
                                         value={customer.phone}
                                         onChange={e => setCustomer({ ...customer, phone: e.target.value })}
                                         className={INPUT_CLASS}
                                         placeholder={t('publicSubmit.phonePlaceholder')}
+                                        maxLength={20}
                                     />
                                     {errors.phone && <p className="text-red-500 text-xs ml-2 mt-1">{errors.phone}</p>}
                                 </div>
@@ -446,6 +451,7 @@ export const CustomerSubmit: React.FC = () => {
                                         onChange={e => setCustomer({ ...customer, lineId: e.target.value })}
                                         className={INPUT_CLASS}
                                         placeholder={t('placeholders.lineId')}
+                                        maxLength={100}
                                     />
                                 </div>
                             </div>
@@ -459,6 +465,7 @@ export const CustomerSubmit: React.FC = () => {
                                     className={INPUT_CLASS}
                                     placeholder={t('publicSubmit.addressPlaceholder')}
                                     rows={3}
+                                    maxLength={500}
                                 />
                                 {errors.returnAddress && <p className="text-red-500 text-xs ml-2 mt-1">{errors.returnAddress}</p>}
                             </div>

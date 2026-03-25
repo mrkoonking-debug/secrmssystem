@@ -74,7 +74,8 @@ export const Login: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <input
-                type="text"
+                type="email"
+                autoComplete="email"
                 placeholder={t('login.emailPlaceholder')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
