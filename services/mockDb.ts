@@ -203,6 +203,11 @@ export const MockDb = {
   // --- Seed Data (Admin Only) ---
   seedDatabase: async () => {
     if (!isConfigured || !db) return;
+    // Safety: admin-only operation
+    if (currentUser?.role !== 'admin') {
+      console.error('seedDatabase: requires admin role');
+      throw new Error('Unauthorized: admin access required');
+    }
     try {
       // Seed Settings
       await setDoc(doc(db, 'settings', 'config'), OFFLINE_SETTINGS);
@@ -588,6 +593,14 @@ export const MockDb = {
 
   clearDatabase: async () => {
     if (!isConfigured || !db) return;
+    // Safety: admin-only + confirmation required
+    if (currentUser?.role !== 'admin') {
+      console.error('clearDatabase: requires admin role');
+      throw new Error('Unauthorized: admin access required');
+    }
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL RMA data. Are you sure?')) {
+      return;
+    }
     try {
       const snap = await getDocs(collection(db, 'rmas'));
       const promises = snap.docs.map(d => deleteDoc(d.ref));
