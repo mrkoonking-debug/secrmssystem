@@ -6,19 +6,13 @@ import { getAuth } from "firebase/auth";
 const env = (import.meta as any).env || {};
 
 export const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyDf6mMnM2i3hFCTJznufEDCd6tvzUXaKdc",
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "my-sec-claim-system.firebaseapp.com",
-  projectId: env.VITE_FIREBASE_PROJECT_ID || "my-sec-claim-system",
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "my-sec-claim-system.firebasestorage.app",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "988616933794",
-  appId: env.VITE_FIREBASE_APP_ID || "1:988616933794:web:4f8267e73e3269cb05f2fb"
+  apiKey: env.VITE_FIREBASE_API_KEY || "",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: env.VITE_FIREBASE_APP_ID || ""
 };
-
-console.log('Firebase Config Loaded:', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  apiKeyLength: firebaseConfig.apiKey?.length
-});
 
 const isConfigured =
   firebaseConfig.apiKey !== "YOUR_API_KEY" &&
