@@ -423,23 +423,28 @@ export const MockDb = {
   },
   addRMA: async (c: Partial<RMA>): Promise<RMA> => {
     const year = new Date().getFullYear().toString().slice(-2);
-    // [NEW] ID Format: RMA-26XXXX
-    let id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
+    // [FIXED] ID Format: RMA-26XXXXXX (6 digits = 900K unique IDs/year)
+    const generateId = () => `RMA-${year}${Math.floor(100000 + Math.random() * 900000)}`;
+    let id = generateId();
 
     if (!isConfigured || !db) throw new Error("Firebase Disconnected");
 
-    try {
-      const checkExists = async () => {
+    // Retry up to 5 times if ID collision occurs
+    const MAX_RETRIES = 5;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
         const snap = await getDoc(doc(db, 'rmas', id));
-        return snap.exists();
-      };
-
-      const exists = await checkExists();
-
-      if (exists) {
-        id = `RMA-${year}${Math.floor(1000 + Math.random() * 9000)}`;
+        if (!snap.exists()) break; // ID is unique, proceed
+        if (attempt === MAX_RETRIES - 1) {
+          throw new Error(`RMA ID collision: failed to generate unique ID after ${MAX_RETRIES} attempts`);
+        }
+        id = generateId(); // Generate new ID and retry
+      } catch (e: any) {
+        if (e.message?.includes('RMA ID collision')) throw e;
+        console.warn("ID Check fail", e);
+        break; // On network error, proceed with current ID
       }
-    } catch (e) { console.warn("ID Check fail", e); }
+    }
 
     const now = new Date().toISOString();
     const newRMAData = {
