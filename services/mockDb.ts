@@ -397,17 +397,19 @@ export const MockDb = {
         resultsMap.set(directSnap.id, mapDocToRMA(directSnap));
       }
 
-      // 2. Try exact match on quotationNumber (e.g. "SEC00010")
+      // 2. Try exact match on quotationNumber (e.g. "SEC073880")
       const quoteSnap = await getDocs(query(
         collection(db, 'rmas'),
-        where('quotationNumber', '==', text.trim())
+        where('quotationNumber', '==', text.trim()),
+        limit(5)
       ));
       quoteSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
 
-      // 3. Try exact match on groupRequestId (e.g. "SECRMA-202603-9497")
+      // 3. Try exact match on groupRequestId (e.g. "SECRMA-2026-0003")
       const groupSnap = await getDocs(query(
         collection(db, 'rmas'),
-        where('groupRequestId', '==', text.trim())
+        where('groupRequestId', '==', text.trim()),
+        limit(5)
       ));
       groupSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
 
@@ -416,7 +418,8 @@ export const MockDb = {
       // and serial numbers must be entered exactly as text
       const snSnap = await getDocs(query(
         collection(db, 'rmas'),
-        where('serialNumber', '==', text.trim())
+        where('serialNumber', '==', text.trim()),
+        limit(5)
       ));
       snSnap.docs.forEach(d => resultsMap.set(d.id, mapDocToRMA(d)));
 
