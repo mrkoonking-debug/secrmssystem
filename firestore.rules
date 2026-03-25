@@ -6,11 +6,16 @@ service cloud.firestore {
     function isAuth() {
       return request.auth != null;
     }
+
+    // Admin Helper — checks role from Firestore users collection
+    function isAdmin() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
     
-    // 1. Users Collection — Only authenticated users can read/write
+    // 1. Users Collection — read: any authenticated, write: admin only
     match /users/{userId} {
       allow read: if isAuth();
-      allow write: if isAuth();
+      allow write: if isAdmin();
     }
     
     // 2. RMAs Collection
@@ -18,11 +23,11 @@ service cloud.firestore {
       // Public: read a single document by ID (for customer tracking)
       allow get: if true;
       
-      // Public: allow limited list queries (max 10 results)
-      // App-level code enforces exact-match search — no partial queries sent
-      allow list: if isAuth() || request.query.limit <= 10;
+      // List: authenticated staff OR limited public queries (max 5 results)
+      // NOTE: public list is needed for searchRMAsPublic (where queries)
+      allow list: if isAuth() || request.query.limit <= 5;
       
-      // Staff: update and delete
+      // Staff: update and delete (any authenticated user = staff or admin)
       allow update, delete: if isAuth();
       
       // Creation: Staff OR public guest submit (with restrictions)
@@ -32,10 +37,12 @@ service cloud.firestore {
       );
     }
     
-    // 3. Config/Master Data — public read, staff write
-    match /brands/{d} { allow read: if true; allow write: if isAuth(); }
-    match /distributors/{d} { allow read: if true; allow write: if isAuth(); }
-    match /settings/{d} { allow read: if true; allow write: if isAuth(); }
+    // 3. Config/Master Data — public read, admin write
+    match /brands/{d} { allow read: if true; allow write: if isAdmin(); }
+    match /distributors/{d} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{d} { allow read: if true; allow write: if isAdmin(); }
+    
+    // 4. Counters — authenticated only (used for sequential Job ID generation)
     match /counters/{d} { allow read, write: if isAuth(); }
   }
 }
