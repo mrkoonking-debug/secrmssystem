@@ -3,6 +3,7 @@ import { RMA, Team } from '../types';
 import { translations } from '../i18n/translations';
 import { MockDb } from './mockDb';
 import { LINE_ACCOUNTS } from '../lineConfig';
+import { escapeHtml } from './sanitize';
 
 const formatAccessory = (acc: string) => {
   if (acc.startsWith('acc_hdd::')) return `HDD (${acc.split('::')[1]})`;
@@ -554,13 +555,13 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
       <tr>
         <td class="align-center">${index + 1}</td>
         <td style="padding-left: 12px;">
-          <div class="item-brand-model">${item.brand} ${item.productModel}</div>
-          <div class="item-desc">อาการเสีย: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc">การดำเนินการ: ${actionText}</div>
-          <div class="item-desc">อุปกรณ์ที่คืน: ${accString}</div>
-          <div class="item-sn">S/N: ${item.serialNumber}</div>
+          <div class="item-brand-model">${escapeHtml(item.brand)} ${escapeHtml(item.productModel)}</div>
+          <div class="item-desc">อาการเสีย: ${escapeHtml(item.resolution?.rootCause || '-')}</div>
+          <div class="item-desc">การดำเนินการ: ${escapeHtml(actionText)}</div>
+          <div class="item-desc">อุปกรณ์ที่คืน: ${escapeHtml(accString)}</div>
+          <div class="item-sn">S/N: ${escapeHtml(item.serialNumber)}</div>
           ${item.resolution?.replacedSerialNumber
-        ? `<div class="item-sn-new">S/N ใหม่: ${item.resolution.replacedSerialNumber}</div>`
+        ? `<div class="item-sn-new">S/N ใหม่: ${escapeHtml(item.resolution.replacedSerialNumber)}</div>`
         : ''}
         </td>
         <td></td>
@@ -601,11 +602,11 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
       <!-- CUSTOMER INFO -->
       <div class="party-box" style="margin-bottom: 20px;">
         <div class="party-box-label">CUSTOMER DETAILS (ลูกค้า)</div>
-        <div class="party-name">${rma.customerName}</div>
+        <div class="party-name">${escapeHtml(rma.customerName)}</div>
         <div class="party-detail" style="margin-top: 4px;">
-          ${rma.customerPhone ? `Tel: ${rma.customerPhone}` : ''}
+          ${rma.customerPhone ? `Tel: ${escapeHtml(rma.customerPhone)}` : ''}
           ${rma.customerPhone && rma.customerEmail ? ' · ' : ''}
-          ${rma.customerEmail ? `Email: ${rma.customerEmail}` : ''}
+          ${rma.customerEmail ? `Email: ${escapeHtml(rma.customerEmail)}` : ''}
         </div>
       </div>
 
@@ -770,9 +771,9 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
               <div class="st-deliver-badge">จัดส่งถึง (DELIVER TO)</div>
             </div>
             <div class="st-receiver-content">
-              <div class="st-receiver-name">${receiverName || '________________________________'}</div>
-              <div class="st-receiver-contact">ผู้ติดต่อ: ${contactPerson || '_________________'}</div>
-              <div class="st-receiver-phone">โทร. ${receiverPhone || '_________________'}</div>
+              <div class="st-receiver-name">${escapeHtml(receiverName) || '________________________________'}</div>
+              <div class="st-receiver-contact">ผู้ติดต่อ: ${escapeHtml(contactPerson) || '_________________'}</div>
+              <div class="st-receiver-phone">โทร. ${escapeHtml(receiverPhone) || '_________________'}</div>
               <div class="st-receiver-address">
                 ${receiverAddress
         ? receiverAddress.replace(/\\n/g, '<br/>')
@@ -1214,7 +1215,7 @@ const executePreview = (html: string, titleName: string, copyText: string) => {
     return;
   }
 
-  const escapedCopyText = copyText.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+  const escapedCopyText = copyText.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n');
 
   previewWindow.document.write(`
     <html>

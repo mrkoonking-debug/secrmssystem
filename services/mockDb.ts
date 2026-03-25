@@ -19,6 +19,9 @@ let currentUser: any = null;
 let OFFLINE_STORAGE: RMA[] = SEED_CLAIMS as any;
 // In-memory stats cache (30 second TTL)
 let _statsCache: { key: string; data: any; ts: number } | null = null;
+// Login rate limiter
+let _loginAttempts = 0;
+let _loginLockUntil = 0;
 let OFFLINE_USERS: any[] = [
   {
     uid: 'offline-admin',
@@ -96,6 +99,11 @@ export const MockDb = {
     if (!isConfigured || !auth) {
       return { success: false, error: "Firebase Authentication not configured" };
     }
+    // Rate limit: block after 5 failed attempts for 30 seconds
+    if (_loginLockUntil > Date.now()) {
+      const waitSec = Math.ceil((_loginLockUntil - Date.now()) / 1000);
+      return { success: false, error: `ลองใหม่อีกครั้งในอีก ${waitSec} วินาที` };
+    }
     try {
       const cred = await signInWithEmailAndPassword(auth, u, p);
       const email = cred.user.email;
@@ -112,10 +120,15 @@ export const MockDb = {
         role: role,
         team: userData?.team || 'ALL'
       };
+      _loginAttempts = 0; // Reset on success
       return { success: true };
     } catch (e: any) {
-      console.error("Login Error:", e);
-      return { success: false, error: e.message || "Unknown error" };
+      _loginAttempts++;
+      if (_loginAttempts >= 5) {
+        _loginLockUntil = Date.now() + 30000; // Lock for 30 seconds
+        _loginAttempts = 0;
+      }
+      return { success: false, error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" };
     }
   },
 
@@ -146,16 +159,19 @@ export const MockDb = {
     }
   },
   addBrand: async (brand: any) => {
-    const id = `b-${Date.now()}`;
+    const id = `b-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await setDoc(doc(db, 'brands', id), brand);
   },
   updateBrand: async (id: string, updates: any) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await updateDoc(doc(db, 'brands', id), updates);
   },
   deleteBrand: async (id: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await deleteDoc(doc(db, 'brands', id));
   },
 
@@ -171,16 +187,19 @@ export const MockDb = {
     }
   },
   addDistributor: async (dist: any) => {
-    const id = `d-${Date.now()}`;
+    const id = `d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await setDoc(doc(db, 'distributors', id), dist);
   },
   updateDistributor: async (id: string, updates: any) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await updateDoc(doc(db, 'distributors', id), updates);
   },
   deleteDistributor: async (id: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await deleteDoc(doc(db, 'distributors', id));
   },
 
@@ -273,6 +292,7 @@ export const MockDb = {
   },
   deleteStaffAccount: async (uid: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
     await deleteDoc(doc(db, 'users', uid));
   },
 
@@ -606,8 +626,12 @@ export const MockDb = {
     }
     try {
       const snap = await getDocs(collection(db, 'rmas'));
-      const promises = snap.docs.map(d => deleteDoc(d.ref));
-      await Promise.all(promises);
+      // Batch delete: 500 docs per batch to avoid timeout
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < snap.docs.length; i += BATCH_SIZE) {
+        const batch = snap.docs.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(d => deleteDoc(d.ref)));
+      }
       console.log("Database Cleared");
     } catch (e) { console.error("Clear DB Failed", e); }
   },
@@ -664,7 +688,16 @@ export const MockDb = {
       resolvedThisMonth: teamDocs.filter(c => c.status === RMAStatus.CLOSED).length,
       criticalIssues: aging.bucket7plus,
       revenuePipeline: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
-      avgTurnaroundHours: 48,
+      avgTurnaroundHours: (() => {
+        const closedDocs = teamDocs.filter(c => c.status === RMAStatus.CLOSED && c.createdAt && c.updatedAt);
+        if (closedDocs.length === 0) return 0;
+        const totalHours = closedDocs.reduce((sum, c) => {
+          const created = new Date(c.createdAt).getTime();
+          const updated = new Date(c.updatedAt).getTime();
+          return sum + Math.max(0, (updated - created) / 3600000);
+        }, 0);
+        return Math.round(totalHours / closedDocs.length);
+      })(),
       overdueCount: aging.bucket7plus,
       agingBuckets: aging,
       urgentRMAs
