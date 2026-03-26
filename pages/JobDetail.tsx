@@ -30,11 +30,13 @@ export const JobDetail: React.FC = () => {
     const [docPreviewType, setDocPreviewType] = useState<'DISTRIBUTOR' | 'CUSTOMER'>('DISTRIBUTOR');
     const [docPreviewRmas, setDocPreviewRmas] = useState<RMA[]>([]);
     const docPreviewRenderRef = useRef<HTMLDivElement>(null);
+    const [isCopyingImage, setIsCopyingImage] = useState(false);
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
     const [isSavingCustomer, setIsSavingCustomer] = useState(false);
     const [customerForm, setCustomerForm] = useState({
+        quotationNumber: '',
         customerName: '',
         contactPerson: '',
         customerPhone: '',
@@ -95,6 +97,7 @@ export const JobDetail: React.FC = () => {
 
                     // Initialize customer form
                     setCustomerForm({
+                        quotationNumber: first.quotationNumber || '',
                         customerName: first.customerName || '',
                         contactPerson: first.contactPerson || '',
                         customerPhone: first.customerPhone || '',
@@ -138,6 +141,7 @@ export const JobDetail: React.FC = () => {
         setIsSavingCustomer(true);
         try {
             const updates: Partial<RMA> = {
+                quotationNumber: customerForm.quotationNumber,
                 customerName: customerForm.customerName,
                 contactPerson: customerForm.contactPerson,
                 customerPhone: customerForm.customerPhone,
@@ -150,7 +154,7 @@ export const JobDetail: React.FC = () => {
                 await MockDb.updateRMA(rma.id, updates);
             }
             // Update local state
-            setJobInfo(prev => prev ? { ...prev, customerName: customerForm.customerName } : null);
+            setJobInfo(prev => prev ? { ...prev, customerName: customerForm.customerName, quotationNumber: customerForm.quotationNumber } : null);
             await refreshRMAs();
             setIsEditingCustomer(false);
         } catch (error) {
@@ -179,6 +183,7 @@ export const JobDetail: React.FC = () => {
         if (rmas.length > 0) {
             const first = rmas[0];
             setCustomerForm({
+                quotationNumber: first.quotationNumber || '',
                 customerName: first.customerName || '',
                 contactPerson: first.contactPerson || '',
                 customerPhone: first.customerPhone || '',
@@ -195,8 +200,8 @@ export const JobDetail: React.FC = () => {
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
     if (!jobInfo) return null;
 
-    const finishedRMAs = rmas.filter(rma => rma.status === RMAStatus.REPAIRED || rma.status === RMAStatus.REJECTED || rma.status === RMAStatus.CLOSED);
-    const hasFinishedRMAs = finishedRMAs.length > 0;
+    const closedRMAs = rmas.filter(rma => rma.status === RMAStatus.CLOSED);
+    const hasClosedRMAs = closedRMAs.length > 0;
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
@@ -216,12 +221,10 @@ export const JobDetail: React.FC = () => {
                                 <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white leading-none">
                                     {jobInfo.id}
                                 </h1>
-                                {(jobInfo as any).quotationNumber && (
-                                    <span className="bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 text-xs px-2.5 py-1 rounded border border-gray-200 dark:border-[#424245] flex items-center gap-1 font-medium">
-                                        <span className="uppercase text-[10px] font-bold opacity-60">Ref:</span>
-                                        {(jobInfo as any).quotationNumber}
-                                    </span>
-                                )}
+                                <span className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 font-medium ${(jobInfo as any).quotationNumber ? 'bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-[#424245]' : 'bg-gray-50/50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>
+                                    <span className="uppercase text-[10px] font-bold opacity-60">Ref:</span>
+                                    {(jobInfo as any).quotationNumber || 'ไม่มี Ref'}
+                                </span>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
                                 <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(jobInfo.date).toLocaleDateString()}</span>
@@ -275,37 +278,45 @@ export const JobDetail: React.FC = () => {
                         </div>
 
                         {/* Customer Group - Same Neutral Style */}
-                        <div className="flex flex-col sm:flex-row items-stretch border border-gray-200 dark:border-[#424245] rounded-xl overflow-hidden shrink-0 w-full sm:w-auto">
-                            <div className="flex items-center justify-center px-4 py-2 sm:py-0 bg-gray-50/80 dark:bg-black/20 sm:border-r border-b sm:border-b-0 border-gray-200 dark:border-[#424245] text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                โซนลูกค้า
+                        <div className="flex flex-col shrink-0 w-full sm:w-auto">
+                            <div className="flex flex-col sm:flex-row items-stretch border border-gray-200 dark:border-[#424245] rounded-xl overflow-hidden">
+                                <div className="flex items-center justify-center px-4 py-2 sm:py-0 bg-gray-50/80 dark:bg-black/20 sm:border-r border-b sm:border-b-0 border-gray-200 dark:border-[#424245] text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    โซนลูกค้า
+                                </div>
+                                <div className="flex flex-1 items-center bg-transparent">
+                                    <button
+                                        onClick={async () => {
+                                            const html = await getCustomerDocumentsHTML(closedRMAs);
+                                            if (html) {
+                                                setDocPreviewHtml(html);
+                                                setDocPreviewType('CUSTOMER');
+                                                setDocPreviewRmas(closedRMAs);
+                                            }
+                                        }}
+                                        disabled={!hasClosedRMAs}
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border-r border-gray-200 dark:border-[#424245] transition-colors whitespace-nowrap ${!hasClosedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
+                                        title={!hasClosedRMAs ? "ต้องปิดงานก่อนถึงจะใช้งานได้" : "พิมพ์ใบส่งคืนลูกค้า (เฉพาะงานที่ปิดแล้ว)"}
+                                    >
+                                        <User className="w-4 h-4 text-blue-500" strokeWidth={2.5} />
+                                        ใบส่งคืน
+                                    </button>
+                                    <button
+                                        onClick={() => { setShipmentTagTarget('CUSTOMER'); setIsShipmentTagModalOpen(true); }}
+                                        disabled={!hasClosedRMAs}
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap ${!hasClosedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
+                                        title={!hasClosedRMAs ? "ต้องปิดงานก่อนถึงจะใช้งานได้" : "ปะหน้ากล่อง (ลูกค้า)"}
+                                    >
+                                        <Truck className="w-4 h-4 text-orange-500" strokeWidth={2.5} />
+                                        ใบปะหน้า
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex flex-1 items-center bg-transparent">
-                                <button
-                                    onClick={async () => {
-                                        const html = await getCustomerDocumentsHTML(finishedRMAs);
-                                        if (html) {
-                                            setDocPreviewHtml(html);
-                                            setDocPreviewType('CUSTOMER');
-                                            setDocPreviewRmas(finishedRMAs);
-                                        }
-                                    }}
-                                    disabled={!hasFinishedRMAs}
-                                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border-r border-gray-200 dark:border-[#424245] transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
-                                    title={!hasFinishedRMAs ? "ต้องมีงานที่ปิดแล้วหรือเสร็จสิ้นอย่างน้อย 1 ชิ้น" : "พิมพ์ใบส่งคืนลูกค้า (เฉพาะเครื่องที่เสร็จแล้ว)"}
-                                >
-                                    <User className="w-4 h-4 text-blue-500" strokeWidth={2.5} />
-                                    ใบส่งคืน
-                                </button>
-                                <button
-                                    onClick={() => { setShipmentTagTarget('CUSTOMER'); setIsShipmentTagModalOpen(true); }}
-                                    disabled={!hasFinishedRMAs}
-                                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors whitespace-nowrap ${!hasFinishedRMAs ? 'bg-gray-50 dark:bg-black/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-60' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-[#1d1d1f] dark:text-gray-200 font-medium'}`}
-                                    title={!hasFinishedRMAs ? "ต้องมีงานที่ปิดแล้วหรือเสร็จสิ้นอย่างน้อย 1 ชิ้น" : "ปะหน้ากล่อง (ลูกค้า)"}
-                                >
-                                    <Truck className="w-4 h-4 text-orange-500" strokeWidth={2.5} />
-                                    ใบปะหน้า
-                                </button>
-                            </div>
+                            {!hasClosedRMAs && (
+                                <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                    <span>ยังไม่มีงานที่ปิดแล้ว ({closedRMAs.length}/{rmas.length} ปิดแล้ว) — กดตรวจสอบและปิดงานในหน้าแก้ไขก่อน</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -337,27 +348,33 @@ export const JobDetail: React.FC = () => {
                         <div className="space-y-4 animate-fade-in bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-gray-100 dark:border-[#333]">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.companyName')}</label>
-                                    <input type="text" value={customerForm.customerName} onChange={e => setCustomerForm(p => ({ ...p, customerName: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อลูกค้า / บริษัท" />
+                                    <label className="block text-xs font-semibold text-[#0071e3] uppercase mb-2 ml-1">เลขที่ใบเสนอราคา/บิล</label>
+                                    <input type="text" value={customerForm.quotationNumber} onChange={e => setCustomerForm(p => ({ ...p, quotationNumber: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-blue-200 dark:border-blue-800/50 outline-none ring-1 ring-blue-100 dark:ring-blue-900/30" placeholder="SECXXXXXX" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.contactName')}</label>
-                                    <input type="text" value={customerForm.contactPerson} onChange={e => setCustomerForm(p => ({ ...p, contactPerson: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อผู้ติดต่อ" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.companyName')}</label>
+                                    <input type="text" value={customerForm.customerName} onChange={e => setCustomerForm(p => ({ ...p, customerName: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อลูกค้า / บริษัท" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.contactName')}</label>
+                                    <input type="text" value={customerForm.contactPerson} onChange={e => setCustomerForm(p => ({ ...p, contactPerson: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="ชื่อผู้ติดต่อ" />
+                                </div>
+                                <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('publicSubmit.phone')}</label>
                                     <input type="text" value={customerForm.customerPhone} onChange={e => setCustomerForm(p => ({ ...p, customerPhone: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="เบอร์โทรศัพท์" />
                                 </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('submit.lineId')}</label>
                                     <input type="text" value={customerForm.customerLineId} onChange={e => setCustomerForm(p => ({ ...p, customerLineId: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="LINE ID" />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">Email</label>
-                                <input type="text" value={customerForm.customerEmail} onChange={e => setCustomerForm(p => ({ ...p, customerEmail: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="อีเมล (ถ้ามี)" />
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">Email</label>
+                                    <input type="text" value={customerForm.customerEmail} onChange={e => setCustomerForm(p => ({ ...p, customerEmail: e.target.value }))} className="w-full rounded-xl px-4 py-3 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="อีเมล (ถ้ามี)" />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-1">{t('submit.returnAddress')}</label>
@@ -442,7 +459,7 @@ export const JobDetail: React.FC = () => {
                                         <div className="mt-2 text-xs text-gray-400 flex items-start gap-1 w-full">
                                             <FileText className="w-3 h-3 mt-1 flex-shrink-0" />
                                             <span className="font-bold uppercase mt-1 w-24 flex-shrink-0 truncate" title={t('track.internalNote') || 'Notes'}>{t('track.internalNote') || 'Notes'}:</span>
-                                            <div className="flex-grow py-1 text-sm text-[#1d1d1f] dark:text-white break-words">
+                                            <div className="flex-grow py-1 text-sm text-[#1d1d1f] dark:text-white whitespace-pre-line" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                                                 {item.notes ? item.notes : <span className="text-gray-300 italic">ไม่มีบันทึก</span>}
                                             </div>
                                         </div>
@@ -610,7 +627,8 @@ export const JobDetail: React.FC = () => {
                         {/* Copy Image Only */}
                         <button
                             onClick={async () => {
-                                if (!docPreviewHtml) return;
+                                if (!docPreviewHtml || isCopyingImage) return;
+                                setIsCopyingImage(true);
                                 try {
                                     const blob = await renderHtmlToBlob(docPreviewHtml);
                                     try {
@@ -625,18 +643,22 @@ export const JobDetail: React.FC = () => {
                                     }
                                 } catch (err) {
                                     console.error('Copy image failed:', err);
-                                    showToast('ไม่สามารถคัดลอกรูปภาพได้ กดอีกครั้ง', 'error');
+                                    showToast('ไม่สามารถสร้างรูปภาพได้ ลองปิดแล้วเปิดใหม่', 'error');
+                                } finally {
+                                    setIsCopyingImage(false);
                                 }
                             }}
-                            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            disabled={isCopyingImage}
+                            className={`px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
                             title="คัดลอกเฉพาะรูปภาพ"
                         >
-                            <Copy className="w-4 h-4" /> รูปภาพ
+                            {isCopyingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} รูปภาพ
                         </button>
                         {/* Copy Both (LINE friendly) */}
                         <button
                             onClick={async () => {
-                                if (!docPreviewHtml) return;
+                                if (!docPreviewHtml || isCopyingImage) return;
+                                setIsCopyingImage(true);
                                 try {
                                     const blob = await renderHtmlToBlob(docPreviewHtml);
                                     // Build text summary
@@ -706,13 +728,16 @@ export const JobDetail: React.FC = () => {
                                     }
                                 } catch (err) {
                                     console.error('Copy failed:', err);
-                                    showToast('ไม่สามารถคัดลอกได้ กดอีกครั้ง', 'error');
+                                    showToast('ไม่สามารถสร้างรูปภาพได้ ลองปิดแล้วเปิดใหม่', 'error');
+                                } finally {
+                                    setIsCopyingImage(false);
                                 }
                             }}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                            disabled={isCopyingImage}
+                            className={`px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
                             title="คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)"
                         >
-                            <Copy className="w-4 h-4" /> ทั้งหมด (LINE)
+                            {isCopyingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} ทั้งหมด (LINE)
                         </button>
                         <button
                             onClick={() => {
@@ -730,6 +755,15 @@ export const JobDetail: React.FC = () => {
                             <XIcon className="w-4 h-4" /> ปิด
                         </button>
                     </div>
+                    {/* Warning banner for partial customer documents */}
+                    {docPreviewType === 'CUSTOMER' && docPreviewRmas.length < rmas.length && (
+                        <div className="flex-shrink-0 flex items-center gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/40">
+                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <span className="text-sm text-amber-700 dark:text-amber-300">
+                                แสดงเฉพาะงานที่ปิดแล้ว <strong>{docPreviewRmas.length}</strong> จาก <strong>{rmas.length}</strong> รายการ — อีก <strong>{rmas.length - docPreviewRmas.length}</strong> รายการยังไม่ได้ปิดงาน ไม่แสดงในเอกสาร
+                            </span>
+                        </div>
+                    )}
                     {/* Preview Content - A4 */}
                     <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
                         <iframe

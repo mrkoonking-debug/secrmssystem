@@ -24,6 +24,7 @@ const formatAction = (action: string) => {
   return map[action] || action;
 }
 
+
 const getLogoHTML = (settings: any) => `
   <div style="display: flex; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #0b57d0; padding-bottom: 6px;">
     <div style="margin-right: 12px;">
@@ -395,11 +396,11 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   const tableRows = rmas.map((item, index) => {
     const sentItems = item.distributorSentItems || [];
     const allAcc = item.accessories || [];
-    
+
     // If sentItems is set, use it. Otherwise fallback to all accessories
     let sentString: string;
     let keptString: string;
-    
+
     if (sentItems.length > 0) {
       const sentFormatted = sentItems.map(a => a === 'unit' ? 'ตัวเครื่อง (Unit)' : formatAccessory(a));
       sentString = sentFormatted.join(', ');
@@ -771,14 +772,10 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
               <div class="st-deliver-badge">จัดส่งถึง (DELIVER TO)</div>
             </div>
             <div class="st-receiver-content">
-              <div class="st-receiver-name">${escapeHtml(receiverName) || '________________________________'}</div>
-              <div class="st-receiver-contact">ผู้ติดต่อ: ${escapeHtml(contactPerson) || '_________________'}</div>
-              <div class="st-receiver-phone">โทร. ${escapeHtml(receiverPhone) || '_________________'}</div>
-              <div class="st-receiver-address">
-                ${receiverAddress
-        ? receiverAddress.replace(/\\n/g, '<br/>')
-        : '________________________________________________<br/>________________________________________________'}
-              </div>
+              ${receiverName ? `<div class="st-receiver-name">${escapeHtml(receiverName)}</div>` : ''}
+              ${contactPerson ? `<div class="st-receiver-contact">ผู้ติดต่อ: ${escapeHtml(contactPerson)}</div>` : ''}
+              ${receiverPhone ? `<div class="st-receiver-phone">โทร. ${escapeHtml(receiverPhone)}</div>` : ''}
+              ${receiverAddress ? `<div class="st-receiver-address">${receiverAddress.replace(/\\n/g, '<br/>')}</div>` : ''}
             </div>
           </div>
         </div>
@@ -1092,7 +1089,7 @@ export const printCustomerShippingLabel = async (payloads: ShippingLabelPayload[
   try {
     if (!payloads || payloads.length === 0) return;
     const html = await getCustomerShippingLabelHTML(payloads);
-    
+
     // Build copy text from payloads
     const rma = payloads[0].rma;
     const jobId = rma.groupRequestId || rma.id;

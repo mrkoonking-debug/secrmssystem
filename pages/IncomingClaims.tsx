@@ -161,12 +161,8 @@ export const IncomingClaims: React.FC = () => {
 
                                             <div className="flex items-center gap-4 text-xs text-gray-400 pt-1">
                                                 <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {new Date(job.createdAt).toLocaleString()}</span>
-                                                {job.quotationNumber && job.quotationNumber !== 'N/A' && (
-                                                    <>
-                                                        <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                        <span>QT: {job.quotationNumber}</span>
-                                                    </>
-                                                )}
+                                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                <span className={job.quotationNumber && job.quotationNumber !== 'N/A' ? '' : 'italic opacity-60'}>{job.quotationNumber && job.quotationNumber !== 'N/A' ? `QT: ${job.quotationNumber}` : 'ไม่มี Ref'}</span>
                                             </div>
 
                                             {/* Expand/Collapse hint */}

@@ -220,7 +220,7 @@ export const ClaimsList: React.FC = () => {
                                                             <div>
                                                                 <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
                                                                     {jobKey}
-                                                                    {quotationNumber && <span className="bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 text-[10px] px-2 py-0.5 rounded-md border border-gray-200 dark:border-[#424245]">Ref: {quotationNumber}</span>}
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-md border ${quotationNumber ? 'bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#424245]' : 'bg-gray-50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>{quotationNumber ? `Ref: ${quotationNumber}` : 'ไม่มี Ref'}</span>
                                                                     {jobItems.some(i => isRMAOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">{t('claimsList.attentionNeeded')}</span>}
                                                                 </h3>
                                                                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"><User className="w-3 h-3" /> {customerName} <span className="w-1 h-1 bg-gray-300 rounded-full"></span> <span className="text-gray-500 font-normal">{jobItems.length} {t('claimsList.items')}</span></div>
