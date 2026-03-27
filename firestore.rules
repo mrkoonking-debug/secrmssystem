@@ -20,20 +20,27 @@ service cloud.firestore {
     
     // 2. RMAs Collection
     match /rmas/{rmaId} {
-      // Public: read a single document by ID (for customer tracking)
+      // Public: read a single document by ID (for customer tracking page)
+      // NOTE: This exposes all fields including PII. Consider moving
+      // sensitive fields (devicePassword, customerEmail) to a subcollection
+      // /rmas/{rmaId}/private/{doc} with isAuth() read rules in the future.
       allow get: if true;
       
-      // List: authenticated staff OR limited public queries (max 5 results)
-      // NOTE: public list is needed for searchRMAsPublic (where queries)
+      // List: authenticated staff only, OR limited public queries (max 5 results)
+      // Public list is needed for searchRMAsPublic (where queries on quotationNumber, serialNumber, groupRequestId)
       allow list: if isAuth() || request.query.limit <= 5;
       
-      // Staff: update and delete (any authenticated user = staff or admin)
+      // Update and delete: authenticated staff only
       allow update, delete: if isAuth();
       
-      // Creation: Staff OR public guest submit (with restrictions)
+      // Creation: Staff OR public guest submit (with strict restrictions)
       allow create: if isAuth() || (
         request.resource.data.status == 'PENDING' &&
-        request.resource.data.createdBy == 'Customer (Web)'
+        request.resource.data.createdBy == 'Customer (Web)' &&
+        // Prevent guest from setting admin-only fields
+        !('serviceType' in request.resource.data) &&
+        !('resolution' in request.resource.data) &&
+        !('repairCosts' in request.resource.data)
       );
     }
     

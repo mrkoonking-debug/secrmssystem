@@ -293,6 +293,10 @@ export const MockDb = {
   deleteStaffAccount: async (uid: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
+    // WARNING: This only deletes the Firestore user document.
+    // The Firebase Auth account is NOT deleted (requires Firebase Admin SDK on a server).
+    // The user can still log in but will get default 'staff' role with no Firestore profile.
+    // To fully delete: use Firebase Console > Authentication > Users, or set up a Cloud Function.
     await deleteDoc(doc(db, 'users', uid));
   },
 

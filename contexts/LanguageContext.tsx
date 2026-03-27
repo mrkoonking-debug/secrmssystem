@@ -13,11 +13,17 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // เริ่มต้นเป็นภาษาไทยเสมอ (ไม่จำค่าเดิม)
-  const [language, setLanguage] = useState<Language>('th');
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('language') as Language | null;
+    return saved === 'en' ? 'en' : 'th'; // Default to Thai if nothing saved
+  });
 
   const toggleLanguage = () => {
-    setLanguage(prev => (prev === 'en' ? 'th' : 'en'));
+    setLanguage(prev => {
+      const next = prev === 'en' ? 'th' : 'en';
+      localStorage.setItem('language', next);
+      return next;
+    });
   };
 
   const t = (path: string): string => {
