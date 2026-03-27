@@ -720,6 +720,13 @@ export const MockDb = {
       })(),
       overdueCount: aging.bucket7plus,
       agingBuckets: aging,
+      statusCounts: {
+        pending: teamDocs.filter(c => c.status === RMAStatus.PENDING).length,
+        diagnosing: teamDocs.filter(c => c.status === RMAStatus.DIAGNOSING).length,
+        waitingParts: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
+        repaired: teamDocs.filter(c => c.status === RMAStatus.REPAIRED).length,
+        closed: teamDocs.filter(c => c.status === RMAStatus.CLOSED).length,
+      },
       urgentRMAs
     };
     _statsCache = { key: cacheKey, data: result, ts: cacheNow };

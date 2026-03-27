@@ -135,6 +135,13 @@ export interface DashboardStats {
     bucket4_7: number;        // 4-7 วัน
     bucket7plus: number;      // มากกว่า 7 วัน
   };
+  statusCounts: {             // จำนวนงานแยกตามสถานะ
+    pending: number;
+    diagnosing: number;
+    waitingParts: number;
+    repaired: number;
+    closed: number;
+  };
   urgentRMAs: RMA[];      // รายการงานด่วนที่ต้องรีบดู
 }
 

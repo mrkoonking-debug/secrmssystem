@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { DashboardStats, Team, RMAStatus } from '../types';
 import { MockDb } from '../services/mockDb';
 import { Clock, CheckCircle2, AlertTriangle, Truck, TrendingUp, AlertOctagon, Timer, ChevronRight, Layers, Box, Wifi, Zap, ShoppingBag, ChevronDown, RefreshCw } from 'lucide-react';
@@ -42,14 +42,16 @@ export const Dashboard: React.FC = () => {
         else if (type === 'C') { setSelectedTeam('GROUP_C'); setIsGroupCActive(true); }
     };
 
-    const agingData = useMemo(() => {
+    const statusData = useMemo(() => {
         if (!stats) return [];
         return [
-            { name: t('dashboard.fresh'), value: stats.agingBuckets.bucket0_3 },
-            { name: t('dashboard.aging'), value: stats.agingBuckets.bucket4_7 },
-            { name: t('dashboard.stale'), value: stats.agingBuckets.bucket7plus },
+            { name: 'รอดำเนินการ', value: stats.statusCounts.pending, fill: '#f59e0b' },
+            { name: 'ตรวจสอบ', value: stats.statusCounts.diagnosing, fill: '#3b82f6' },
+            { name: 'ส่งศูนย์', value: stats.statusCounts.waitingParts, fill: '#f97316' },
+            { name: 'แก้ไขเรียบร้อยรอส่ง', value: stats.statusCounts.repaired, fill: '#10b981' },
+            { name: 'ปิดงาน', value: stats.statusCounts.closed, fill: '#6b7280' },
         ];
-    }, [stats, t]);
+    }, [stats]);
 
     if (error) return (
         <div className="max-w-md mx-auto mt-20 text-center">
@@ -110,20 +112,25 @@ export const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 glass-panel p-8">
                     <div className="mb-8">
-                        <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3"><TrendingUp className="w-6 h-6 text-blue-500" /> {t('dashboard.agingAnalysis')}</h3>
-                        <p className="text-sm text-gray-500 mt-1">การกระจายงานเคลมตามระยะเวลาที่เปิด</p>
+                        <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3"><Layers className="w-6 h-6 text-blue-500" /> สรุปงานแยกตามสถานะ</h3>
+                        <p className="text-sm text-gray-500 mt-1">จำนวนงานเคลมในแต่ละสถานะ</p>
                     </div>
                     <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={agingData} barSize={80}>
+                            <BarChart data={statusData} barSize={60}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.1)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#86868b', fontWeight: 500 }} dy={10} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#86868b', fontWeight: 500 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#86868b', fontWeight: 500 }} allowDecimals={false} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '16px', background: '#fff', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', color: '#1d1d1f' }}
                                     cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                                    formatter={(value: number) => [`${value} งาน`, 'จำนวน']}
                                 />
-                                <Bar dataKey="value" fill="#0071e3" radius={[12, 12, 12, 12]} />
+                                <Bar dataKey="value" radius={[12, 12, 12, 12]}>
+                                    {statusData.map((entry, index) => (
+                                        <Cell key={index} fill={entry.fill} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
