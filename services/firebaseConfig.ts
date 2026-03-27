@@ -3,7 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-const env = (import.meta as any).env || {};
+const env = import.meta.env;
 
 export const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || "",

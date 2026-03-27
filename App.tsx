@@ -1,6 +1,6 @@
 
 import React, { Suspense, lazy, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -88,7 +88,6 @@ const AppContent: React.FC = () => {
               <Route path="/status" element={<CustomerStatus />} />
               <Route path="/register" element={<CustomerSubmit />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/admin/*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Suspense>
         </main>

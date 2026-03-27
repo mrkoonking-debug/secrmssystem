@@ -478,7 +478,7 @@ export const MockDb = {
     const newRMAData = {
       ...c,
       status: RMAStatus.PENDING,
-      history: [{ id: `evt-${Date.now()}`, date: now, type: 'SYSTEM', description: c.createdBy?.includes('Web') ? 'ลูกค้าลงทะเบียนล่วงหน้าผ่านหน้าเว็บ' : 'รับสินค้าเข้าเข้าระบบ', user: currentUser?.name || 'System' }],
+      history: [{ id: `evt-${Date.now()}`, date: Timestamp.now(), type: 'SYSTEM', description: c.createdBy?.includes('Web') ? 'ลูกค้าลงทะเบียนล่วงหน้าผ่านหน้าเว็บ' : 'รับสินค้าเข้าเข้าระบบ', user: currentUser?.name || 'System' }],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -682,12 +682,20 @@ export const MockDb = {
       .filter(c => Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000) > 7)
       .slice(0, 10);
 
+    // Filter CLOSED RMAs that were resolved THIS month only
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const resolvedThisMonth = teamDocs.filter(c => {
+      if (c.status !== RMAStatus.CLOSED) return false;
+      const updatedDate = new Date(c.updatedAt);
+      return updatedDate >= thisMonthStart;
+    }).length;
+
     const result: DashboardStats = {
       totalRMAs: teamDocs.length,
       pendingRMAs: activeDocs.length,
-      resolvedThisMonth: teamDocs.filter(c => c.status === RMAStatus.CLOSED).length,
+      resolvedThisMonth,
       criticalIssues: aging.bucket7plus,
-      revenuePipeline: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length,
+      revenuePipeline: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length, // Count of RMAs waiting for parts
       avgTurnaroundHours: (() => {
         const closedDocs = teamDocs.filter(c => c.status === RMAStatus.CLOSED && c.createdAt && c.updatedAt);
         if (closedDocs.length === 0) return 0;

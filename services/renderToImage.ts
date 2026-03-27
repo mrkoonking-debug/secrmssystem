@@ -134,7 +134,7 @@ async function inlineImages(html: string): Promise<string> {
   for (const m of matches) {
     const newUrl = urlCache.get(m.url) || m.url;
     if (newUrl !== m.url) {
-      result = result.replace(m.url, newUrl);
+      result = result.replaceAll(m.url, newUrl);
     }
   }
 
