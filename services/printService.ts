@@ -44,8 +44,8 @@ const getImagesHTML = (rma: RMA) => {
   if (!rma.attachments || rma.attachments.length === 0) return '';
   const images = rma.attachments.map(att => `
     <div style="text-align: center;">
-      <img src="${att.previewUrl || ''}" style="max-width: 100%; max-height: 120px; border: 1px solid #e5e5ea; padding: 3px; border-radius: 4px;" />
-      <div style="font-size: 9px; color: #86868b; margin-top: 3px;">${att.fileName}</div>
+      <img src="${escapeHtml(att.previewUrl || '')}" style="max-width: 100%; max-height: 120px; border: 1px solid #e5e5ea; padding: 3px; border-radius: 4px;" />
+      <div style="font-size: 9px; color: #86868b; margin-top: 3px;">${escapeHtml(att.fileName)}</div>
     </div>
   `).join('');
   return `
@@ -415,12 +415,12 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
       <tr>
         <td class="align-center">${index + 1}</td>
         <td style="padding-left: 12px;">
-          <div class="item-brand-model">${item.brand} ${item.productModel}</div>
-          <div class="item-desc">อาการที่พบ: ${item.resolution?.rootCause || '-'}</div>
-          <div class="item-desc">อุปกรณ์ที่ส่ง: ${sentString}</div>
-          ${keptString ? `<div class="item-desc" style="color:#86868b;">เก็บไว้ที่ร้าน: ${keptString}</div>` : ''}
-          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c;">User: ${item.deviceUsername} / Pass: ${item.devicePassword}</div>` : ''}
-          <div class="item-sn">S/N: ${item.serialNumber}</div>
+          <div class="item-brand-model">${escapeHtml(item.brand)} ${escapeHtml(item.productModel)}</div>
+          <div class="item-desc">อาการที่พบ: ${escapeHtml(item.resolution?.rootCause || '-')}</div>
+          <div class="item-desc">อุปกรณ์ที่ส่ง: ${escapeHtml(sentString)}</div>
+          ${keptString ? `<div class="item-desc" style="color:#86868b;">เก็บไว้ที่ร้าน: ${escapeHtml(keptString)}</div>` : ''}
+          ${item.deviceUsername ? `<div class="item-desc" style="color:#ea580c;">User: ${escapeHtml(item.deviceUsername)} / Pass: ${escapeHtml(item.devicePassword)}</div>` : ''}
+          <div class="item-sn">S/N: ${escapeHtml(item.serialNumber)}</div>
         </td>
         <td></td>
       </tr>
@@ -452,7 +452,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">REFERENCE NO.</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${escapeHtml(rma.groupRequestId || rma.quotationNumber || rma.id)}</div>
           <div style="font-size: 11px; color: #555; margin-top: 2px;">Date: ${today}</div>
         </div>
       </div>
@@ -461,7 +461,7 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
       <div class="parties-grid">
         <div class="party-box">
           <div class="party-box-label">TO: DISTRIBUTOR (เรียน ผู้นำเข้า)</div>
-          <div class="party-name">${rma.distributor}</div>
+          <div class="party-name">${escapeHtml(rma.distributor)}</div>
           <div class="party-detail">RMA / Service Department</div>
         </div>
         <div class="party-box">
@@ -595,7 +595,7 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
         </div>
         <div style="text-align: right;">
           <div style="font-size: 10px; font-weight: 700; color: #555; letter-spacing: 0.5px;">JOB REFERENCE</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${rma.groupRequestId || rma.quotationNumber || rma.id}</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1d1d1f; margin-top: 4px;">${escapeHtml(rma.groupRequestId || rma.quotationNumber || rma.id)}</div>
           <div style="font-size: 11px; color: #555; margin-top: 2px;">Date: ${today}</div>
         </div>
       </div>
@@ -775,7 +775,7 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
               ${receiverName ? `<div class="st-receiver-name">${escapeHtml(receiverName)}</div>` : ''}
               ${contactPerson ? `<div class="st-receiver-contact">ผู้ติดต่อ: ${escapeHtml(contactPerson)}</div>` : ''}
               ${receiverPhone ? `<div class="st-receiver-phone">โทร. ${escapeHtml(receiverPhone)}</div>` : ''}
-              ${receiverAddress ? `<div class="st-receiver-address">${receiverAddress.replace(/\\n/g, '<br/>')}</div>` : ''}
+              ${receiverAddress ? `<div class="st-receiver-address">${escapeHtml(receiverAddress).replace(/\\n/g, '<br/>')}</div>` : ''}
             </div>
           </div>
         </div>
