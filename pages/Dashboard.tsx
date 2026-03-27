@@ -21,9 +21,9 @@ export const Dashboard: React.FC = () => {
                 const teamFilter = selectedTeam === 'ALL' ? undefined : selectedTeam;
                 const data = await MockDb.getStats(teamFilter);
                 setStats(data);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Dashboard fetch failed:', err);
-                setError(err.message || 'ไม่สามารถโหลดข้อมูลได้');
+                setError(err instanceof Error ? err.message : 'ไม่สามารถโหลดข้อมูลได้');
             }
         };
         fetchData();

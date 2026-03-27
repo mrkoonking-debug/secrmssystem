@@ -6,6 +6,7 @@ import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
+import { showToast } from '../services/toast';
 
 interface EditRMADrawerProps {
     isOpen: boolean;
@@ -43,6 +44,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [showCloseSummary, setShowCloseSummary] = useState(false);
     const [showFlowFullscreen, setShowFlowFullscreen] = useState(false);
     const [vendorForm, setVendorForm] = useState({ actionTaken: '', actionDetails: '', replacedSerialNumber: '', vendorTicketRef: '' });
+
+    // Validation error state
+    const [rootCauseError, setRootCauseError] = useState(false);
 
     // Team State
     const [tempTeam, setTempTeam] = useState<Team | ''>('');
@@ -270,19 +274,19 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
         // ถ้าปิดงาน (CLOSED) ต้องเลือกผลการดำเนินงานก่อน
         const currentAction = formData.resolution?.actionTaken === 'Other' ? customAction : formData.resolution?.actionTaken;
         if (formData.status === RMAStatus.CLOSED && (!currentAction || currentAction.trim() === '')) {
-            alert('กรุณาเลือก "วิธีแก้ไข/ดำเนินการ" ก่อนปิดงาน');
+            showToast('⚠️ กรุณาเลือก "วิธีแก้ไข/ดำเนินการ" ก่อนปิดงาน', 'error');
             return;
         }
 
         // ถ้าส่งเคลมศูนย์ ต้องเลือกอุปกรณ์ที่จะส่งอย่างน้อย 1 รายการ
         if (formData.status === RMAStatus.WAITING_PARTS && (!formData.distributorSentItems || formData.distributorSentItems.length === 0)) {
-            alert('กรุณาเลือกอุปกรณ์ที่จะส่งเคลมไปศูนย์อย่างน้อย 1 รายการ');
+            showToast('⚠️ กรุณาเลือกอุปกรณ์ที่จะส่งเคลมไปศูนย์อย่างน้อย 1 รายการ (ดูหัวข้อ "อุปกรณ์ที่ส่งเคลม")', 'error');
             return;
         }
 
         const calculatedDiffs = calculateDiffs();
         if (calculatedDiffs.length === 0) {
-            alert("No changes detected.");
+            showToast('ℹ️ ไม่มีข้อมูลที่เปลี่ยนแปลง', 'info');
             return;
         }
         setDiffs(calculatedDiffs);
@@ -846,8 +850,11 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     <p className="text-[11px] text-gray-400 ml-2 mb-1">ตรวจสอบเสร็จแล้ว เลือกขั้นตอนที่เหมาะสม</p>
                                     <div className="grid grid-cols-1 gap-2">
                                         <button type="button" onClick={() => {
-                                            if (!formData.resolution?.rootCause) {
-                                                if (!confirm('ยังไม่ได้กรอก "อาการที่พบ" ต้องการส่งเคลมศูนย์เลยหรือไม่?')) return;
+                                            if (!formData.resolution?.rootCause?.trim()) {
+                                                showToast('❌ กรุณากรอก "อาการที่พบ" ก่อน (ถ้ายังไม่รู้ให้ใส่ N/A)', 'error');
+                                                setRootCauseError(true);
+                                                document.getElementById('rootCauseInput')?.focus();
+                                                return;
                                             }
                                             handleFormChange('status', RMAStatus.WAITING_PARTS);
                                             handleFormChange('serviceType', 'EXTERNAL');
@@ -856,6 +863,12 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                             <Package className="w-4 h-4" /> 📦 ส่งเคลมศูนย์
                                         </button>
                                         <button type="button" onClick={() => {
+                                            if (!formData.resolution?.rootCause?.trim()) {
+                                                showToast('❌ กรุณากรอก "อาการที่พบ" ก่อน (ถ้ายังไม่รู้ให้ใส่ N/A)', 'error');
+                                                setRootCauseError(true);
+                                                document.getElementById('rootCauseInput')?.focus();
+                                                return;
+                                            }
                                             handleFormChange('status', RMAStatus.REPAIRED);
                                             handleFormChange('serviceType', 'INTERNAL');
                                             handleResolutionChange('actionTaken', 'Software Update');
@@ -952,8 +965,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     {/* ROW 2: Resolution Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('track.rootCause')}</label>
-                            <input type="text" value={formData.resolution?.rootCause || ''} onChange={(e) => handleResolutionChange('rootCause', e.target.value)} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="e.g. Power Surge" />
+                            <label className={`block text-xs font-semibold uppercase mb-2 ml-2 ${rootCauseError ? 'text-red-500' : 'text-gray-500'}`}>{t('track.rootCause')} {rootCauseError && <span className="normal-case">* ต้องกรอก</span>}</label>
+                            <input id="rootCauseInput" type="text" value={formData.resolution?.rootCause || ''} onChange={(e) => { handleResolutionChange('rootCause', e.target.value); if (e.target.value.trim()) setRootCauseError(false); }} className={`w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border outline-none transition-colors ${rootCauseError ? 'border-red-500 ring-2 ring-red-500/20' : 'border-gray-200 dark:border-[#424245]'}`} placeholder="e.g. Power Surge (ถ้ายังไม่รู้ให้ใส่ N/A)" />
+                            {rootCauseError && <p className="text-xs text-red-500 mt-1.5 ml-2 animate-fade-in">❌ กรุณากรอกอาการที่พบก่อนดำเนินการขั้นต่อไป (ถ้ายังไม่รู้ให้ใส่ N/A)</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('track.vendorRef')}</label>
@@ -1001,9 +1015,9 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                                     : 'bg-white dark:bg-[#2c2c2e] border-[#d2d2d7] dark:border-[#424245] text-[#1d1d1f] dark:text-gray-300 hover:border-orange-400 hover:text-orange-500'
                                 }`}
                         >
-                            <Box className="w-3.5 h-3.5" /> ตัวเครื่อง (Unit)
+                            <Box className="w-3.5 h-3.5" /> ตัวเครื่อง
                         </button>
-                        {(formData.accessories || []).map((acc, idx) => {
+                        {(formData.accessories || []).filter(acc => acc !== 'unit_only').map((acc, idx) => {
                             const isActive = (formData.distributorSentItems || []).includes(acc);
                             const label = acc.startsWith('acc_hdd::') ? `HDD (${acc.split('::')[1]})` : (acc.startsWith('acc_') || acc === 'unit_only' ? t(`accessories_list.${acc}`) : acc);
                             return (
@@ -1161,7 +1175,7 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                         <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#2c2c2e] flex justify-end gap-3">
                             <button onClick={() => setShowVendorResultPopup(false)} className="px-6 py-2.5 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">ยกเลิก</button>
                             <button onClick={() => {
-                                if (!vendorForm.actionTaken) { alert('กรุณาเลือกวิธีดำเนินการ'); return; }
+                                if (!vendorForm.actionTaken) { showToast('⚠️ กรุณาเลือกวิธีดำเนินการ', 'error'); return; }
                                 // Apply vendor form to resolution
                                 setFormData(prev => prev ? ({
                                     ...prev,

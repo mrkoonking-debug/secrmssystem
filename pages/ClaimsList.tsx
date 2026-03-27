@@ -31,9 +31,9 @@ export const ClaimsList: React.FC = () => {
                 setRMAs(assignedRMAs);
                 setLastDoc(result.lastDoc);
                 setHasMore(result.hasMore);
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('ClaimsList fetch failed:', err);
-                setError(err.message || 'ไม่สามารถโหลดข้อมูลได้');
+                setError(err instanceof Error ? err.message : 'ไม่สามารถโหลดข้อมูลได้');
             } finally {
                 setLoading(false);
             }
@@ -176,7 +176,7 @@ export const ClaimsList: React.FC = () => {
                     <button onClick={handleExpandAll} className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] flex-shrink-0"><ChevronsUpDown className="w-4 h-4" /></button>
                     <div className="h-6 w-px bg-gray-200 dark:bg-white/10 flex-shrink-0"></div>
                     {['ALL', 'PENDING', 'IN_PROGRESS', 'DONE'].map((s) => (
-                        <button key={s} onClick={() => setStatusFilter(s as any)} className={`px-3 py-2 text-xs font-medium rounded-xl transition-all whitespace-nowrap flex-shrink-0 ${statusFilter === s ? 'bg-gray-100 dark:bg-[#333] text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}>{s === 'ALL' ? t('claimsList.filterStatus') : t(`status.${s}`)}</button>
+                        <button key={s} onClick={() => setStatusFilter(s as typeof statusFilter)} className={`px-3 py-2 text-xs font-medium rounded-xl transition-all whitespace-nowrap flex-shrink-0 ${statusFilter === s ? 'bg-gray-100 dark:bg-[#333] text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}>{s === 'ALL' ? t('claimsList.filterStatus') : t(`status.${s}`)}</button>
                     ))}
                 </div>
             </div>

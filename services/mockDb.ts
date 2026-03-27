@@ -97,7 +97,7 @@ const mapDocToRMA = (d: any): RMA => {
 };
 
 export const MockDb = {
-  login: async (u: string, p: string) => {
+  login: async (u: string, p: string): Promise<{ success: boolean; error?: string }> => {
     if (!isConfigured || !auth) {
       return { success: false, error: "Firebase Authentication not configured" };
     }
@@ -124,7 +124,7 @@ export const MockDb = {
       };
       _loginAttempts = 0; // Reset on success
       return { success: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
       _loginAttempts++;
       if (_loginAttempts >= 5) {
         _loginLockUntil = Date.now() + 30000; // Lock for 30 seconds
@@ -479,8 +479,8 @@ export const MockDb = {
           throw new Error(`RMA ID collision: failed to generate unique ID after ${MAX_RETRIES} attempts`);
         }
         id = generateId(); // Generate new ID and retry
-      } catch (e: any) {
-        if (e.message?.includes('RMA ID collision')) throw e;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes('RMA ID collision')) throw e;
         console.warn("ID Check fail", e);
         break; // On network error, proceed with current ID
       }

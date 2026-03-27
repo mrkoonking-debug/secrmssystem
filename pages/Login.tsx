@@ -40,7 +40,7 @@ export const Login: React.FC = () => {
     } else {
       // ถ้าไม่ผ่าน -> ขึ้นเตือน
       // Check if result has error property, otherwise default message
-      const errorMsg = (result as any).error || 'Login failed. Please check email/password.';
+      const errorMsg = result.error || 'Login failed. Please check email/password.';
       setError(errorMsg);
     }
     setLoading(false); // หยุดหมุน

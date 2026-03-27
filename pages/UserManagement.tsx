@@ -45,8 +45,8 @@ export const UserManagement: React.FC = () => {
       setSuccess('สร้างบัญชีพนักงานสำเร็จ!');
       setFormData({ name: '', email: '', password: '', role: 'staff', team: 'ALL' });
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message || 'ไม่สามารถสร้างบัญชีได้');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'ไม่สามารถสร้างบัญชีได้');
     } finally {
       setIsSubmitting(false);
     }

@@ -221,9 +221,9 @@ export const JobDetail: React.FC = () => {
                                 <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white leading-none">
                                     {jobInfo.id}
                                 </h1>
-                                <span className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 font-medium ${(jobInfo as any).quotationNumber ? 'bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-[#424245]' : 'bg-gray-50/50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>
+                                <span className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 font-medium ${jobInfo.quotationNumber ? 'bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-[#424245]' : 'bg-gray-50/50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>
                                     <span className="uppercase text-[10px] font-bold opacity-60">Ref:</span>
-                                    {(jobInfo as any).quotationNumber || 'ไม่มี Ref'}
+                                    {jobInfo.quotationNumber || 'ไม่มี Ref'}
                                 </span>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
@@ -500,7 +500,7 @@ export const JobDetail: React.FC = () => {
                                                     }
                                                 } catch (err) {
                                                     console.error('Delete failed:', err);
-                                                    alert('ลบไม่สำเร็จ: ' + (err as any)?.message || 'Unknown error');
+                                                    alert('ลบไม่สำเร็จ: ' + (err instanceof Error ? err.message : 'Unknown error'));
                                                     setLoading(false);
                                                 }
                                             }}

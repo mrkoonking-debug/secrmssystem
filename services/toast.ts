@@ -17,9 +17,10 @@ function getContainer(): HTMLDivElement {
   return toastContainer;
 }
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-export function showToast(message: string, type: ToastType = 'success', durationMs = 2200) {
+export function showToast(message: string, type: ToastType = 'success', durationMs?: number) {
+  const duration = durationMs ?? (type === 'error' || type === 'warning' ? 3500 : 2200);
   const container = getContainer();
 
   const toast = document.createElement('div');
@@ -45,7 +46,7 @@ export function showToast(message: string, type: ToastType = 'success', duration
 
   // Minimal icon dot
   const dot = document.createElement('span');
-  const dotColor = type === 'success' ? '#34d399' : type === 'error' ? '#f87171' : '#60a5fa';
+  const dotColor = type === 'success' ? '#34d399' : type === 'error' ? '#f87171' : type === 'warning' ? '#fbbf24' : '#60a5fa';
   dot.style.cssText = `
     width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
     background: ${dotColor};
@@ -78,5 +79,5 @@ export function showToast(message: string, type: ToastType = 'success', duration
         toastContainer = null;
       }
     }, 400);
-  }, durationMs);
+  }, duration);
 }
