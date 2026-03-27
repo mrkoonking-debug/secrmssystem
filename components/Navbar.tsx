@@ -53,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
 
   if (location.pathname === '/login') return null;
 
-  const NavLink = ({ to, label, icon: Icon, hasDot = false, badgeCount = 0 }: { to: string, label: string, icon: any, hasDot?: boolean, badgeCount?: number }) => {
+  const NavLink = ({ to, label, icon: Icon, badgeCount = 0 }: { to: string, label: string, icon: any, badgeCount?: number }) => {
     const isActive = location.pathname === to;
     return (
       <Link to={to} className={`group relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-[#0071e3] text-white shadow-lg shadow-blue-500/20' : 'text-[#86868b] dark:text-gray-400 hover:bg-white dark:hover:bg-[#2c2c2e] hover:shadow-sm hover:text-[#1d1d1f] dark:hover:text-white'}`}>

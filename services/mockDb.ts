@@ -22,6 +22,8 @@ let _statsCache: { key: string; data: any; ts: number } | null = null;
 // Login rate limiter
 let _loginAttempts = 0;
 let _loginLockUntil = 0;
+// Nav counts cache (30 second TTL)
+let _navCountsCache: { data: { unassigned: number; overdue: number }; ts: number } | null = null;
 let OFFLINE_USERS: any[] = [
   {
     uid: 'offline-admin',
@@ -353,8 +355,12 @@ export const MockDb = {
     });
   },
 
-  // Combined Navbar counts — single Firestore read for both badges
+  // Combined Navbar counts — single Firestore read for both badges (cached 30s)
   getNavCounts: async (): Promise<{ unassigned: number; overdue: number }> => {
+    const cacheNow = Date.now();
+    if (_navCountsCache && cacheNow - _navCountsCache.ts < 30000) {
+      return _navCountsCache.data;
+    }
     const all = await MockDb.getRMAs();
     const now = Date.now();
     let unassigned = 0;
@@ -366,7 +372,9 @@ export const MockDb = {
         if (daysOpen > 7) overdue++;
       }
     }
-    return { unassigned, overdue };
+    const data = { unassigned, overdue };
+    _navCountsCache = { data, ts: cacheNow };
+    return data;
   },
 
   // NEW: Get All Logs from all RMAs for Admin
