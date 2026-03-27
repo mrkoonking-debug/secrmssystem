@@ -47,8 +47,6 @@ npm run build
 **ขั้นตอนที่ 3: Deploy ขึ้น Firebase (ทั้งสอง URL)**
 ```bash
 npx firebase deploy --only hosting
-
-npm run build && npx firebase deploy --only hosting
 ```
 - รอจนขึ้นว่า `✔ Deploy complete!`
 - ต้องเห็น `release complete` ทั้งสอง site

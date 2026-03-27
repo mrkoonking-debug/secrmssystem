@@ -77,6 +77,8 @@
 | [04_CODE_STRUCTURE.md](./04_CODE_STRUCTURE.md) | โครงสร้างโค้ด + แผนที่ไฟล์ |
 | [05_HOW_TO_EDIT.md](./05_HOW_TO_EDIT.md) | คู่มือแก้ไขทีละเรื่อง (ครอบคลุม) |
 | [06_OWNER_GUIDE.md](./06_OWNER_GUIDE.md) | คู่มือเจ้าของ (ไม่ต้องรู้โปรแกรม) |
+| [07_GIT_GUIDE.md](./07_GIT_GUIDE.md) | Git & GitHub (บันทึก ย้อนกลับ สำรองโค้ด) |
+| [08_USER_MANUAL.md](./08_USER_MANUAL.md) | คู่มือการใช้งานฟังก์ชันทั้งหมด |
 
 ---
 

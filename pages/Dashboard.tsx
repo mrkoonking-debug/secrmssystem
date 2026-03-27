@@ -111,14 +111,14 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-2 glass-panel p-8">
                     <div className="mb-8">
                         <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3"><TrendingUp className="w-6 h-6 text-blue-500" /> {t('dashboard.agingAnalysis')}</h3>
-                        <p className="text-sm text-gray-500 mt-1">Claims distribution by time open</p>
+                        <p className="text-sm text-gray-500 mt-1">การกระจายงานเคลมตามระยะเวลาที่เปิด</p>
                     </div>
                     <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={agingData} barSize={80}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.1)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#86868b', fontWeight: 500 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#86868b', fontWeight: 500 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 13, fill: '#86868b', fontWeight: 500 }} allowDecimals={false} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '16px', background: '#fff', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', color: '#1d1d1f' }}
                                     cursor={{ fill: 'rgba(0,0,0,0.02)' }}
