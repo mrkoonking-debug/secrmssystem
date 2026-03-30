@@ -574,21 +574,39 @@ export const JobDetail: React.FC = () => {
                                         if (i < docPreviewRmas.length - 1) textLines.push('');
                                     });
                                 } else {
-                                    textLines.push(`ผู้นำเข้า: ${rma0?.distributor || '-'}`);
-                                    textLines.push('');
-                                    textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
-                                    docPreviewRmas.forEach((r, i) => {
-                                        textLines.push(`รายการ ${i + 1}:`);
-                                        textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
-                                        textLines.push(`   S/N: ${r.serialNumber}`);
-                                        textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
-                                        textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                        if (r.resolution?.actionTaken) {
-                                            textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
-                                            if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
-                                            if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                    // Group by distributor
+                                    const distGrouped: Record<string, typeof docPreviewRmas> = {};
+                                    for (const r of docPreviewRmas) {
+                                        const key = r.distributor || 'Unknown';
+                                        if (!distGrouped[key]) distGrouped[key] = [];
+                                        distGrouped[key].push(r);
+                                    }
+                                    const distEntries = Object.entries(distGrouped);
+
+                                    distEntries.forEach(([distName, items], groupIdx) => {
+                                        if (groupIdx > 0) {
+                                            textLines.push('');
+                                            textLines.push('━━━━━━━━━━━━━━━━━━━━');
+                                            textLines.push('');
+                                            textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
+                                            textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
                                         }
-                                        if (i < docPreviewRmas.length - 1) textLines.push('');
+                                        textLines.push(`ผู้นำเข้า: ${distName}`);
+                                        textLines.push('');
+                                        textLines.push(`รายการสินค้า (${items.length} ชิ้น):`);
+                                        items.forEach((r, i) => {
+                                            textLines.push(`รายการ ${i + 1}:`);
+                                            textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
+                                            textLines.push(`   S/N: ${r.serialNumber}`);
+                                            textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
+                                            textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                            if (r.resolution?.actionTaken) {
+                                                textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                                if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                                if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                            }
+                                            if (i < items.length - 1) textLines.push('');
+                                        });
                                     });
                                 }
                                 navigator.clipboard.writeText(textLines.join('\n')).then(() => {
@@ -600,36 +618,88 @@ export const JobDetail: React.FC = () => {
                         >
                             <Copy className="w-4 h-4" /> ข้อความ
                         </button>
-                        {/* Copy Image Only */}
-                        <button
-                            onClick={async () => {
-                                if (!docPreviewHtml || isCopyingImage) return;
-                                setIsCopyingImage(true);
-                                try {
-                                    const blob = await renderHtmlToBlob(docPreviewHtml);
-                                    try {
-                                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                                        showToast('คัดลอกรูปภาพแล้ว!', 'success');
-                                    } catch {
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
-                                        URL.revokeObjectURL(url);
-                                        showToast('ดาวน์โหลดรูปภาพแล้ว', 'info');
-                                    }
-                                } catch (err) {
-                                    console.error('Copy image failed:', err);
-                                    showToast('ไม่สามารถสร้างรูปภาพได้ ลองปิดแล้วเปิดใหม่', 'error');
-                                } finally {
-                                    setIsCopyingImage(false);
-                                }
-                            }}
-                            disabled={isCopyingImage}
-                            className={`px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
-                            title="คัดลอกเฉพาะรูปภาพ"
-                        >
-                            {isCopyingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} รูปภาพ
-                        </button>
+                        {/* Copy Image — per-page buttons when multiple distributor pages */}
+                        {(() => {
+                            // Calculate distributor groups for DISTRIBUTOR type
+                            const distGroups = docPreviewType === 'DISTRIBUTOR'
+                                ? Object.entries(docPreviewRmas.reduce<Record<string, RMA[]>>((acc, r) => {
+                                    const key = r.distributor || 'Unknown';
+                                    if (!acc[key]) acc[key] = [];
+                                    acc[key].push(r);
+                                    return acc;
+                                }, {}))
+                                : [];
+                            const hasMultiplePages = distGroups.length > 1;
+
+                            if (hasMultiplePages) {
+                                return distGroups.map(([distName], pageIdx) => (
+                                    <button
+                                        key={distName}
+                                        onClick={async () => {
+                                            if (!docPreviewHtml || isCopyingImage) return;
+                                            setIsCopyingImage(true);
+                                            try {
+                                                const blob = await renderHtmlToBlob(docPreviewHtml, pageIdx);
+                                                try {
+                                                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                                    showToast(`คัดลอกรูป "${distName}" แล้ว!`, 'success');
+                                                } catch {
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url; a.download = `rma-${jobId}-${distName}.png`; a.click();
+                                                    URL.revokeObjectURL(url);
+                                                    showToast(`ดาวน์โหลดรูป "${distName}" แล้ว`, 'info');
+                                                }
+                                            } catch (err) {
+                                                console.error('Copy image failed:', err);
+                                                showToast('ไม่สามารถสร้างรูปภาพได้ ลองปิดแล้วเปิดใหม่', 'error');
+                                            } finally {
+                                                setIsCopyingImage(false);
+                                            }
+                                        }}
+                                        disabled={isCopyingImage}
+                                        className={`px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-xs flex items-center gap-1.5 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
+                                        title={`คัดลอกรูปภาพ - ${distName}`}
+                                    >
+                                        {isCopyingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+                                        📋 {distName}
+                                    </button>
+                                ));
+                            }
+
+                            // Single page — original button
+                            return (
+                                <button
+                                    onClick={async () => {
+                                        if (!docPreviewHtml || isCopyingImage) return;
+                                        setIsCopyingImage(true);
+                                        try {
+                                            const blob = await renderHtmlToBlob(docPreviewHtml);
+                                            try {
+                                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                                showToast('คัดลอกรูปภาพแล้ว!', 'success');
+                                            } catch {
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url; a.download = `rma-doc-${jobId}.png`; a.click();
+                                                URL.revokeObjectURL(url);
+                                                showToast('ดาวน์โหลดรูปภาพแล้ว', 'info');
+                                            }
+                                        } catch (err) {
+                                            console.error('Copy image failed:', err);
+                                            showToast('ไม่สามารถสร้างรูปภาพได้ ลองปิดแล้วเปิดใหม่', 'error');
+                                        } finally {
+                                            setIsCopyingImage(false);
+                                        }
+                                    }}
+                                    disabled={isCopyingImage}
+                                    className={`px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
+                                    title="คัดลอกเฉพาะรูปภาพ"
+                                >
+                                    {isCopyingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} รูปภาพ
+                                </button>
+                            );
+                        })()}
                         {/* Copy Both (LINE friendly) */}
                         <button
                             onClick={async () => {
@@ -668,21 +738,39 @@ export const JobDetail: React.FC = () => {
                                             if (i < docPreviewRmas.length - 1) textLines.push('');
                                         });
                                     } else {
-                                        textLines.push(`ผู้นำเข้า: ${rma0?.distributor || '-'}`);
-                                        textLines.push('');
-                                        textLines.push(`รายการสินค้า (${docPreviewRmas.length} ชิ้น):`);
-                                        docPreviewRmas.forEach((r, i) => {
-                                            textLines.push(`รายการ ${i + 1}:`);
-                                            textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
-                                            textLines.push(`   S/N: ${r.serialNumber}`);
-                                            textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
-                                            textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
-                                            if (r.resolution?.actionTaken) {
-                                                textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
-                                                if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
-                                                if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                        // Group by distributor
+                                        const distGrouped2: Record<string, typeof docPreviewRmas> = {};
+                                        for (const r of docPreviewRmas) {
+                                            const key = r.distributor || 'Unknown';
+                                            if (!distGrouped2[key]) distGrouped2[key] = [];
+                                            distGrouped2[key].push(r);
+                                        }
+                                        const distEntries2 = Object.entries(distGrouped2);
+
+                                        distEntries2.forEach(([distName, items], groupIdx) => {
+                                            if (groupIdx > 0) {
+                                                textLines.push('');
+                                                textLines.push('━━━━━━━━━━━━━━━━━━━━');
+                                                textLines.push('');
+                                                textLines.push(`เลขที่งานเคลม (Job ID): ${jobIdVal}`);
+                                                textLines.push(`เลขอ้างอิง/ใบเสนอราคา: ${quotationVal}`);
                                             }
-                                            if (i < docPreviewRmas.length - 1) textLines.push('');
+                                            textLines.push(`ผู้นำเข้า: ${distName}`);
+                                            textLines.push('');
+                                            textLines.push(`รายการสินค้า (${items.length} ชิ้น):`);
+                                            items.forEach((r, i) => {
+                                                textLines.push(`รายการ ${i + 1}:`);
+                                                textLines.push(`   ${r.brand} รุ่น: ${r.productModel}`);
+                                                textLines.push(`   S/N: ${r.serialNumber}`);
+                                                textLines.push(`   อาการที่ลูกค้าแจ้ง: ${r.issueDescription || '-'}`);
+                                                textLines.push(`   อาการที่พบ: ${r.resolution?.rootCause || '-'}`);
+                                                if (r.resolution?.actionTaken) {
+                                                    textLines.push(`   การดำเนินการ: ${formatAction(r.resolution.actionTaken)}`);
+                                                    if (r.resolution.actionDetails) textLines.push(`   รายละเอียด: ${r.resolution.actionDetails}`);
+                                                    if (r.resolution.replacedSerialNumber) textLines.push(`   S/N ใหม่: ${r.resolution.replacedSerialNumber}`);
+                                                }
+                                                if (i < items.length - 1) textLines.push('');
+                                            });
                                         });
                                     }
                                     const copyText = textLines.join('\n');
@@ -709,9 +797,17 @@ export const JobDetail: React.FC = () => {
                                     setIsCopyingImage(false);
                                 }
                             }}
-                            disabled={isCopyingImage}
-                            className={`px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`}
-                            title="คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)"
+                            disabled={isCopyingImage || (docPreviewType === 'DISTRIBUTOR' && new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size > 1)}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors ${
+                                (docPreviewType === 'DISTRIBUTOR' && new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size > 1)
+                                    ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                    : `bg-emerald-500 hover:bg-emerald-600 text-white ${isCopyingImage ? 'opacity-60 cursor-wait' : ''}`
+                            }`}
+                            title={
+                                (docPreviewType === 'DISTRIBUTOR' && new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size > 1)
+                                    ? 'มีหลายผู้นำเข้า — ใช้ปุ่มคัดลอกรูปแยกแต่ละใบแทน'
+                                    : 'คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)'
+                            }
                         >
                             {isCopyingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />} ทั้งหมด (LINE)
                         </button>
@@ -744,9 +840,20 @@ export const JobDetail: React.FC = () => {
                     <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
                         <iframe
                             id="doc-preview-iframe"
-                            srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${docPreviewHtml}</body></html>`}
+                            srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#f5f5f5;">${docPreviewHtml}</body></html>`}
                             className="border-0 shadow-2xl bg-white"
-                            style={{ width: '794px', height: '1123px', minWidth: '794px' }}
+                            style={{
+                                width: '794px',
+                                minWidth: '794px',
+                                height: (() => {
+                                    // Calculate number of pages for distributor docs
+                                    if (docPreviewType === 'DISTRIBUTOR') {
+                                        const distCount = new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size;
+                                        return `${Math.max(1, distCount) * 1143}px`;
+                                    }
+                                    return '1123px';
+                                })()
+                            }}
                         />
                     </div>
                 </div>

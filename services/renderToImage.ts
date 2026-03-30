@@ -3,7 +3,7 @@
  * html2canvas runs INSIDE the iframe — zero Tailwind interference.
  * Images are pre-converted to data URIs to avoid CORS/loading issues.
  */
-export async function renderHtmlToBlob(htmlContent: string): Promise<Blob> {
+export async function renderHtmlToBlob(htmlContent: string, pageIndex?: number): Promise<Blob> {
   // Pre-convert all image URLs to data URIs for reliable rendering
   const processedHtml = await inlineImages(htmlContent);
 
@@ -66,10 +66,16 @@ ${processedHtml}
         // Settle time
         await new Promise(r => setTimeout(r, 500));
 
-        // Capture
-        const target = iDoc.querySelector('.print-doc') as HTMLElement
-                     || iDoc.querySelector('.shipping-label') as HTMLElement
-                     || iDoc.body;
+        // Capture - support selecting specific page by index
+        let target: HTMLElement;
+        if (pageIndex !== undefined) {
+          const allDocs = Array.from(iDoc.querySelectorAll('.print-doc')) as HTMLElement[];
+          target = allDocs[pageIndex] || allDocs[0] || iDoc.body;
+        } else {
+          target = iDoc.querySelector('.print-doc') as HTMLElement
+                || iDoc.querySelector('.shipping-label') as HTMLElement
+                || iDoc.body;
+        }
 
         const canvas = await iWin.html2canvas(target, {
           scale: 2,
