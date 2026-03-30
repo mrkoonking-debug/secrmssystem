@@ -404,11 +404,14 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
     if (sentItems.length > 0) {
       const sentFormatted = sentItems.map(a => a === 'unit' ? 'ตัวเครื่อง (Unit)' : formatAccessory(a));
       sentString = sentFormatted.join(', ');
-      const keptItems = allAcc.filter(a => !sentItems.includes(a));
+      // Filter out 'unit_only' from kept items — it's a flag, not an actual accessory
+      const keptItems = allAcc.filter(a => a !== 'unit_only' && !sentItems.includes(a));
       keptString = keptItems.length > 0 ? keptItems.map(a => formatAccessory(a)).join(', ') : '';
     } else {
       sentString = 'Unit Only (เฉพาะเครื่อง)';
-      keptString = allAcc.length > 0 ? allAcc.map(a => formatAccessory(a)).join(', ') : '';
+      // Filter out 'unit_only' — it's not a real item to keep at store
+      const realAcc = allAcc.filter(a => a !== 'unit_only');
+      keptString = realAcc.length > 0 ? realAcc.map(a => formatAccessory(a)).join(', ') : '';
     }
 
     return `
@@ -545,7 +548,7 @@ export const getCustomerFormHTML = async (rmas: RMA[]): Promise<string> => {
       : { label: rma.status.replace('_', ' '), en: '', cls: 'info' };
 
   const tableRows = rmas.map((item, index) => {
-    const accList = item.accessories || [];
+    const accList = (item.accessories || []).filter(a => a !== 'unit_only');
     const accString = accList.length > 0 ? accList.map(a => formatAccessory(a)).join(', ') : 'Unit Only';
 
     const actionText = item.resolution?.actionTaken
