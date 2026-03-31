@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, ArrowLeft, Package, User, X, Box, PenTool, Tag, Check, Trash2, MapPin, Phone, Printer } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ArrowLeft, Package, User, X, Box, PenTool, Tag, Check, Trash2, MapPin, Phone, Printer, AlertTriangle } from 'lucide-react';
 import { MockDb } from '../services/mockDb';
 import { escapeHtml } from '../services/sanitize';
 import { ProductType, Team } from '../types';
@@ -22,6 +22,7 @@ export const CustomerSubmit: React.FC = () => {
     const [basket, setBasket] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showLabelModal, setShowLabelModal] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [sameAsReturn, setSameAsReturn] = useState<boolean | null>(null);
     const [altSender, setAltSender] = useState({ name: '', phone: '', address: '', postalCode: '' });
     // State to hold data for success screen/printing after form is cleared
@@ -168,55 +169,290 @@ export const CustomerSubmit: React.FC = () => {
             ? sSelectedLineConfig.recipients.map(r => `${r.name}: ${r.phone}`).join(' / ')
             : '-';
 
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (!printWindow) return;
+        // Use hidden iframe approach instead of popup window
+        // This prevents the unprofessional about:blank window from lingering
+        const existingFrame = document.getElementById('print-label-frame');
+        if (existingFrame) existingFrame.remove();
 
-        printWindow.document.write(`
+        const iframe = document.createElement('iframe');
+        iframe.id = 'print-label-frame';
+        iframe.style.position = 'fixed';
+        iframe.style.top = '-10000px';
+        iframe.style.left = '-10000px';
+        iframe.style.width = '800px';
+        iframe.style.height = '600px';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) return;
+
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(submittedRef)}&margin=0`;
+
+        iframeDoc.open();
+        iframeDoc.write(`
             <html>
             <head>
                 <title>Shipping Label - ${submittedRef}</title>
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+                    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
                     * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: 'Inter', sans-serif; padding: 20mm; }
-                    .label { border: 3px solid #000; padding: 24px; max-width: 180mm; margin: 0 auto; }
-                    .section { padding: 16px; margin-bottom: 12px; border: 2px dashed #ccc; border-radius: 8px; }
-                    .section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 8px; }
-                    .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-                    .address { font-size: 14px; line-height: 1.6; color: #333; white-space: pre-line; }
-                    .phone { font-size: 14px; font-weight: 600; margin-top: 6px; }
-                    .ref-box { text-align: center; padding: 12px; background: #f5f5f5; border: 2px solid #000; border-radius: 8px; margin-bottom: 12px; }
-                    .ref-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #666; }
-                    .ref-value { font-size: 24px; font-weight: 800; font-family: monospace; margin-top: 4px; }
-                    .divider { border-top: 1px dashed #ccc; margin: 12px 0; }
-                    @media print { body { padding: 10mm; } .label { border-width: 2px; } }
+                    body { 
+                        font-family: 'Sarabun', 'Inter', sans-serif; 
+                        padding: 12mm; 
+                        background: #fff;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    .label {
+                        border: 2.5px solid #000;
+                        max-width: 190mm;
+                        margin: 0 auto;
+                        overflow: hidden;
+                    }
+                    
+                    /* Header with ref number and QR */
+                    .header {
+                        display: flex;
+                        border-bottom: 2.5px solid #000;
+                    }
+                    .header-left {
+                        flex: 1;
+                        padding: 14px 20px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                    }
+                    .header-title {
+                        font-size: 9px;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 3px;
+                        color: #555;
+                        margin-bottom: 6px;
+                    }
+                    .header-ref {
+                        font-size: 28px;
+                        font-weight: 800;
+                        font-family: 'Inter', monospace;
+                        color: #000;
+                        letter-spacing: -0.5px;
+                        line-height: 1.1;
+                    }
+                    .header-note {
+                        font-size: 10px;
+                        color: #666;
+                        margin-top: 6px;
+                        font-weight: 500;
+                    }
+                    .header-qr {
+                        width: 38mm;
+                        border-left: 2.5px solid #000;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 10px;
+                        background: #fafafa;
+                    }
+                    .header-qr img {
+                        width: 26mm;
+                        height: 26mm;
+                    }
+                    .header-qr span {
+                        font-size: 7px;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        letter-spacing: 1.5px;
+                        color: #888;
+                        margin-top: 4px;
+                    }
+
+                    /* Sender Section */
+                    .sender {
+                        padding: 14px 20px;
+                        border-bottom: 1.5px dashed #999;
+                        position: relative;
+                    }
+                    .section-badge {
+                        display: inline-block;
+                        font-size: 8px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
+                        color: #fff;
+                        background: #000;
+                        padding: 3px 10px;
+                        margin-bottom: 10px;
+                    }
+                    .sender-name {
+                        font-size: 16px;
+                        font-weight: 700;
+                        color: #000;
+                        margin-bottom: 3px;
+                    }
+                    .sender-address {
+                        font-size: 13px;
+                        color: #333;
+                        line-height: 1.5;
+                        white-space: pre-line;
+                    }
+                    .sender-phone {
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #000;
+                        margin-top: 4px;
+                    }
+                    
+                    /* Cut line */
+                    .cut-guide {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 0 20px;
+                        height: 0;
+                        position: relative;
+                    }
+
+                    /* Recipient Section - Larger & bolder */
+                    .recipient {
+                        padding: 16px 20px 20px;
+                    }
+                    .recipient-badge {
+                        display: inline-block;
+                        font-size: 9px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
+                        color: #000;
+                        background: #000;
+                        color: #fff;
+                        padding: 4px 12px;
+                        margin-bottom: 12px;
+                    }
+                    .recipient-company {
+                        font-size: 20px;
+                        font-weight: 800;
+                        color: #000;
+                        margin-bottom: 4px;
+                        line-height: 1.2;
+                    }
+                    .recipient-line-id {
+                        display: inline-block;
+                        font-size: 12px;
+                        font-weight: 700;
+                        color: #333;
+                        border: 1.5px solid #000;
+                        padding: 2px 8px;
+                        margin-bottom: 8px;
+                        letter-spacing: 0.5px;
+                    }
+                    .recipient-address {
+                        font-size: 14px;
+                        color: #222;
+                        line-height: 1.6;
+                        margin-bottom: 8px;
+                    }
+                    .recipient-contacts {
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: #000;
+                        line-height: 1.6;
+                    }
+                    .recipient-contacts span {
+                        font-weight: 400;
+                        color: #444;
+                    }
+
+                    /* Footer */
+                    .footer {
+                        border-top: 1.5px solid #000;
+                        padding: 8px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background: #fafafa;
+                    }
+                    .footer-left {
+                        font-size: 9px;
+                        color: #888;
+                        font-weight: 500;
+                    }
+                    .footer-right {
+                        font-size: 9px;
+                        color: #888;
+                        font-weight: 600;
+                        font-family: 'Inter', monospace;
+                    }
+
+                    @media print { 
+                        body { padding: 8mm; } 
+                        @page { size: A4 portrait; margin: 0; }
+                    }
                 </style>
             </head>
             <body>
                 <div class="label">
-                    <div class="ref-box">
-                        <div class="ref-label">${t('publicSubmit.refLabel')}</div>
-                        <div class="ref-value">${escapeHtml(submittedRef)}</div>
+                    <!-- Header: Ref Number + QR Code -->
+                    <div class="header">
+                        <div class="header-left">
+                            <div class="header-title">${t('publicSubmit.refLabel')}</div>
+                            <div class="header-ref">${escapeHtml(submittedRef)}</div>
+                            <div class="header-note">กรุณาเก็บรักษาเลขนี้ไว้เพื่อติดตามสถานะ</div>
+                        </div>
+                        <div class="header-qr">
+                            <img src="${qrUrl}" alt="QR Code" />
+                            <span>SCAN TO TRACK</span>
+                        </div>
                     </div>
-                    <div class="section">
-                        <div class="section-title">${t('publicSubmit.senderLabel')}</div>
-                        <div class="name">${escapeHtml(fromName)}</div>
-                        <div class="address">${escapeHtml(fromAddress)}</div>
-                        <div class="phone">${t('publicSubmit.senderPhone')}: ${escapeHtml(fromPhone)}</div>
+
+                    <!-- Sender -->
+                    <div class="sender">
+                        <div class="section-badge">${t('publicSubmit.senderLabel')}</div>
+                        <div class="sender-name">${escapeHtml(fromName)}</div>
+                        <div class="sender-address">${escapeHtml(fromAddress)}</div>
+                        <div class="sender-phone">โทร. ${escapeHtml(fromPhone)}</div>
                     </div>
-                    <div class="divider"></div>
-                    <div class="section">
-                        <div class="section-title">${t('publicSubmit.recipientLabel')}</div>
-                        <div class="name">${SEC_ADDRESS.company} (${sSelectedLineConfig?.lineId || ''})</div>
-                        <div class="address">${SEC_ADDRESS.address}</div>
-                        <div class="phone">${recipientContacts}</div>
+
+                    <div class="cut-guide"></div>
+
+                    <!-- Recipient (larger, more prominent) -->
+                    <div class="recipient">
+                        <div class="recipient-badge">${t('publicSubmit.recipientLabel')}</div>
+                        <div class="recipient-company">${SEC_ADDRESS.company}</div>
+                        ${sSelectedLineConfig?.lineId ? `<div class="recipient-line-id">${sSelectedLineConfig.lineId}</div>` : ''}
+                        <div class="recipient-address">${SEC_ADDRESS.address}</div>
+                        <div class="recipient-contacts">
+                            ${sSelectedLineConfig 
+                                ? sSelectedLineConfig.recipients.map(r => 
+                                    `<span>โทร.</span> ${escapeHtml(r.name)} ${escapeHtml(r.phone)}`
+                                  ).join(' &nbsp;/&nbsp; ')
+                                : '-'
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="footer">
+                        <div class="footer-right">${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                     </div>
                 </div>
-                <script>window.onload = () => { window.print(); }<\/script>
             </body>
             </html>
         `);
-        printWindow.document.close();
+        iframeDoc.close();
+
+        // Wait for fonts to load, then print from iframe and clean up
+        iframe.onload = () => {
+            setTimeout(() => {
+                iframe.contentWindow?.print();
+                // Clean up iframe after print dialog closes
+                setTimeout(() => {
+                    iframe.remove();
+                }, 1000);
+            }, 500);
+        };
+
         setShowLabelModal(false);
     };
 
@@ -232,14 +468,48 @@ export const CustomerSubmit: React.FC = () => {
                         <button onClick={() => setShowLabelModal(true)} className="px-8 py-3 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
                             <Printer className="w-4 h-4" /> {t('publicSubmit.printLabel')}
                         </button>
-                        <button onClick={() => {
-                            if (window.confirm(`คุณได้จดบันทึกรหัสอ้างอิง (${submittedRef}) หรือพิมพ์ใบจ่าหน้ากล่องเรียบร้อยแล้วใช่หรือไม่? หากออกจากหน้านี้ คุณอาจไม่สามารถเรียกดูรหัสนี้ได้อีก`)) {
-                                navigate('/');
-                            }
-                        }} className="px-8 py-3 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-full font-semibold transition-colors">{t('publicSubmit.backHome')}</button>
+                        <button onClick={() => setShowExitConfirm(true)} className="px-8 py-3 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white rounded-full font-semibold transition-colors">{t('publicSubmit.backHome')}</button>
                     </div>
                     <p className="mt-8 text-xs text-gray-400">{t('publicSubmit.thankYou')}</p>
                 </div>
+
+                {/* Exit Confirmation Modal */}
+                {showExitConfirm && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowExitConfirm(false)}>
+                        <div className="bg-white dark:bg-[#1c1c1e] rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all" onClick={e => e.stopPropagation()}>
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mb-5">
+                                    <AlertTriangle className="w-8 h-8 text-amber-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-3">ยืนยันออกจากหน้านี้?</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 leading-relaxed">
+                                    คุณได้จดบันทึกรหัสอ้างอิง หรือพิมพ์ใบจ่าหน้ากล่องเรียบร้อยแล้วใช่หรือไม่?
+                                </p>
+                                <div className="bg-gray-50 dark:bg-white/5 rounded-xl px-4 py-3 mb-5 w-full">
+                                    <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">รหัสอ้างอิงของคุณ</div>
+                                    <div className="text-lg font-mono font-bold text-[#0071e3]">{submittedRef}</div>
+                                </div>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mb-6">
+                                    ⚠ หากออกจากหน้านี้ คุณอาจไม่สามารถเรียกดูรหัสนี้ได้อีก
+                                </p>
+                                <div className="flex gap-3 w-full">
+                                    <button
+                                        onClick={() => setShowExitConfirm(false)}
+                                        className="flex-1 py-3 rounded-xl font-semibold text-sm bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-[#1d1d1f] dark:text-white transition-colors"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/')}
+                                        className="flex-1 py-3 rounded-xl font-semibold text-sm bg-[#1d1d1f] dark:bg-white hover:bg-black dark:hover:bg-gray-100 text-white dark:text-[#1d1d1f] transition-colors"
+                                    >
+                                        ยืนยัน ออกจากหน้านี้
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Print Label Modal */}
                 {showLabelModal && (
