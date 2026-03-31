@@ -131,9 +131,9 @@ export interface DashboardStats {
   avgTurnaroundHours: number; // เวลาเฉลี่ยที่ใช้ปิดงาน (ชม.)
   overdueCount: number;       // จำนวนงานที่เกินกำหนด (>7วัน)
   agingBuckets: {             // การกระจายตัวของอายุงาน (ใช้พล็อตกราฟ)
-    bucket0_3: number;        // 0-3 วัน
-    bucket4_7: number;        // 4-7 วัน
-    bucket7plus: number;      // มากกว่า 7 วัน
+    bucket0_7: number;        // 0-7 วัน
+    bucket8_15: number;       // 8-15 วัน
+    bucket15plus: number;     // มากกว่า 15 วัน
   };
   statusCounts: {             // จำนวนงานแยกตามสถานะ
     pending: number;

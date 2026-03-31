@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { FileDown, Calendar, Loader2, TrendingUp, CheckCircle2, Clock, AlertTriangle, ChevronDown, Package, Wrench, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar, Loader2, TrendingUp, CheckCircle2, Clock, AlertTriangle, ChevronDown, ChevronRight, Package, Wrench } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { RMA, RMAStatus } from '../types';
 
@@ -40,6 +40,7 @@ export const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -84,11 +85,14 @@ export const ReportsPage: React.FC = () => {
       avgDays = Math.round((totalDays / resolvedItems.length) * 10) / 10;
     }
 
-    const openCount = filteredRMAs.filter(r =>
-      r.status === RMAStatus.PENDING || r.status === RMAStatus.DIAGNOSING || r.status === RMAStatus.WAITING_PARTS
-    ).length;
+    const urgentCount = filteredRMAs.filter(r => {
+      const isOpen = r.status === RMAStatus.PENDING || r.status === RMAStatus.DIAGNOSING || r.status === RMAStatus.WAITING_PARTS;
+      if (!isOpen) return false;
+      const days = Math.floor((Date.now() - new Date(r.createdAt).getTime()) / 86400000);
+      return days > 15;
+    }).length;
 
-    return { total, completionRate, avgDays, openCount };
+    return { total, completionRate, avgDays, urgentCount };
   }, [filteredRMAs]);
 
   // ==================== STATUS PIPELINE ====================
@@ -111,37 +115,6 @@ export const ReportsPage: React.FC = () => {
       value: counts[s.key] || 0,
       fill: s.color,
     }));
-  }, [filteredRMAs]);
-
-  // ==================== BRAND DISTRIBUTION ====================
-
-  const brandData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredRMAs.forEach(r => { counts[r.brand] = (counts[r.brand] || 0) + 1; });
-    return Object.entries(counts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [filteredRMAs]);
-
-  // ==================== PRODUCT TYPE DISTRIBUTION ====================
-
-  const productTypeData = useMemo(() => {
-    const typeLabels: Record<string, string> = {
-      'CCTV_CAMERA': 'กล้อง CCTV',
-      'NVR_DVR': 'เครื่องบันทึก NVR/DVR',
-      'NETWORK_SWITCH': 'Switch',
-      'ROUTER_FIREWALL': 'Router/Firewall',
-      'ACCESS_CONTROL': 'Access Control',
-      'OTHER': 'อื่นๆ',
-    };
-    const counts: Record<string, number> = {};
-    filteredRMAs.forEach(r => {
-      const label = typeLabels[r.productType] || r.productType;
-      counts[label] = (counts[label] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
   }, [filteredRMAs]);
 
   // ==================== WEEKLY TREND ====================
@@ -183,46 +156,74 @@ export const ReportsPage: React.FC = () => {
     return weeks.slice(-12).map(w => ({ name: w.label, งาน: w.count }));
   }, [filteredRMAs]);
 
-  // ==================== TOP FAILING MODELS ====================
+  // ==================== TOP 10 MODELS ====================
 
   const topModels = useMemo(() => {
-    const counts: Record<string, { brand: string; count: number }> = {};
+    const models: Record<string, { count: number; brand: string }> = {};
     filteredRMAs.forEach(r => {
-      const key = `${r.brand} ${r.productModel}`;
-      if (!counts[key]) counts[key] = { brand: r.brand, count: 0 };
-      counts[key].count++;
+      const key = r.productModel || 'ไม่ระบุรุ่น';
+      if (!models[key]) models[key] = { count: 0, brand: r.brand };
+      models[key].count++;
     });
-    return Object.entries(counts)
-      .map(([model, data]) => ({ model, brand: data.brand, count: data.count }))
+    return Object.entries(models)
+      .map(([model, data]) => ({ model, ...data }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      .slice(0, 10);
   }, [filteredRMAs]);
 
-  // ==================== TURNAROUND DISTRIBUTION ====================
+  // ==================== BRAND PROPORTION ====================
 
-  const turnaroundDist = useMemo(() => {
-    const buckets = [
-      { label: '1-3 วัน', min: 0, max: 3, count: 0, color: '#10b981' },
-      { label: '4-7 วัน', min: 4, max: 7, count: 0, color: '#3b82f6' },
-      { label: '8-14 วัน', min: 8, max: 14, count: 0, color: '#f59e0b' },
-      { label: '15-30 วัน', min: 15, max: 30, count: 0, color: '#f97316' },
-      { label: '30+ วัน', min: 31, max: 9999, count: 0, color: '#ef4444' },
-    ];
+  const brandProportion = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredRMAs.forEach(r => { counts[r.brand] = (counts[r.brand] || 0) + 1; });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredRMAs]);
 
-    filteredRMAs.filter(r => r.resolvedAt).forEach(r => {
-      const days = Math.ceil((new Date(r.resolvedAt!).getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-      for (const b of buckets) {
-        if (days >= b.min && days <= b.max) { b.count++; break; }
-      }
+  // ==================== BRAND → DISTRIBUTOR BREAKDOWN ====================
+
+  const brandDistributorData = useMemo(() => {
+    const brands: Record<string, {
+      total: number;
+      distributors: Record<string, number>;
+    }> = {};
+
+    filteredRMAs.forEach(r => {
+      if (!brands[r.brand]) brands[r.brand] = { total: 0, distributors: {} };
+      brands[r.brand].total++;
+      const dist = r.distributor || '\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38';
+      brands[r.brand].distributors[dist] = (brands[r.brand].distributors[dist] || 0) + 1;
     });
 
-    return buckets.map(b => ({ name: b.label, value: b.count, fill: b.color }));
+    return Object.entries(brands)
+      .map(([name, data]) => ({
+        name,
+        total: data.total,
+        distributors: Object.entries(data.distributors)
+          .map(([d, c]) => ({ name: d, count: c }))
+          .sort((a, b) => b.count - a.count),
+      }))
+      .sort((a, b) => b.total - a.total);
   }, [filteredRMAs]);
 
-  // ==================== COLORS ====================
+  // ==================== BRAND COLORS ====================
 
-  const BRAND_COLORS = ['#0071e3', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-  const TYPE_COLORS = ['#6366f1', '#14b8a6', '#f97316', '#e11d48', '#a855f7', '#64748b'];
+  const BRAND_COLOR_MAP: Record<string, string> = {
+    'Hikvision': '#e4002b', 'Hilook': '#e4002b', 'Ezviz': '#1a73e8',
+    'Dahua': '#e87c1e', 'Imou': '#00b4d8', 'Uniview (UNV)': '#1d4ed8',
+    'Reyee': '#00b8a9', 'Ruijie Networks': '#00b8a9', 'TP-Link': '#4acbd6',
+    'Cisco': '#049fd9', 'Fortinet': '#ee3124', 'Huawei': '#cf0a2c',
+    'Ubiquiti (UniFi)': '#006fff', 'MikroTik': '#293239', 'Xiaomi': '#ff6900',
+    'Watashi': '#f59e0b', 'Hi-View': '#7c3aed', 'People Fu': '#059669',
+    'Fujiko': '#0891b2', 'Synology': '#b5cc18', 'QNAP': '#1a8cff',
+    'D-Link': '#f97316', 'Zyxel': '#0066b2', 'Netgear': '#6d28d9',
+    'Asus': '#000000', 'ZK Teco': '#00b050',
+  };
+  const FALLBACK_COLORS = ['#6366f1', '#ec4899', '#84cc16', '#f43f5e', '#06b6d4', '#a855f7'];
+  const getBrandColor = (brandName: string, index: number = 0): string => {
+    return BRAND_COLOR_MAP[brandName] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+  };
 
   // ==================== RENDER ====================
 
@@ -244,20 +245,6 @@ export const ReportsPage: React.FC = () => {
           </p>
         ))}
       </div>
-    );
-  };
-
-  // Donut label renderer
-  const renderDonutLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, value, percent }: any) => {
-    if (percent < 0.05) return null; // Don't label tiny slices
-    const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 20;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    return (
-      <text x={x} y={y} fill="#86868b" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight={600}>
-        {name} ({value})
-      </text>
     );
   };
 
@@ -338,12 +325,12 @@ export const ReportsPage: React.FC = () => {
 
         <div className="glass-panel p-5 md:p-6 relative overflow-hidden group">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
             </div>
           </div>
-          <div className="text-2xl md:text-3xl font-bold text-[#1d1d1f] dark:text-white tracking-tight">{kpis.openCount}</div>
-          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">ค้างดำเนินการ</div>
+          <div className={`text-2xl md:text-3xl font-bold tracking-tight ${kpis.urgentCount > 0 ? 'text-red-500' : 'text-green-500'}`}>{kpis.urgentCount}</div>
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">งานเกิน 15 วัน</div>
         </div>
       </div>
 
@@ -414,87 +401,104 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: Brand + Product Type Donuts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8 mb-8">
-        {/* Brand Distribution */}
-        <div className="glass-panel p-6 md:p-8">
-          <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-6">สัดส่วนแยกยี่ห้อ</h3>
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="h-56 w-full md:flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={brandData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {brandData.map((_, i) => <Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip content={<CustomTooltipContent />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2 w-full md:w-auto">
-              {brandData.map((entry, i) => (
-                <div key={entry.name} className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND_COLORS[i % BRAND_COLORS.length] }} />
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{entry.name}</span>
-                  <span className="text-xs font-bold text-[#1d1d1f] dark:text-white ml-auto">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Product Type Distribution */}
-        <div className="glass-panel p-6 md:p-8">
-          <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-6">ประเภทสินค้าที่เคลม</h3>
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="h-56 w-full md:flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={productTypeData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {productTypeData.map((_, i) => <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip content={<CustomTooltipContent />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2 w-full md:w-auto">
-              {productTypeData.map((entry, i) => (
-                <div key={entry.name} className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{entry.name}</span>
-                  <span className="text-xs font-bold text-[#1d1d1f] dark:text-white ml-auto">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Disclaimer */}
+      <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 rounded-2xl px-5 py-3.5 mb-5">
+        <span className="text-amber-500 text-base mt-0.5">⚠️</span>
+        <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+          <span className="font-bold">หมายเหตุ:</span> ข้อมูลด้านล่างสะท้อน<span className="font-semibold">ปริมาณงานเคลม</span> ไม่ใช่อัตราการเสียของสินค้า เพราะจำนวนเคลมขึ้นอยู่กับปริมาณการขายและการสั่งซื้อ ยี่ห้อหรือรุ่นที่ขายดีย่อมมีโอกาสเข้าเคลมมากกว่า
+        </p>
       </div>
 
-      {/* Row 4: Top Models + Turnaround Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8">
-        {/* Top Failing Models */}
-        <div className="glass-panel p-6 md:p-8">
-          <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-1">รุ่นที่เคลมบ่อยที่สุด</h3>
-          <p className="text-xs text-gray-400 mb-5">ข้อมูลช่วยระบุสินค้าที่มีปัญหาคุณภาพ</p>
+      {/* Row 3: Brand → Distributor Breakdown */}
+      <div className="glass-panel p-6 md:p-8">
+        <div className="mb-2">
+          <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white">สินค้าแต่ละยี่ห้อมาจากผู้นำเข้าเจ้าไหน</h3>
+          <p className="text-xs text-gray-400 mt-1">คลิกยี่ห้อเพื่อดูรายละเอียดผู้นำเข้า</p>
+        </div>
+
+        {brandDistributorData.length > 0 ? (
+          <div className="space-y-2">
+            {brandDistributorData.map((brand, i) => {
+              const isExpanded = expandedBrand === brand.name;
+              const brandColor = getBrandColor(brand.name, i);
+              return (
+                <div key={brand.name} className="border border-gray-100 dark:border-[#333] rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => setExpandedBrand(isExpanded ? null : brand.name)}
+                    className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                      style={{ backgroundColor: brandColor }}>
+                      {brand.total}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-[#1d1d1f] dark:text-white">{brand.name}</div>
+                      <div className="text-xs text-gray-400 truncate">
+                        ผู้นำเข้าหลัก: {brand.distributors[0]?.name || '-'} ({brand.distributors[0]?.count || 0} งาน)
+                      </div>
+                    </div>
+                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-5 pb-5 border-t border-gray-100 dark:border-[#333] bg-gray-50/50 dark:bg-white/[0.02]">
+                      <div className="pt-4 space-y-2">
+                        {brand.distributors.map((d, di) => {
+                          const maxC = brand.distributors[0]?.count || 1;
+                          const pct = (d.count / maxC) * 100;
+                          return (
+                            <div key={d.name} className="flex items-center gap-3">
+                              <div className="w-32 text-xs font-medium text-gray-500 dark:text-gray-400 text-right flex-shrink-0 truncate">{d.name}</div>
+                              <div className="flex-1 h-6 bg-gray-100 dark:bg-white/5 rounded-lg overflow-hidden">
+                                <div className="h-full rounded-lg transition-all" style={{ width: `${pct}%`, backgroundColor: brandColor, opacity: 1 - (di * 0.15) }} />
+                              </div>
+                              <div className="w-16 text-xs font-bold text-[#1d1d1f] dark:text-white text-right">{d.count} งาน</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-gray-400 text-sm py-8">ไม่มีข้อมูล</div>
+        )}
+      </div>
+
+      {/* Row 4: Top 10 Models + Brand Proportion */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 md:gap-8 mt-8">
+
+        {/* Top 10 Models */}
+        <div className="lg:col-span-3 glass-panel p-6 md:p-8">
+          <div className="mb-2">
+            <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white">Top 10 รุ่นที่เคลมบ่อย</h3>
+            <p className="text-xs text-gray-400 mt-1">รุ่นสินค้าที่มีงานเคลมเข้ามามากที่สุด</p>
+          </div>
           {topModels.length > 0 ? (
             <div className="space-y-2">
               {topModels.map((item, i) => {
-                const maxCount = topModels[0]?.count || 1;
-                const pct = (item.count / maxCount) * 100;
+                const maxVal = topModels[0]?.count || 1;
+                const pct = (item.count / maxVal) * 100;
+                const brandColor = getBrandColor(item.brand, i);
                 return (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${i < 3
-                      ? 'bg-[#0071e3] text-white'
-                      : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                      }`}>
+                  <div key={item.model} className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0"
+                      style={{ backgroundColor: i < 3 ? brandColor : 'transparent', color: i < 3 ? '#fff' : '#86868b' }}>
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-[#1d1d1f] dark:text-white truncate">{item.model}</div>
-                      <div className="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full mt-1 overflow-hidden">
-                        <div className="h-full rounded-full bg-[#0071e3] transition-all" style={{ width: `${pct}%` }} />
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-bold text-[#1d1d1f] dark:text-white truncate">{item.model}</span>
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ backgroundColor: `${brandColor}15`, color: brandColor }}>{item.brand}</span>
+                      </div>
+                      <div className="w-full h-4 bg-gray-100 dark:bg-white/5 rounded-md overflow-hidden">
+                        <div className="h-full rounded-md transition-all" style={{ width: `${pct}%`, backgroundColor: brandColor, opacity: 0.7 }} />
                       </div>
                     </div>
-                    <div className="text-sm font-bold text-[#1d1d1f] dark:text-white flex-shrink-0">{item.count}</div>
+                    <div className="w-10 text-sm font-bold text-[#1d1d1f] dark:text-white text-right">{item.count}</div>
                   </div>
                 );
               })}
@@ -504,31 +508,46 @@ export const ReportsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Turnaround Distribution */}
-        <div className="glass-panel p-6 md:p-8">
-          <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white mb-1">ระยะเวลาดำเนินการ</h3>
-          <p className="text-xs text-gray-400 mb-5">กระจายตัวของเวลาที่ใช้ปิดงาน</p>
-          <div className="h-56 w-full">
-            {turnaroundDist.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={turnaroundDist} barSize={40}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.08)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#86868b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#86868b' }} allowDecimals={false} />
-                  <Tooltip content={<CustomTooltipContent />} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {turnaroundDist.map((entry, index) => (
-                      <Cell key={index} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">ไม่มีงานที่ปิดในช่วงเวลานี้</div>
-            )}
+        {/* Brand Proportion */}
+        <div className="lg:col-span-2 glass-panel p-6 md:p-8">
+          <div className="mb-2">
+            <h3 className="text-base font-bold text-[#1d1d1f] dark:text-white">สัดส่วนยี่ห้อ</h3>
+            <p className="text-xs text-gray-400 mt-1">สัดส่วนงานเคลมแยกตามยี่ห้อสินค้า</p>
           </div>
+          {brandProportion.length > 0 ? (
+            <>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={brandProportion} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+                      {brandProportion.map((entry, i) => <Cell key={i} fill={getBrandColor(entry.name, i)} />)}
+                    </Pie>
+                    <Tooltip content={<CustomTooltipContent />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-1.5 mt-4">
+                {brandProportion.map((entry, i) => {
+                  const total = brandProportion.reduce((s, e) => s + e.value, 0);
+                  const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                  return (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: getBrandColor(entry.name, i) }} />
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300 flex-1 truncate">{entry.name}</span>
+                      <span className="text-[10px] text-gray-400">{pct}%</span>
+                      <span className="text-xs font-bold text-[#1d1d1f] dark:text-white w-6 text-right">{entry.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-gray-400 text-sm py-8">ไม่มีข้อมูล</div>
+          )}
         </div>
+
       </div>
+
     </div>
   );
 };

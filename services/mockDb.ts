@@ -684,14 +684,14 @@ export const MockDb = {
     // Client-side counting from loaded docs (no composite index needed)
     const now = new Date();
     const activeDocs = teamDocs.filter(c => ![RMAStatus.CLOSED].includes(c.status));
-    const aging = { bucket0_3: 0, bucket4_7: 0, bucket7plus: 0 };
+    const aging = { bucket0_7: 0, bucket8_15: 0, bucket15plus: 0 };
     activeDocs.forEach(c => {
       const diff = Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000);
-      if (diff <= 3) aging.bucket0_3++; else if (diff <= 7) aging.bucket4_7++; else aging.bucket7plus++;
+      if (diff <= 7) aging.bucket0_7++; else if (diff <= 15) aging.bucket8_15++; else aging.bucket15plus++;
     });
 
     const urgentRMAs = activeDocs
-      .filter(c => Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000) > 7)
+      .filter(c => Math.floor((now.getTime() - new Date(c.createdAt).getTime()) / 86400000) > 15)
       .slice(0, 10);
 
     // Filter CLOSED RMAs that were resolved THIS month only
@@ -706,7 +706,7 @@ export const MockDb = {
       totalRMAs: teamDocs.length,
       pendingRMAs: activeDocs.length,
       resolvedThisMonth,
-      criticalIssues: aging.bucket7plus,
+      criticalIssues: aging.bucket15plus,
       revenuePipeline: teamDocs.filter(c => c.status === RMAStatus.WAITING_PARTS).length, // Count of RMAs waiting for parts
       avgTurnaroundHours: (() => {
         const closedDocs = teamDocs.filter(c => c.status === RMAStatus.CLOSED && c.createdAt && c.updatedAt);
@@ -718,7 +718,7 @@ export const MockDb = {
         }, 0);
         return Math.round(totalHours / closedDocs.length);
       })(),
-      overdueCount: aging.bucket7plus,
+      overdueCount: aging.bucket15plus,
       agingBuckets: aging,
       statusCounts: {
         pending: teamDocs.filter(c => c.status === RMAStatus.PENDING).length,
