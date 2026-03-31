@@ -508,7 +508,7 @@ export const translations = {
       heroSubtitle: 'ติดตามสถานะและลงทะเบียนเคลมสินค้า',
       checkStatusLabel: 'ตรวจสอบสถานะ',
       checkStatusTitle: 'ตรวจสอบสถานะการเคลม',
-      inputHint: 'ค้นหาด้วยเลขที่ใบเสนอราคา (SEC...), เลขเคลม RMA หรือ S/N ของสินค้า (เฉพาะที่ส่งเคลมแล้ว)',
+      inputHint: 'ค้นหาด้วยเลขใบเสนอราคา (SEC...), เลขเคลม RMA หรือ S/N (เฉพาะที่ส่งเคลมแล้ว)',
       placeholder: 'ระบุเลขที่เอกสาร หรือ Serial Number...',
       searchBtn: 'ค้นหา',
       selfServiceLabel: 'บริการตนเอง',

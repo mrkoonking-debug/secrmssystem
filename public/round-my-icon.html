@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>สร้างไอคอนขอบมน (Squircle Generator)</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f5f5f7; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+        button { background: #0071e3; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 10px; font-weight: bold; }
+        button:hover { background: #0077ed; }
+        canvas { border: 1px dashed #ccc; margin: 20px; border-radius: 20px; background: transparent; }
+        .download-group { display: flex; gap: 10px; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>สร้างไอคอนขอบมน (Squircle)</h2>
+        <p>คลิกเพื่อดาวน์โหลดรูปไปเซฟทับในโฟลเดอร์รหัสโปรเจกต์ <code>public/</code> ของคุณ</p>
+        
+        <!-- Preview Canvas -->
+        <canvas id="preview" width="192" height="192"></canvas>
+        <p style="color: green; font-weight: bold;" id="status">กำลังโหลดรูปเก่ามาลบมุม...</p>
+
+        <div class="download-group">
+            <button onclick="downloadIcon(192)">ดาวน์โหลดขนาด 192x192</button>
+            <button onclick="downloadIcon(512)">ดาวน์โหลดขนาด 512x512</button>
+        </div>
+    </div>
+
+    <script>
+        const originalImg = new Image();
+        // Load the original square 512 icon
+        originalImg.src = '/pwa-icon-v5-512x512.png';
+        let isReady = false;
+
+        originalImg.onload = () => {
+            isReady = true;
+            document.getElementById('status').innerText = 'ลบมุมสำเร็จ! กดดาวน์โหลดได้เลยครับ';
+            // Draw preview
+            drawRounded(document.getElementById('preview'), 192, 44);
+        };
+
+        originalImg.onerror = () => {
+            document.getElementById('status').innerText = 'ไม่พบรูปภาพต้นฉบับ pwa-icon-v5-512x512.png แนะนำให้ตรวจสอบในโฟลเดอร์ public ครับ';
+            document.getElementById('status').style.color = 'red';
+        };
+
+        function drawRounded(canvas, size, radius) {
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // create squircle clipping mask
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            
+            ctx.clip(); // Apply rounded corners mask
+            
+            // Draw white background in case image is completely transparent
+            ctx.fillStyle = "white";
+            ctx.fill();
+
+            // Draw original image inside the mask
+            ctx.drawImage(originalImg, 0, 0, size, size);
+        }
+
+        function downloadIcon(size) {
+            if (!isReady) return alert('รูปยังไม่โหลดครับ');
+            
+            // Create offscreen canvas for actual download size
+            const dlCanvas = document.createElement('canvas');
+            // Proportional radius (roughly 22% of size)
+            const radius = Math.floor(size * 0.22); 
+            drawRounded(dlCanvas, size, radius);
+
+            // Trigger download automatically
+            const link = document.createElement('a');
+            link.download = `pwa-icon-v5-${size}x${size}.png`;
+            link.href = dlCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

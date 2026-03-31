@@ -64,11 +64,11 @@ export const CustomerSearch: React.FC = () => {
                     </p>
 
                     {/* Clean Search Bar - Removed Color Gradient and Animation */}
-                    <div className="relative max-w-2xl mx-auto group z-20 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                    <div className="relative w-full max-w-3xl mx-auto group z-20 animate-slide-up px-2 md:px-0" style={{ animationDelay: '0.2s' }}>
                         <form
                             onSubmit={handleSearch}
                             className={`
-                            relative bg-white dark:bg-[#1c1c1e] rounded-full p-2 pl-6 flex items-center shadow-lg transition-all duration-300 border
+                            relative bg-white dark:bg-[#1c1c1e] rounded-full p-1.5 md:p-2 pl-5 md:pl-6 flex items-center shadow-lg transition-all duration-300 border
                             ${isFocused ? 'border-gray-400 dark:border-white/40 ring-4 ring-black/5 dark:ring-white/5' : 'border-gray-200 dark:border-white/10'}
                         `}
                         >
@@ -80,13 +80,13 @@ export const CustomerSearch: React.FC = () => {
                                 onFocus={() => setIsFocused(true)}
                                 onBlur={() => setIsFocused(false)}
                                 placeholder={t('public.inputHint')}
-                                className="flex-1 bg-transparent border-none py-3 text-lg text-[#1d1d1f] dark:text-gray-100 placeholder-gray-400 focus:ring-0 outline-none"
+                                className="flex-1 bg-transparent border-none py-3 text-sm md:text-base text-[#1d1d1f] dark:text-gray-100 placeholder-gray-400 focus:ring-0 outline-none w-full min-w-0"
                             />
                             <button
                                 type="submit"
                                 disabled={!query}
                                 className={`
-                                p-3 rounded-full transition-all flex items-center justify-center
+                                p-3 rounded-full transition-all flex items-center justify-center flex-shrink-0
                                 ${query ? 'bg-black dark:bg-white text-white dark:text-black shadow-md' : 'bg-gray-100 dark:bg-white/5 text-gray-300'}
                             `}
                             >

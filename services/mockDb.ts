@@ -369,7 +369,7 @@ export const MockDb = {
       if (!c.team || (c.team as any) === 'UNASSIGNED') unassigned++;
       if (![RMAStatus.CLOSED].includes(c.status)) {
         const daysOpen = Math.floor((now - new Date(c.createdAt).getTime()) / 86400000);
-        if (daysOpen > 7) overdue++;
+        if (daysOpen > 15) overdue++;
       }
     }
     const data = { unassigned, overdue };
