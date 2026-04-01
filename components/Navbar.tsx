@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, LogOut, Globe, LayoutGrid, List, PlusCircle, User, Users, Menu, X, Truck, Settings, BarChart3, Tag, Building2, Bell, History } from 'lucide-react';
+import { ShieldCheck, LogOut, Globe, LayoutGrid, List, PlusCircle, Plus, User, Users, Menu, X, Truck, Settings, BarChart3, Tag, Building2, Bell, History } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -113,23 +113,62 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           <span className="font-bold text-base text-[#1d1d1f] dark:text-white tracking-tighter">SEC RMS SYSTEM</span>
         </Link>
-        <div className="flex items-center gap-2">
-          {unassignedCount > 0 && (
-            <Link to="/admin/incoming" className="relative p-2">
-              <Bell className="w-5 h-5 text-[#86868b]" />
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[9px] font-black px-1 rounded-full ring-2 ring-[#f5f5f7] dark:ring-[#161617]">
-                {unassignedCount > 99 ? '99+' : unassignedCount}
-              </span>
-            </Link>
-          )}
-          <button
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="p-2 rounded-xl text-[#1d1d1f] dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          >
-            {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
+        {/* Mobile notifications and menu buttons have been moved to the Bottom Tab Bar */}
       </div>
+
+      {/* ===== Mobile Bottom Tab Bar (Glassmorphism) ===== */}
+      {user && (
+        <div
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pointer-events-none"
+          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+        >
+          {/* Floating '+' button — positioned from outer wrapper for perfect centering */}
+          <Link to="/admin/submit" className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%-1.25rem)] w-12 h-12 bg-gradient-to-b from-[#007aff] to-[#0055d4] text-white rounded-full shadow-[0_4px_14px_rgba(0,122,255,0.4)] flex items-center justify-center active:scale-90 transition-transform z-50 pointer-events-auto" style={{ bottom: 'calc(100% - 1.75rem)' }}>
+            <Plus className="w-6 h-6" strokeWidth={2.5} />
+          </Link>
+
+          {/* Glass capsule bar */}
+          <div className="relative bg-white/75 dark:bg-[#1c1c1e]/80 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] rounded-[22px] shadow-[0_2px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)] grid grid-cols-5 items-center h-[52px] pointer-events-auto">
+
+            {/* Dashboard */}
+            <Link to="/admin/dashboard" className={`flex flex-col items-center justify-center h-full relative transition-colors ${location.pathname === '/admin/dashboard' ? 'text-[#007aff]' : 'text-[#8e8e93]'}`}>
+              <LayoutGrid className="w-[20px] h-[20px]" />
+              <span className="text-[9px] font-semibold mt-0.5 leading-none">ภาพรวม</span>
+              {overdueCount > 0 && (
+                <span className="absolute top-1.5 right-[18%] w-[6px] h-[6px] rounded-full bg-red-500"></span>
+              )}
+            </Link>
+
+            {/* Claims List */}
+            <Link to="/admin/rmas" className={`flex flex-col items-center justify-center h-full transition-colors ${location.pathname === '/admin/rmas' ? 'text-[#007aff]' : 'text-[#8e8e93]'}`}>
+              <List className="w-[20px] h-[20px]" />
+              <span className="text-[9px] font-semibold mt-0.5 leading-none">รายการ</span>
+            </Link>
+
+            {/* Center spacer for '+' button */}
+            <div className="flex flex-col items-center justify-end h-full pb-1">
+              <span className="text-[9px] font-semibold text-[#8e8e93] leading-none">เพิ่มเคลม</span>
+            </div>
+
+            {/* Notifications */}
+            <Link to="/admin/incoming" className={`flex flex-col items-center justify-center h-full relative transition-colors ${location.pathname === '/admin/incoming' ? 'text-[#007aff]' : 'text-[#8e8e93]'}`}>
+              <Bell className="w-[20px] h-[20px]" />
+              <span className="text-[9px] font-semibold mt-0.5 leading-none">แจ้งเตือน</span>
+              {unassignedCount > 0 && (
+                <span className="absolute top-1 right-[12%] min-w-[15px] h-[15px] flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full px-0.5 leading-none">
+                  {unassignedCount > 99 ? '99+' : unassignedCount}
+                </span>
+              )}
+            </Link>
+
+            {/* More Menu */}
+            <button onClick={() => setIsMobileOpen(true)} className={`flex flex-col items-center justify-center h-full transition-colors ${isMobileOpen ? 'text-[#007aff]' : 'text-[#8e8e93]'}`}>
+              <Menu className="w-[20px] h-[20px]" />
+              <span className="text-[9px] font-semibold mt-0.5 leading-none">อื่นๆ</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ===== Mobile Slide-Out Overlay ===== */}
       {isMobileOpen && (

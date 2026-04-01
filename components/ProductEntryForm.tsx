@@ -127,7 +127,7 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div data-tour="tour-brand">
                     <GlassSelect label={t('submit.brand')} value={currentItem.brand} onChange={val => { setCurrentItem(p => ({ ...p, brand: val })); setErrors(p => ({ ...p, brand: '' })); }} options={brandOptions} searchable recentKey="brand" hasError={!!errors.brand} />
                     {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 เช่น Hikvision, Dahua, Uniview</p>}
@@ -137,7 +137,7 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                 <div className="relative" data-tour="tour-model-serial">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.model')}</label>
                     <div className="relative">
-                        <input value={currentItem.model} onChange={e => setCurrentItem({ ...currentItem, model: e.target.value })} className={`${getInputClass(!!errors.model)} pr-10`} placeholder={t('submit.enterModel')} />
+                        <input value={currentItem.model} onChange={e => setCurrentItem({ ...currentItem, model: e.target.value.replace(/[^\x20-\x7E]/g, '').toUpperCase() })} className={`${getInputClass(!!errors.model)} pr-10 uppercase`} placeholder={t('submit.enterModel')} style={{ textTransform: 'uppercase' }} />
                         <button type="button" onClick={() => { setScanTarget('model'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
                     </div>
                     {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 ดูจากสติกเกอร์บนตัวเครื่อง หรือกด 📷 สแกน</p>}
@@ -146,7 +146,7 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
                 <div className="relative">
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">{t('submit.serial')}</label>
                     <div className="relative">
-                        <input value={currentItem.serial} onChange={e => setCurrentItem({ ...currentItem, serial: e.target.value })} className={`${getInputClass(!!errors.serial)} pr-10`} placeholder={t('submit.enterSn')} />
+                        <input value={currentItem.serial} onChange={e => setCurrentItem({ ...currentItem, serial: e.target.value.replace(/[^\x20-\x7E]/g, '').toUpperCase() })} className={`${getInputClass(!!errors.serial)} pr-10 uppercase`} placeholder={t('submit.enterSn')} style={{ textTransform: 'uppercase' }} />
                         <button type="button" onClick={() => { setScanTarget('serial'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
                     </div>
                     {mode === 'customer' && <p className="text-[11px] text-blue-500/70 mt-1 ml-2 flex items-center gap-1">💡 หมายเลข S/N อยู่บนสติกเกอร์ด้านหลังเครื่อง</p>}

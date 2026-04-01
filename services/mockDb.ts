@@ -307,7 +307,27 @@ export const MockDb = {
       await signOut(secondaryAuth);
       await deleteApp(secondaryApp);
       return true;
-    } catch (e) {
+    } catch (e: any) {
+      // Handle case where Auth account exists but Firestore doc was deleted
+      if (e?.code === 'auth/email-already-in-use') {
+        try {
+          // Try to sign in with the provided password to get the UID
+          const existingCred = await signInWithEmailAndPassword(secondaryAuth, data.email, data.password);
+          const uid = existingCred.user.uid;
+          // Re-create the Firestore user document
+          await setDoc(doc(db, 'users', uid), { name: data.name, email: data.email, role: data.role, team: data.team, createdAt: serverTimestamp() });
+          await signOut(secondaryAuth);
+          await deleteApp(secondaryApp);
+          return true;
+        } catch (signInError: any) {
+          await deleteApp(secondaryApp);
+          // If sign-in also fails (wrong password), give a helpful error
+          if (signInError?.code === 'auth/wrong-password' || signInError?.code === 'auth/invalid-credential') {
+            throw new Error('อีเมลนี้มีบัญชีอยู่แล้วในระบบ Auth และรหัสผ่านไม่ตรงกับรหัสเดิม กรุณาใช้รหัสผ่านเดิม หรือลบบัญชีใน Firebase Console ก่อน');
+          }
+          throw signInError;
+        }
+      }
       await deleteApp(secondaryApp);
       throw e;
     }
@@ -315,11 +335,27 @@ export const MockDb = {
   deleteStaffAccount: async (uid: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
-    // WARNING: This only deletes the Firestore user document.
-    // The Firebase Auth account is NOT deleted (requires Firebase Admin SDK on a server).
-    // The user can still log in but will get default 'staff' role with no Firestore profile.
-    // To fully delete: use Firebase Console > Authentication > Users, or set up a Cloud Function.
+
+    // Step 1: Get user email from Firestore before deleting
+    let userEmail = '';
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        userEmail = userDoc.data()?.email || '';
+      }
+    } catch (e) {
+      console.warn('Could not fetch user doc before delete:', e);
+    }
+
+    // Step 2: Delete Firestore document
     await deleteDoc(doc(db, 'users', uid));
+
+    // Step 3: Note about Firebase Auth
+    // Firebase Auth accounts cannot be deleted from the client SDK (requires Admin SDK).
+    // The Firestore document has been removed, so the user will lose their role/profile.
+    // If the same email needs to be re-registered later, createStaffAccount will handle
+    // the 'auth/email-already-in-use' case by re-signing in and re-creating the Firestore doc.
+    console.info(`User ${userEmail || uid} removed from Firestore. Firebase Auth account still exists but has no profile.`);
   },
 
   // --- RMA Management ---
@@ -509,6 +545,7 @@ export const MockDb = {
     const now = new Date().toISOString();
     const newRMAData = {
       ...c,
+      repairCosts: { warrantyStatus: 'IN_WARRANTY', ...(c.repairCosts || {}) },
       status: RMAStatus.PENDING,
       history: [{ id: `evt-${Date.now()}`, date: Timestamp.now(), type: 'SYSTEM', description: c.createdBy?.includes('Web') ? 'ลูกค้าลงทะเบียนล่วงหน้าผ่านหน้าเว็บ' : 'รับสินค้าเข้าเข้าระบบ', user: currentUser?.name || 'System' }],
       createdAt: serverTimestamp(),

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RMA, RMAStatus, Team, DelayReason, ResolutionDetails } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock, Search, Package, Wrench, Undo2, PackageCheck, ClipboardCheck, Settings2, Maximize2 } from 'lucide-react';
+import { X, Save, AlertCircle, ArrowRight, CheckCircle2, ChevronRight, RotateCcw, Truck, Box, Layers, Wifi, Zap, ShoppingBag, ShieldCheck, RefreshCw, AlertOctagon, Plus, Check, Pencil, Lock, Search, Package, Wrench, Undo2, PackageCheck, ClipboardCheck, Settings2, Maximize2, ScanBarcode } from 'lucide-react';
 import { GlassSelect } from './GlassSelect';
 import { MockDb } from '../services/mockDb';
 import { HddBulkModal } from './HddBulkModal';
+import { ScannerModal } from './ScannerModal';
 import { showToast } from '../services/toast';
 
 interface EditRMADrawerProps {
@@ -53,9 +54,18 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
     const [mainGroup, setMainGroup] = useState<'A' | 'B' | 'C' | ''>('');
     const [isChangingTeam, setIsChangingTeam] = useState(false);
 
+    // Scanner state
+    const [showScanner, setShowScanner] = useState(false);
+    const [scanTarget, setScanTarget] = useState<'productModel' | 'serialNumber'>('serialNumber');
+
     useEffect(() => {
         if (isOpen && rma) {
-            setFormData(JSON.parse(JSON.stringify(rma))); // Deep copy
+            const initialData = JSON.parse(JSON.stringify(rma)); // Deep copy
+            if (!initialData.repairCosts) initialData.repairCosts = {};
+            if (!initialData.repairCosts.warrantyStatus) {
+                initialData.repairCosts.warrantyStatus = 'IN_WARRANTY';
+            }
+            setFormData(initialData);
             setIsReviewing(false);
             setDiffs([]);
             setCustomDist(rma.distributor || '');
@@ -418,11 +428,17 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">รุ่น (Model)</label>
-                            <input type="text" value={formData.productModel || ''} onChange={e => handleFormChange('productModel', e.target.value)} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none" placeholder="e.g. DH-IPC-HFW2439S" />
+                            <div className="relative">
+                                <input type="text" value={formData.productModel || ''} onChange={e => handleFormChange('productModel', e.target.value.replace(/[^\x20-\x7E]/g, '').toUpperCase())} className="w-full rounded-2xl px-4 py-3.5 pr-11 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none uppercase" placeholder="e.g. DH-IPC-HFW2439S" style={{ textTransform: 'uppercase' }} />
+                                <button type="button" onClick={() => { setScanTarget('productModel'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2 ml-2">S/N (Serial Number)</label>
-                            <input type="text" value={formData.serialNumber || ''} onChange={e => handleFormChange('serialNumber', e.target.value)} className="w-full rounded-2xl px-4 py-3.5 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none font-mono" placeholder="Serial Number" />
+                            <div className="relative">
+                                <input type="text" value={formData.serialNumber || ''} onChange={e => handleFormChange('serialNumber', e.target.value.replace(/[^\x20-\x7E]/g, '').toUpperCase())} className="w-full rounded-2xl px-4 py-3.5 pr-11 text-sm text-[#1d1d1f] dark:text-white bg-white dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] outline-none font-mono uppercase" placeholder="Serial Number" style={{ textTransform: 'uppercase' }} />
+                                <button type="button" onClick={() => { setScanTarget('serialNumber'); setShowScanner(true); }} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"><ScanBarcode className="w-5 h-5" /></button>
+                            </div>
                         </div>
                     </div>
 
@@ -1321,6 +1337,8 @@ export const EditRMADrawer: React.FC<EditRMADrawerProps> = ({ isOpen, onClose, r
                     }}
                 />
             )}
+            {/* Scanner Modal */}
+            {showScanner && <ScannerModal onClose={() => setShowScanner(false)} onScan={(val) => { handleFormChange(scanTarget, val.toUpperCase()); setShowScanner(false); }} />}
 
             </fieldset>
         </div>

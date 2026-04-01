@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { RMA, RMAStatus } from '../types';
-import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3, Save, Loader2 } from 'lucide-react';
+import { RMA, RMAStatus, ProductType } from '../types';
+import { ArrowLeft, Package, User, Clock, Edit2, AlertCircle, CheckCircle2, History, Trash2, Truck, ShieldCheck, FileText, Edit3, Save, Loader2, Plus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { StatusBadge } from '../components/StatusBadge';
 
@@ -13,6 +13,8 @@ import { ShipmentTagModal } from '../components/ShipmentTagModal';
 import html2canvas from 'html2canvas';
 import { renderHtmlToBlob } from '../services/renderToImage';
 import { showToast } from '../services/toast';
+import { ProductEntryForm } from '../components/ProductEntryForm';
+
 
 export const JobDetail: React.FC = () => {
     const { jobId } = useParams<{ jobId: string }>();
@@ -31,6 +33,10 @@ export const JobDetail: React.FC = () => {
     const [docPreviewRmas, setDocPreviewRmas] = useState<RMA[]>([]);
     const docPreviewRenderRef = useRef<HTMLDivElement>(null);
     const [isCopyingImage, setIsCopyingImage] = useState(false);
+
+    // Add item modal
+    const [showAddItemModal, setShowAddItemModal] = useState(false);
+    const [isAddingItem, setIsAddingItem] = useState(false);
 
     // Customer edit state
     const [isEditingCustomer, setIsEditingCustomer] = useState(false);
@@ -195,7 +201,47 @@ export const JobDetail: React.FC = () => {
         setIsEditingCustomer(false);
     };
 
+    const handleAddItemToJob = async (item: any) => {
+        if (!jobInfo || rmas.length === 0) return;
+        setIsAddingItem(true);
+        try {
+            const first = rmas[0];
+            await MockDb.addRMA({
+                groupRequestId: first.groupRequestId || jobInfo.id,
+                quotationNumber: first.quotationNumber || '',
+                customerName: first.customerName,
+                contactPerson: first.contactPerson || '',
+                customerEmail: first.customerEmail || '',
+                customerLineId: first.customerLineId || '',
+                customerAddress: first.customerReturnAddress || '',
+                customerReturnAddress: first.customerReturnAddress || '',
+                customerPhone: first.customerPhone || '',
+                lineAccount: (first as any).lineAccount || '',
+                brand: item.brand,
+                productModel: item.model,
+                serialNumber: item.serial,
+                productType: ProductType.OTHER,
+                distributor: item.distributor || '',
+                accessories: item.accessories || [],
+                issueDescription: item.issue,
+                deviceUsername: item.deviceUsername || '',
+                devicePassword: item.devicePassword || '',
+                team: item.team || null,
+                attachments: [],
+                createdBy: `Staff (Added to ${first.groupRequestId || jobInfo.id})`
+            });
 
+            await refreshRMAs();
+            setJobInfo(prev => prev ? { ...prev, count: prev.count + 1 } : null);
+            setShowAddItemModal(false);
+            showToast('✅ เพิ่มสินค้าเรียบร้อย', 'success');
+        } catch (error) {
+            console.error('Failed to add item', error);
+            showToast('❌ เกิดข้อผิดพลาดในการเพิ่มสินค้า', 'error');
+        } finally {
+            setIsAddingItem(false);
+        }
+    };
 
     if (loading) return <div className="p-12 text-center">Loading Job...</div>;
     if (!jobInfo) return null;
@@ -218,7 +264,7 @@ export const JobDetail: React.FC = () => {
                         <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl shadow-inner"><Package /></div>
                         <div>
                             <div className="flex items-center flex-wrap gap-3 mb-2">
-                                <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white leading-none">
+                                <h1 className="text-xl sm:text-2xl font-bold text-[#1d1d1f] dark:text-white leading-tight break-all">
                                     {jobInfo.id}
                                 </h1>
                                 <span className={`text-xs px-2.5 py-1 rounded border flex items-center gap-1 font-medium ${jobInfo.quotationNumber ? 'bg-gray-50 dark:bg-[#2c2c2e] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-[#424245]' : 'bg-gray-50/50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>
@@ -244,7 +290,7 @@ export const JobDetail: React.FC = () => {
                     </div>
 
                     {/* PRINT ACTION GROUPS — 2x2 Grid */}
-                    <div className="grid grid-cols-2 gap-2 w-full xl:w-auto" style={{ gridTemplateColumns: '1fr 1fr', minWidth: '340px', maxWidth: '400px' }}>
+                    <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:min-w-[340px] md:max-w-[400px]">
                         {/* Top-Left: ใบส่งเคลม */}
                         <button
                             onClick={async () => {
@@ -391,7 +437,16 @@ export const JobDetail: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-                <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white ml-2 mb-4">{t('claimsList.items')}</h2>
+                <div className="flex items-center justify-between ml-2 mr-2 mb-4">
+                    <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{t('claimsList.items')}</h2>
+                    <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white text-sm font-semibold rounded-full shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        เพิ่มสินค้า
+                    </button>
+                </div>
                 {rmas.map((item, index) => {
                     const isClosed = [RMAStatus.CLOSED, RMAStatus.REPAIRED, RMAStatus.REJECTED].includes(item.status);
                     const isExpanded = expandedRMAs.has(item.id);
@@ -855,6 +910,41 @@ export const JobDetail: React.FC = () => {
                                 })()
                             }}
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* Add Item Modal */}
+            {showAddItemModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !isAddingItem && setShowAddItemModal(false)}>
+                    <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white/95 dark:bg-[#1c1c1e]/95 backdrop-blur-md px-8 py-5 border-b border-gray-100 dark:border-gray-800 rounded-t-[2rem] flex items-center justify-between z-10">
+                            <div>
+                                <h2 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                        <Plus className="w-4 h-4 text-blue-500" />
+                                    </div>
+                                    เพิ่มสินค้าเข้า Job
+                                </h2>
+                                <p className="text-xs text-gray-400 mt-1 ml-11">เพิ่มรายการเข้า {jobInfo?.id}</p>
+                            </div>
+                            <button onClick={() => !isAddingItem && setShowAddItemModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                <XIcon className="w-4 h-4 text-gray-400" />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <div className="p-8">
+                            {isAddingItem ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                    <Loader2 className="w-8 h-8 animate-spin text-[#0071e3]" />
+                                    <span className="text-sm text-gray-500">กำลังเพิ่มสินค้า...</span>
+                                </div>
+                            ) : (
+                                <ProductEntryForm mode="admin" onAddItem={handleAddItemToJob} />
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
