@@ -161,10 +161,20 @@ export const MockDb = {
     }
   },
   addBrand: async (brand: any) => {
-    const id = `b-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
-    await setDoc(doc(db, 'brands', id), brand);
+    // Generate sequential ID: find highest existing brand-N and increment
+    const snap = await getDocs(collection(db, 'brands'));
+    let maxNum = -1;
+    snap.docs.forEach(d => {
+      const match = d.id.match(/^brand-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    const id = `brand-${maxNum + 1}`;
+    await setDoc(doc(db, 'brands', id), { ...brand, id });
   },
   updateBrand: async (id: string, updates: any) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
@@ -189,10 +199,20 @@ export const MockDb = {
     }
   },
   addDistributor: async (dist: any) => {
-    const id = `d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
     if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
-    await setDoc(doc(db, 'distributors', id), dist);
+    // Generate sequential ID: find highest existing dist-N and increment
+    const snap = await getDocs(collection(db, 'distributors'));
+    let maxNum = -1;
+    snap.docs.forEach(d => {
+      const match = d.id.match(/^dist-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    const id = `dist-${maxNum + 1}`;
+    await setDoc(doc(db, 'distributors', id), { ...dist, id });
   },
   updateDistributor: async (id: string, updates: any) => {
     if (!isConfigured || !db) throw new Error("Firebase Not Configured");
@@ -544,28 +564,45 @@ export const MockDb = {
     const counterRef = doc(db, 'counters', 'jobCounter');
 
     try {
+      // Scan existing RMAs to find the actual highest sequence for this year
+      const prefix = `SECRMA-${year}-`;
+      const rmasSnap = await getDocs(collection(db, 'rmas'));
+      let maxSeqFromDocs = 0;
+      rmasSnap.docs.forEach(d => {
+        const data = d.data();
+        const gid = data.groupRequestId as string | undefined;
+        if (gid && gid.startsWith(prefix)) {
+          const seqPart = gid.substring(prefix.length);
+          const seqNum = parseInt(seqPart, 10);
+          if (!isNaN(seqNum) && seqNum > maxSeqFromDocs) {
+            maxSeqFromDocs = seqNum;
+          }
+        }
+      });
+
       const newSeq = await runTransaction(db, async (transaction) => {
         const snap = await transaction.get(counterRef);
-        let currentSequence = 1;
+        let counterSeq = 0;
 
         if (snap.exists()) {
           const data = snap.data();
           if (data.currentYear === year) {
-            // Same year, increment
-            currentSequence = (data.sequence || 0) + 1;
-          } else {
-            // New year, reset counter
-            currentSequence = 1;
+            counterSeq = data.sequence || 0;
           }
+          // If different year, counterSeq stays 0 (will be reset)
         }
 
-        // Atomic update
+        // Use whichever is higher: counter or actual max from documents
+        const trueMax = Math.max(counterSeq, maxSeqFromDocs);
+        const nextSequence = trueMax + 1;
+
+        // Atomic update with the corrected value
         transaction.set(counterRef, {
           currentYear: year,
-          sequence: currentSequence
+          sequence: nextSequence
         }, { merge: true });
 
-        return currentSequence;
+        return nextSequence;
       });
 
       const formattedSeq = String(newSeq).padStart(4, '0');
@@ -583,42 +620,36 @@ export const MockDb = {
   deleteRMA: async (id: string) => {
     if (!isConfigured || !db) throw new Error("Firebase Disconnected");
     try {
-      // Get the RMA first to potentially revert the Job ID counter
-      const snap = await getDoc(doc(db, 'rmas', id));
-      if (snap.exists()) {
-        const rmaData = snap.data() as RMA;
-        const groupReqId = rmaData.groupRequestId;
+      // Delete the document first
+      await deleteDoc(doc(db, 'rmas', id));
 
-        // If it looks like SECRMA-YYYY-XXXX
-        if (groupReqId && groupReqId.startsWith('SECRMA-')) {
-          const parts = groupReqId.split('-');
-          if (parts.length === 3) {
-            const year = parts[1];
-            const seqStr = parts[2];
-            const seqNum = parseInt(seqStr, 10);
+      // After deletion, recalculate the counter based on remaining documents
+      const now = new Date();
+      const year = String(now.getFullYear());
+      const prefix = `SECRMA-${year}-`;
 
-            // Check the counter
-            const counterRef = doc(db, 'counters', 'jobCounter');
-            const counterSnap = await getDoc(counterRef);
-
-            if (counterSnap.exists()) {
-              const counterData = counterSnap.data();
-              // If this deleted job was the absolute latest one generated for this year
-              if (counterData.currentYear === year && counterData.sequence === seqNum) {
-                // Decrement so the next one reuses this ID
-                await setDoc(counterRef, {
-                  currentYear: year,
-                  sequence: Math.max(0, seqNum - 1)
-                }, { merge: true });
-                console.log(`Reverted job counter for ${year} from ${seqNum} to ${seqNum - 1}`);
-              }
-            }
+      // Scan remaining RMAs to find new highest sequence
+      const rmasSnap = await getDocs(collection(db, 'rmas'));
+      let maxSeq = 0;
+      rmasSnap.docs.forEach(d => {
+        const data = d.data();
+        const gid = data.groupRequestId as string | undefined;
+        if (gid && gid.startsWith(prefix)) {
+          const seqPart = gid.substring(prefix.length);
+          const seqNum = parseInt(seqPart, 10);
+          if (!isNaN(seqNum) && seqNum > maxSeq) {
+            maxSeq = seqNum;
           }
         }
-      }
+      });
 
-      // Finally delete the document
-      await deleteDoc(doc(db, 'rmas', id));
+      // Update counter to reflect actual max
+      const counterRef = doc(db, 'counters', 'jobCounter');
+      await setDoc(counterRef, {
+        currentYear: year,
+        sequence: maxSeq
+      }, { merge: true });
+      console.log(`Job counter synced to ${maxSeq} after deleting ${id}`);
     }
     catch (e) {
       console.error("deleteRMA failed", e);
