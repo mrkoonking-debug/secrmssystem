@@ -52,8 +52,13 @@ export const BrandManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (confirm(t('management.deleteConfirm'))) {
-      await MockDb.deleteBrand(id);
-      fetchBrands();
+      try {
+        await MockDb.deleteBrand(id);
+        await fetchBrands();
+      } catch (e: any) {
+        alert('ลบไม่สำเร็จ: ' + (e?.message || e));
+        console.error('Delete brand error:', e);
+      }
     }
   };
 

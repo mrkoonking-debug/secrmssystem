@@ -17,8 +17,7 @@ export const EditRMA: React.FC = () => {
             if (!rmaId) return;
             setLoading(true);
             try {
-                const allRMAs = await MockDb.getRMAs();
-                const found = allRMAs.find(r => r.id === rmaId);
+                const found = await MockDb.getRMAById(rmaId);
                 if (found) {
                     setRma(found);
                 } else {

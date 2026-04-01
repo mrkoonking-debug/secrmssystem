@@ -142,7 +142,7 @@ export const translations = {
       tryAgain: 'Try Again',
       registerLink: 'Pre-Register Claim',
       registerDesc: 'Speed up the process by registering your item before coming to the shop.',
-      copyright: 'Copyright © 2025 SEC Technology Co., Ltd. All rights reserved.',
+      copyright: 'Copyright © 2026 SEC Technology Co., Ltd. All rights reserved.',
       privacy: 'Privacy Policy',
       terms: 'Terms of Use',
       sitemap: 'Site Map'
@@ -529,7 +529,7 @@ export const translations = {
       tryAgain: 'ลองใหม่อีกครั้ง',
       registerLink: 'ลงทะเบียนการเคลมด้วยตัวเอง',
       registerDesc: 'กรอกข้อมูลก่อนเข้ามาที่ร้าน เพื่อความรวดเร็ว',
-      copyright: 'สงวนลิขสิทธิ์ © 2025 SEC Technology Co., Ltd.',
+      copyright: 'สงวนลิขสิทธิ์ © 2026 SEC Technology Co., Ltd.',
       privacy: 'นโยบายความเป็นส่วนตัว',
       terms: 'ข้อกำหนดการใช้งาน',
       sitemap: 'แผนผังเว็บไซต์'
