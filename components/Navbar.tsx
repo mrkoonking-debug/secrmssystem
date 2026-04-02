@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
 
         {/* 🔥 แจ้งเตือนเป็นตัวเลข กรอบสีแดง */}
         {badgeCount > 0 && (
-          <div className="absolute right-3 min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-[10px] font-black px-1.5 rounded-full shadow-sm ring-2 ring-[#f5f5f7] dark:ring-[#161617]">
+          <div className="absolute right-3 min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-[10px] font-black px-1.5 rounded-full shadow-sm ring-2 ring-white dark:ring-[#161617]">
             {badgeCount > 99 ? '99+' : badgeCount}
           </div>
         )}
@@ -208,7 +208,7 @@ export const Navbar: React.FC<NavbarProps> = ({ embedded = false }) => {
       )}
 
       {/* ===== Desktop Sidebar (unchanged) ===== */}
-      <aside className={`hidden md:flex flex-col w-72 z-50 bg-[#f5f5f7] dark:bg-[#161617] ${embedded ? 'h-full border-r border-gray-200/50 dark:border-[#333]' : 'fixed left-0 top-0 bottom-0 border-r border-gray-200/50 dark:border-[#333]'
+      <aside className={`hidden md:flex flex-col w-72 z-50 bg-white dark:bg-[#161617] ${embedded ? 'h-full border-r border-gray-200/50 dark:border-[#333]' : 'fixed left-0 top-0 bottom-0 border-r border-gray-200/50 dark:border-[#333]'
         }`}>
         <div className="p-8 pb-4">
           <Link to={user ? "/admin/dashboard" : "/"} className="flex items-center gap-3 group">
