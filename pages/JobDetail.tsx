@@ -102,10 +102,18 @@ export const JobDetail: React.FC = () => {
                     });
 
                     // Initialize customer form
+                    // Auto-split legacy data: old customer submissions stored "companyName - contactName" in customerName
+                    let loadedCustomerName = first.customerName || '';
+                    let loadedContactPerson = first.contactPerson || '';
+                    if (!loadedContactPerson && loadedCustomerName.includes(' - ')) {
+                        const parts = loadedCustomerName.split(' - ');
+                        loadedCustomerName = parts[0].trim();
+                        loadedContactPerson = parts.slice(1).join(' - ').trim();
+                    }
                     setCustomerForm({
                         quotationNumber: first.quotationNumber || '',
-                        customerName: first.customerName || '',
-                        contactPerson: first.contactPerson || '',
+                        customerName: loadedCustomerName,
+                        contactPerson: loadedContactPerson,
                         customerPhone: first.customerPhone || '',
                         customerLineId: first.customerLineId || '',
                         customerEmail: first.customerEmail || '',
@@ -188,10 +196,18 @@ export const JobDetail: React.FC = () => {
         // Reset form to current data
         if (rmas.length > 0) {
             const first = rmas[0];
+            // Auto-split legacy data
+            let cancelName = first.customerName || '';
+            let cancelContact = first.contactPerson || '';
+            if (!cancelContact && cancelName.includes(' - ')) {
+                const parts = cancelName.split(' - ');
+                cancelName = parts[0].trim();
+                cancelContact = parts.slice(1).join(' - ').trim();
+            }
             setCustomerForm({
                 quotationNumber: first.quotationNumber || '',
-                customerName: first.customerName || '',
-                contactPerson: first.contactPerson || '',
+                customerName: cancelName,
+                contactPerson: cancelContact,
                 customerPhone: first.customerPhone || '',
                 customerLineId: first.customerLineId || '',
                 customerEmail: first.customerEmail || '',
@@ -248,6 +264,8 @@ export const JobDetail: React.FC = () => {
 
     const closedRMAs = rmas.filter(rma => rma.status === RMAStatus.CLOSED);
     const hasClosedRMAs = closedRMAs.length > 0;
+    const allHaveDistributor = rmas.every(rma => rma.distributor && rma.distributor.trim() !== '' && rma.distributor !== 'Pending Staff Input');
+    const missingDistributorCount = rmas.filter(rma => !rma.distributor || rma.distributor.trim() === '' || rma.distributor === 'Pending Staff Input').length;
 
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
@@ -297,7 +315,11 @@ export const JobDetail: React.FC = () => {
                                 const html = await getDistributorDocumentsHTML(rmas);
                                 if (html) { setDocPreviewHtml(html); setDocPreviewType('DISTRIBUTOR'); setDocPreviewRmas(rmas); }
                             }}
-                            className="h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-95 transition-all"
+                            disabled={!allHaveDistributor}
+                            className={`h-11 flex items-center justify-center gap-2 rounded-xl text-xs font-semibold transition-all ${allHaveDistributor
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-95'
+                                : 'bg-gray-100 dark:bg-[#2c2c2e] text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+                            title={!allHaveDistributor ? `กรุณาเลือกผู้นำเข้าให้ครบทุกรายการก่อน (ยังขาด ${missingDistributorCount} รายการ)` : ''}
                         >
                             <Printer className="w-3.5 h-3.5" strokeWidth={2.5} />
                             ส่งให้ศูนย์
@@ -322,7 +344,11 @@ export const JobDetail: React.FC = () => {
                         {/* Bottom-Left: ใบปะหน้า (ศูนย์) */}
                         <button
                             onClick={() => { setShipmentTagTarget('DISTRIBUTOR'); setIsShipmentTagModalOpen(true); }}
-                            className="h-11 flex items-center justify-center gap-2 rounded-xl border border-orange-300 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 text-xs font-semibold hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:scale-[1.02] active:scale-95 transition-all"
+                            disabled={!allHaveDistributor}
+                            className={`h-11 flex items-center justify-center gap-2 rounded-xl text-xs font-semibold transition-all ${allHaveDistributor
+                                ? 'border border-orange-300 dark:border-orange-500/30 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:scale-[1.02] active:scale-95'
+                                : 'border border-gray-200 dark:border-[#333] text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+                            title={!allHaveDistributor ? `กรุณาเลือกผู้นำเข้าให้ครบทุกรายการก่อน (ยังขาด ${missingDistributorCount} รายการ)` : ''}
                         >
                             <Truck className="w-3.5 h-3.5" strokeWidth={2.5} />
                             ใบปะหน้า (ศูนย์)

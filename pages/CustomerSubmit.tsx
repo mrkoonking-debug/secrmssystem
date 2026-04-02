@@ -92,7 +92,8 @@ export const CustomerSubmit: React.FC = () => {
                 for (const item of items) {
                     await MockDb.addRMA({
                         groupRequestId,
-                        customerName: `${customer.companyName} - ${customer.contactName}`,
+                        customerName: customer.companyName,
+                        contactPerson: customer.contactName,
                         customerEmail: customer.email,
                         customerLineId: customer.lineId,
                         customerAddress: customer.returnAddress,

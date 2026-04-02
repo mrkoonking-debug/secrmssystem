@@ -20,10 +20,35 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error('ErrorBoundary caught:', error, errorInfo);
+
+        // Auto-reload once for chunk load errors (Vite app updates)
+        const isChunkLoadError = error?.message?.match(/Failed to fetch dynamically imported module/i) || 
+                                 error?.message?.match(/Importing a module script failed/i) ||
+                                 error?.message?.match(/dynamically imported module/i);
+                                 
+        if (isChunkLoadError) {
+            const chunkFailedMessage = 'chunk_failed_timestamp';
+            const lastReload = sessionStorage.getItem(chunkFailedMessage);
+            const now = Date.now();
+            
+            // Allow auto-reload once every 10 seconds to prevent infinite loops
+            if (!lastReload || (now - parseInt(lastReload, 10)) > 10000) {
+                sessionStorage.setItem(chunkFailedMessage, now.toString());
+                window.location.reload();
+            }
+        }
     }
 
     handleRetry = () => {
-        this.setState({ hasError: false, error: null });
+        const isChunkLoadError = this.state.error?.message?.match(/Failed to fetch dynamically imported module/i) || 
+                                 this.state.error?.message?.match(/Importing a module script failed/i) ||
+                                 this.state.error?.message?.match(/dynamically imported module/i);
+                                 
+        if (isChunkLoadError) {
+            window.location.reload();
+        } else {
+            this.setState({ hasError: false, error: null });
+        }
     };
 
     render() {
