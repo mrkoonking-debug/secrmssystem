@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus, ProductType } from '../types';
@@ -10,10 +10,10 @@ import { StatusBadge } from '../components/StatusBadge';
 import { printDistributorDocuments, printCustomerDocuments, getDistributorDocumentsHTML, getCustomerDocumentsHTML } from '../services/printService';
 import { Printer, Copy, X as XIcon } from 'lucide-react';
 import { ShipmentTagModal } from '../components/ShipmentTagModal';
-import html2canvas from 'html2canvas';
+// html2canvas loaded dynamically when needed — see usage below
 import { renderHtmlToBlob } from '../services/renderToImage';
 import { showToast } from '../services/toast';
-import { ProductEntryForm } from '../components/ProductEntryForm';
+const ProductEntryForm = lazy(() => import('../components/ProductEntryForm').then(m => ({ default: m.ProductEntryForm })));
 
 
 export const JobDetail: React.FC = () => {
@@ -61,13 +61,8 @@ export const JobDetail: React.FC = () => {
 
 
     const refreshRMAs = async () => {
-        const allRMAs = await MockDb.getRMAs();
         const decodedId = decodeURIComponent(jobId || '');
-        const jobRMAs = allRMAs.filter(c =>
-            c.quotationNumber === decodedId ||
-            c.groupRequestId === decodedId ||
-            (c.quotationNumber === '' && c.groupRequestId === '' && c.id === decodedId)
-        );
+        const jobRMAs = await MockDb.getRMAsByJobId(decodedId);
         setRMAs(jobRMAs);
     };
 
@@ -76,15 +71,8 @@ export const JobDetail: React.FC = () => {
             if (!jobId) return;
             setLoading(true);
             try {
-                const allRMAs = await MockDb.getRMAs();
                 const decodedId = decodeURIComponent(jobId);
-
-                // Enhanced lookup logic
-                const jobRMAs = allRMAs.filter(c =>
-                    c.quotationNumber === decodedId ||
-                    c.groupRequestId === decodedId ||
-                    (c.id === decodedId)
-                );
+                const jobRMAs = await MockDb.getRMAsByJobId(decodedId);
 
                 if (jobRMAs.length > 0) {
                     setRMAs(jobRMAs);
@@ -620,8 +608,8 @@ export const JobDetail: React.FC = () => {
             {docPreviewHtml && (
                 <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
                     {/* Toolbar */}
-                    <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
-                        <h2 className="text-gray-800 dark:text-white font-semibold text-base flex-1">📋 Preview เอกสาร</h2>
+                    <div className="flex-shrink-0 flex flex-wrap items-center gap-2 md:gap-3 px-4 md:px-6 py-3 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
+                        <h2 className="text-gray-800 dark:text-white font-semibold text-base w-full sm:w-auto flex-1 mb-1 sm:mb-0">📋 Preview เอกสาร</h2>
                         {/* Copy Text Only (Facebook friendly) */}
                         <button
                             onClick={() => {
@@ -918,24 +906,25 @@ export const JobDetail: React.FC = () => {
                         </div>
                     )}
                     {/* Preview Content - A4 */}
-                    <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
-                        <iframe
-                            id="doc-preview-iframe"
-                            srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#f5f5f5;">${docPreviewHtml}</body></html>`}
-                            className="border-0 shadow-2xl bg-white"
-                            style={{
-                                width: '794px',
-                                minWidth: '794px',
-                                height: (() => {
-                                    // Calculate number of pages for distributor docs
-                                    if (docPreviewType === 'DISTRIBUTOR') {
-                                        const distCount = new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size;
-                                        return `${Math.max(1, distCount) * 1143}px`;
-                                    }
-                                    return '1123px';
-                                })()
-                            }}
-                        />
+                    <div className="flex-1 overflow-auto flex justify-start lg:justify-center py-8 px-4 md:px-12 bg-gray-100/50 dark:bg-black/50">
+                        <div className="origin-top flex justify-center" style={{ zoom: 'min(0.8, calc(100vw / 850))' }}>
+                            <iframe
+                                id="doc-preview-iframe"
+                                srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#f5f5f5;">${docPreviewHtml}</body></html>`}
+                                className="border-0 shadow-2xl bg-white"
+                                style={{
+                                    width: '794px',
+                                    minWidth: '794px',
+                                    height: (() => {
+                                        if (docPreviewType === 'DISTRIBUTOR') {
+                                            const distCount = new Set(docPreviewRmas.map(r => r.distributor || 'Unknown')).size;
+                                            return `${Math.max(1, distCount) * 1123}px`;
+                                        }
+                                        return '1123px';
+                                    })()
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
@@ -968,7 +957,9 @@ export const JobDetail: React.FC = () => {
                                     <span className="text-sm text-gray-500">กำลังเพิ่มสินค้า...</span>
                                 </div>
                             ) : (
-                                <ProductEntryForm mode="admin" onAddItem={handleAddItemToJob} />
+                                <Suspense fallback={<div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>}>
+                                    <ProductEntryForm mode="admin" onAddItem={handleAddItemToJob} />
+                                </Suspense>
                             )}
                         </div>
                     </div>

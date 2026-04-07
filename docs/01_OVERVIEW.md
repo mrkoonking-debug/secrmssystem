@@ -70,16 +70,21 @@
 
 ## เอกสารต่างๆ (ดูเพิ่มเติม)
 
-| ไฟล์ | เนื้อหา |
-| :--- | :--- |
-| [02_FIREBASE_SETUP.md](./02_FIREBASE_SETUP.md) | วิธีสร้างและเชื่อมต่อ Firebase |
-| [03_DEPLOYMENT.md](./03_DEPLOYMENT.md) | วิธี Deploy ขึ้นเว็บจริง |
-| [04_CODE_STRUCTURE.md](./04_CODE_STRUCTURE.md) | โครงสร้างโค้ด + แผนที่ไฟล์ |
-| [05_HOW_TO_EDIT.md](./05_HOW_TO_EDIT.md) | คู่มือแก้ไขทีละเรื่อง (ครอบคลุม) |
-| [06_OWNER_GUIDE.md](./06_OWNER_GUIDE.md) | คู่มือเจ้าของ (ไม่ต้องรู้โปรแกรม) |
-| [07_GIT_GUIDE.md](./07_GIT_GUIDE.md) | Git & GitHub (บันทึก ย้อนกลับ สำรองโค้ด) |
-| [08_USER_MANUAL.md](./08_USER_MANUAL.md) | คู่มือการใช้งานฟังก์ชันทั้งหมด |
+| เลข | ไฟล์ | เนื้อหา |
+| :--- | :--- | :--- |
+| 01 | [OVERVIEW.md](./01_OVERVIEW.md) | ภาพรวมระบบ (ไฟล์นี้) |
+| 02 | [FIREBASE_SETUP.md](./02_FIREBASE_SETUP.md) | วิธีสร้างและเชื่อมต่อ Firebase |
+| 03 | [DEPLOYMENT.md](./03_DEPLOYMENT.md) | วิธี Deploy ขึ้นเว็บจริง |
+| 04 | [CODE_STRUCTURE.md](./04_CODE_STRUCTURE.md) | โครงสร้างโค้ด + แผนที่ไฟล์ |
+| 05 | [HOW_TO_EDIT.md](./05_HOW_TO_EDIT.md) | คู่มือแก้ไขทีละเรื่อง (ครอบคลุม) |
+| 06 | [OWNER_GUIDE.md](./06_OWNER_GUIDE.md) | คู่มือเจ้าของ (ไม่ต้องรู้โปรแกรม) |
+| 07 | [GIT_GUIDE.md](./07_GIT_GUIDE.md) | Git & GitHub (บันทึก ย้อนกลับ สำรองโค้ด) |
+| 08 | [USER_MANUAL.md](./08_USER_MANUAL.md) | คู่มือการใช้งานฟังก์ชันทั้งหมด |
+| 09 | [CHAPTER2.md](./09_CHAPTER2.md) | บทที่ 2 — แนวคิดและทฤษฎีที่เกี่ยวข้อง |
+| 10 | [FIREBASE_COST_ANALYSIS.md](./10_FIREBASE_COST_ANALYSIS.md) | วิเคราะห์ค่าใช้จ่าย Firebase + ราคา Blaze |
+| 11 | [SETUP_AND_SYNC_GUIDE.md](./11_SETUP_AND_SYNC_GUIDE.md) | คู่มือ Setup เครื่องใหม่ + Sync + Deploy |
 
 ---
 
-*อัปเดตล่าสุด มีนาคม 2026*
+*อัปเดตล่าสุด เมษายน 2569*
+

@@ -8,7 +8,7 @@ interface Props {
   isOverdue?: boolean;
 }
 
-export const StatusBadge: React.FC<Props> = ({ status, isOverdue }) => {
+export const StatusBadge: React.FC<Props> = React.memo(({ status, isOverdue }) => {
   const { t } = useLanguage();
 
   const getStyles = () => {
@@ -38,4 +38,4 @@ export const StatusBadge: React.FC<Props> = ({ status, isOverdue }) => {
       {t(`status.${status}`)}
     </span>
   );
-};
+});

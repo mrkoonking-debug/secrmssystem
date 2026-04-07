@@ -125,7 +125,10 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
   const selectedOption = options.find(opt => opt.value === value);
 
   const filteredOptions = searchable
-    ? options.filter(opt => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? options.filter(opt => {
+        const q = searchQuery.toLowerCase();
+        return opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q);
+      })
     : options;
 
   let frequentOptions: Option[] = [];
@@ -155,7 +158,10 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
     >
       <div className="flex items-center gap-2">
         {option.icon}
-        <span className="font-medium truncate">{option.label}</span>
+        <span className="font-medium truncate">
+          {option.label}
+          {option.value !== option.label && option.value !== 'Other' && <span className="text-gray-400 font-normal ml-1">({option.value})</span>}
+        </span>
       </div>
       {option.value === value && <Check className="w-4 h-4 flex-shrink-0" />}
     </button>
@@ -229,7 +235,9 @@ export const GlassSelect: React.FC<GlassSelectProps> = ({
         <div className="flex items-center gap-2 truncate">
           {selectedOption?.icon}
           <span className={!selectedOption ? "text-gray-500 dark:text-gray-400" : ""}>
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption
+              ? <>{selectedOption.label}{selectedOption.value !== selectedOption.label && selectedOption.value !== 'Other' && <span className="text-gray-400 font-normal ml-1">({selectedOption.value})</span>}</>
+              : placeholder}
           </span>
         </div>
         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />

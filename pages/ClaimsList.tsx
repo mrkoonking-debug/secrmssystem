@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { MockDb } from '../services/mockDb';
 import { RMA, RMAStatus, Team } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
-import { Search, Plus, ChevronRight, ChevronDown, Box, Layers, Wifi, Zap, ShoppingBag, Package, User, ChevronsUpDown, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Search, Plus, ChevronRight, ChevronDown, Box, Layers, Wifi, Zap, ShoppingBag, Package, User, ChevronsUpDown, Loader2, AlertTriangle, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -16,12 +16,21 @@ export const ClaimsList: React.FC = () => {
     const [lastDoc, setLastDoc] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'DONE'>('ALL');
     const [teamFilter, setTeamFilter] = useState<'ALL' | 'GROUP_C' | Team>('ALL');
     const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set(['Today', 'Yesterday', 'This Week']));
     const [isTeamCExpanded, setIsTeamCExpanded] = useState(false);
     const { t } = useLanguage();
     const navigate = useNavigate();
+    const searchTimerRef = useRef<any>(null);
+
+    // Debounce search input
+    const handleSearchChange = useCallback((value: string) => {
+        setSearch(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+    }, []);
 
     useEffect(() => {
         const fetch = async () => {
@@ -72,18 +81,19 @@ export const ClaimsList: React.FC = () => {
             if (!c || !c.id) return false;
 
             // If search is empty, show all (handled by other filters)
-            if (!search.trim()) return true;
+            if (!debouncedSearch.trim()) return true;
 
-            const term = search.toLowerCase().trim();
+            const term = debouncedSearch.toLowerCase().trim();
 
-            const matchCustomer = c.customerName && c.customerName.toLowerCase() === term;
-            const matchSN = c.serialNumber && c.serialNumber.toLowerCase() === term;
-            const matchModel = c.productModel && c.productModel.toLowerCase() === term;
-            const matchId = c.id && c.id.toLowerCase() === term;
-            const matchQuote = c.quotationNumber && c.quotationNumber.toLowerCase() === term;
-            const matchGroup = c.groupRequestId && c.groupRequestId.toLowerCase() === term;
+            const matchCustomer = c.customerName && c.customerName.toLowerCase().includes(term);
+            const matchSN = c.serialNumber && c.serialNumber.toLowerCase().includes(term);
+            const matchModel = c.productModel && c.productModel.toLowerCase().includes(term);
+            const matchId = c.id && c.id.toLowerCase().includes(term);
+            const matchQuote = c.quotationNumber && c.quotationNumber.toLowerCase().includes(term);
+            const matchGroup = c.groupRequestId && c.groupRequestId.toLowerCase().includes(term);
+            const matchBrand = c.brand && c.brand.toLowerCase().includes(term);
 
-            return matchId || matchCustomer || matchSN || matchModel || matchQuote || matchGroup;
+            return matchId || matchCustomer || matchSN || matchModel || matchQuote || matchGroup || matchBrand;
         };
 
         const matchesStatus = (c: RMA) => {
@@ -120,7 +130,7 @@ export const ClaimsList: React.FC = () => {
         });
         Object.keys(groups).forEach(key => { if (groups[key].length === 0) delete groups[key]; });
         return groups;
-    }, [rmas, search, statusFilter, teamFilter]);
+    }, [rmas, debouncedSearch, statusFilter, teamFilter]);
 
     const getJobsForDate = (rmasInDate: RMA[]) => {
         return rmasInDate.reduce((acc, rma) => {
@@ -134,7 +144,7 @@ export const ClaimsList: React.FC = () => {
     const getTeamCount = (team: Team) => rmas.filter(c => c.team === team && ![RMAStatus.CLOSED].includes(c.status)).length;
     const getGroupCCount = () => rmas.filter(c => [Team.TEAM_C, Team.TEAM_E, Team.TEAM_G].includes(c.team) && ![RMAStatus.CLOSED].includes(c.status)).length;
     const handleGroupCClick = () => { setIsTeamCExpanded(!isTeamCExpanded); setTeamFilter('GROUP_C'); };
-    const isRMAOverdue = (c: RMA) => ![RMAStatus.CLOSED, RMAStatus.REPAIRED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 7);
+    const isRMAOverdue = (c: RMA) => ![RMAStatus.CLOSED, RMAStatus.REPAIRED].includes(c.status) && (Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 86400000) > 15);
 
     if (loading) return <div className="p-12 text-center">Loading RMAs...</div>;
 
@@ -171,7 +181,7 @@ export const ClaimsList: React.FC = () => {
             </div>
 
             <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] shadow-sm border border-gray-200 dark:border-[#333] p-1 mb-8 sticky top-24 z-30 flex flex-col md:flex-row md:items-center gap-2">
-                <div className="relative flex-grow group"><Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="text" placeholder={t('claimsList.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-transparent border-none rounded-2xl py-3 pl-11 pr-4 text-sm text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-0" /></div>
+                <div className="relative flex-grow group"><Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="text" placeholder={t('claimsList.searchPlaceholder')} value={search} onChange={(e) => handleSearchChange(e.target.value)} className="w-full bg-transparent border-none rounded-2xl py-3 pl-11 pr-4 text-sm text-[#1d1d1f] dark:text-white placeholder-gray-500 focus:ring-0" /></div>
                 <div className="flex items-center gap-1 md:gap-2 overflow-x-auto scrollbar-hide px-2 md:px-0">
                     <button onClick={handleExpandAll} className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-[#2c2c2e] flex-shrink-0"><ChevronsUpDown className="w-4 h-4" /></button>
                     <div className="h-6 w-px bg-gray-200 dark:bg-white/10 flex-shrink-0"></div>
@@ -211,19 +221,29 @@ export const ClaimsList: React.FC = () => {
                                             const jobItems = jobsInDate[jobKey];
                                             const customerName = jobItems[0]?.customerName || 'Unknown';
                                             const quotationNumber = jobItems[0]?.quotationNumber;
+                                            const isJobDone = jobItems.every(i => [RMAStatus.CLOSED, RMAStatus.REPAIRED].includes(i.status));
 
                                             return (
-                                                <div key={jobKey} onClick={() => handleJobClick(jobKey)} className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] overflow-hidden border border-gray-100 dark:border-[#333] hover:shadow-md cursor-pointer transition-all group">
+                                                <div key={jobKey} onClick={() => handleJobClick(jobKey)} className={`bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden border cursor-pointer transition-shadow group will-change-transform ${isJobDone ? 'border-green-200 dark:border-green-800/30' : 'border-gray-100 dark:border-[#333]'} hover:shadow-md`}>
                                                     <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5" /></div>
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isJobDone ? 'bg-green-500/10 text-green-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                                                                {isJobDone ? <CheckCircle2 className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+                                                            </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
+                                                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2 flex-wrap">
                                                                     {jobKey}
                                                                     <span className={`text-[10px] px-2 py-0.5 rounded-md border ${quotationNumber ? 'bg-gray-100 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-300 border-gray-200 dark:border-[#424245]' : 'bg-gray-50 dark:bg-[#2c2c2e]/50 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-[#424245]/50 italic'}`}>{quotationNumber ? `Ref: ${quotationNumber}` : 'ไม่มี Ref'}</span>
-                                                                    {jobItems.some(i => isRMAOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">{t('claimsList.attentionNeeded')}</span>}
+                                                                    {isJobDone && <span className="bg-green-500/10 text-green-600 text-[10px] px-2 py-0.5 rounded-full border border-green-500/20 font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> เสร็จสิ้น</span>}
+                                                                    {!isJobDone && jobItems.some(i => isRMAOverdue(i)) && <span className="bg-red-500/10 text-red-600 text-[10px] px-2 py-0.5 rounded-full border border-red-500/20">{t('claimsList.attentionNeeded')}</span>}
                                                                 </h3>
                                                                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2"><User className="w-3 h-3" /> {customerName} <span className="w-1 h-1 bg-gray-300 rounded-full"></span> <span className="text-gray-500 font-normal">{jobItems.length} {t('claimsList.items')}</span></div>
+                                                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                                                    {jobItems.slice(0, 5).map((item) => (
+                                                                        <StatusBadge key={item.id} status={item.status} isOverdue={isRMAOverdue(item)} />
+                                                                    ))}
+                                                                    {jobItems.length > 5 && <span className="text-[10px] text-gray-400 font-medium self-center">+{jobItems.length - 5}</span>}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3 justify-between md:justify-end">

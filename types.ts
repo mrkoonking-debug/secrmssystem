@@ -156,4 +156,7 @@ export interface Distributor {
   id: string;
   value: string;
   label: string;
+  address?: string;        // ที่อยู่สำหรับส่งเคลม
+  contactPerson?: string;  // ชื่อผู้ติดต่อ
+  phone?: string;          // เบอร์โทรติดต่อ
 }

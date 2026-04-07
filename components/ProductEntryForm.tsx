@@ -60,11 +60,11 @@ export const ProductEntryForm: React.FC<ProductEntryFormProps> = ({ mode, onAddI
     useEffect(() => {
         const loadData = async () => {
             const [brands, dists] = await Promise.all([MockDb.getBrands(), MockDb.getDistributors()]);
-            setBrandOptions([...brands, { value: 'Other', label: t('submit.other') }]);
-            setDistOptions([...dists, { value: 'Other', label: t('submit.other') }]);
+            setBrandOptions([...brands, { value: 'Other', label: 'อื่นๆ' }]);
+            setDistOptions([...dists, { value: 'Other', label: 'อื่นๆ' }]);
         };
         loadData();
-    }, [t]);
+    }, []);
 
     // Auto-select Team logic
     useEffect(() => {

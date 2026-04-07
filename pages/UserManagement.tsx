@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { UserPlus, Trash2, Shield, User, Loader2, AlertCircle, Check } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, Loader2, AlertCircle, Check, Edit2, X, Save } from 'lucide-react';
 import { Team } from '../types';
 import { GlassSelect } from '../components/GlassSelect';
+import { showToast } from '../services/toast';
 
 export const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -13,6 +14,12 @@ export const UserManagement: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
+
+  // Edit state
+  const [editingUid, setEditingUid] = useState<string | null>(null);
+  const [editRole, setEditRole] = useState('');
+  const [editTeam, setEditTeam] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', role: 'staff', team: 'ALL'
@@ -59,6 +66,32 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  const startEdit = (user: any) => {
+    setEditingUid(user.uid);
+    setEditRole(user.role || 'staff');
+    setEditTeam(user.team || 'ALL');
+  };
+
+  const cancelEdit = () => {
+    setEditingUid(null);
+    setEditRole('');
+    setEditTeam('');
+  };
+
+  const handleSaveEdit = async (uid: string) => {
+    setIsSavingEdit(true);
+    try {
+      await MockDb.updateStaffAccount(uid, { role: editRole, team: editTeam });
+      showToast('อัพเดทสิทธิ์สำเร็จ', 'success');
+      setEditingUid(null);
+      fetchUsers();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'ไม่สามารถอัพเดทได้', 'error');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const roleOptions = [
     { value: 'staff', label: 'พนักงานทั่วไป (Staff)' },
     { value: 'admin', label: 'ผู้จัดการระบบ (Admin)' }
@@ -72,6 +105,15 @@ export const UserManagement: React.FC = () => {
     { value: Team.TEAM_E, label: 'Team E (UPS)' },
     { value: Team.TEAM_G, label: 'Team G (Online)' }
   ];
+
+  const getRoleBadge = (role: string) => {
+    if (role === 'admin') return 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400';
+    return 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400';
+  };
+
+  const getTeamBadge = (team: string) => {
+    return 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400';
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -155,31 +197,103 @@ export const UserManagement: React.FC = () => {
             <div className="p-20 text-center"><Loader2 className="w-10 h-10 animate-spin mx-auto text-gray-300" /></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {users.map((user) => (
-                <div key={user.uid} className="glass-panel p-6 flex justify-between items-center group">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {user.role === 'admin' ? <Shield className="w-6 h-6" /> : <User className="w-6 h-6" />}
-                    </div>
-                    <div>
-                      <div className="font-bold dark:text-white">{user.name}</div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
-                      <div className="mt-1 flex gap-2">
-                        <span className="text-[10px] bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded text-gray-600 uppercase font-bold">{user.role}</span>
-                        <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded text-blue-600 uppercase font-bold">{user.team}</span>
+              {users.map((user) => {
+                const isEditing = editingUid === user.uid;
+                const isSelf = MockDb.getCurrentUser()?.uid === user.uid;
+
+                return (
+                  <div key={user.uid} className={`glass-panel p-5 transition-all ${isEditing ? 'ring-2 ring-[#0071e3]/30 shadow-lg' : ''}`}>
+                    {isEditing ? (
+                      // ── Edit Mode ──
+                      <div className="space-y-3 animate-fade-in">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 flex-shrink-0">
+                            <Edit2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold dark:text-white text-sm">{user.name}</div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">ระดับสิทธิ์</label>
+                          <select
+                            value={editRole}
+                            onChange={e => setEditRole(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-lg px-3 py-2.5 text-sm dark:text-white outline-none focus:ring-2 focus:ring-[#0071e3]"
+                          >
+                            <option value="staff">พนักงานทั่วไป (Staff)</option>
+                            <option value="admin">ผู้จัดการระบบ (Admin)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">แผนกที่รับผิดชอบ</label>
+                          <select
+                            value={editTeam}
+                            onChange={e => setEditTeam(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-lg px-3 py-2.5 text-sm dark:text-white outline-none focus:ring-2 focus:ring-[#0071e3]"
+                          >
+                            {teamOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={cancelEdit}
+                            className="flex-1 py-2 bg-gray-200 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold flex items-center justify-center gap-1 hover:bg-gray-300 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" /> ยกเลิก
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(user.uid)}
+                            disabled={isSavingEdit}
+                            className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                          >
+                            {isSavingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} บันทึก
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      // ── View Mode ──
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {user.role === 'admin' ? <Shield className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                          </div>
+                          <div>
+                            <div className="font-bold dark:text-white">{user.name}</div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                            <div className="mt-1 flex gap-2">
+                              <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${getRoleBadge(user.role)}`}>{user.role}</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${getTeamBadge(user.team)}`}>{user.team}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {!isSelf && (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => startEdit(user)}
+                              className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+                              title="แก้ไขสิทธิ์"
+                            >
+                              <Edit2 className="w-4.5 h-4.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.uid)}
+                              className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                              title="ลบพนักงาน"
+                            >
+                              <Trash2 className="w-4.5 h-4.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {MockDb.getCurrentUser()?.uid !== user.uid && (
-                    <button
-                      onClick={() => handleDelete(user.uid)}
-                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

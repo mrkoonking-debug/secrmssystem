@@ -393,6 +393,14 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
   const settings = await MockDb.getSettings();
   const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Fetch distributor master data for address/contact info
+  let distInfo: { address?: string; contactPerson?: string; phone?: string; label?: string } = {};
+  try {
+    const distributors = await MockDb.getDistributors();
+    const match = distributors.find(d => d.value === rma.distributor);
+    if (match) distInfo = match;
+  } catch { /* fallback: no extra info */ }
+
   const tableRows = rmas.map((item, index) => {
     const sentItems = item.distributorSentItems || [];
     const allAcc = item.accessories || [];
@@ -465,7 +473,11 @@ export const getImporterFormHTML = async (rmas: RMA[]): Promise<string> => {
         <div class="party-box">
           <div class="party-box-label">TO: DISTRIBUTOR (เรียน ผู้นำเข้า)</div>
           <div class="party-name">${escapeHtml(rma.distributor)}</div>
-          <div class="party-detail">RMA / Service Department</div>
+          ${distInfo.label ? `<div class="party-detail">${escapeHtml(distInfo.label)}</div>` : ''}
+          ${distInfo.contactPerson ? `<div class="party-detail">ผู้ติดต่อ: ${escapeHtml(distInfo.contactPerson)}</div>` : ''}
+          ${distInfo.phone ? `<div class="party-detail">โทร: ${escapeHtml(distInfo.phone)}</div>` : ''}
+          ${distInfo.address ? `<div class="party-detail" style="margin-top: 4px;">${escapeHtml(distInfo.address)}</div>` : ''}
+          ${!distInfo.label && !distInfo.address ? `<div class="party-detail">RMA / Service Department</div>` : ''}
         </div>
         <div class="party-box">
           <div class="party-box-label">FROM: OUR COMPANY (จาก)</div>
@@ -1066,10 +1078,9 @@ export const getCustomerShippingLabelHTML = async (payloads: ShippingLabelPayloa
         .shipping-label { 
           width: 210mm; 
           height: 148mm; /* Half A4 height (A5) for print */
-          padding: 8mm; /* Slightly smaller padding for print edge */
+          padding: 8mm;
           margin: 0;
           page-break-after: always;
-          border-bottom: 1px dashed #ccc; /* Cut-here guide between labels */
         }
         .st-container {
           border-color: #000; /* High contrast print border */

@@ -357,6 +357,11 @@ export const MockDb = {
     // the 'auth/email-already-in-use' case by re-signing in and re-creating the Firestore doc.
     console.info(`User ${userEmail || uid} removed from Firestore. Firebase Auth account still exists but has no profile.`);
   },
+  updateStaffAccount: async (uid: string, updates: { role?: string; team?: string; name?: string }) => {
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
+    await updateDoc(doc(db, 'users', uid), updates);
+  },
 
   // --- RMA Management ---
   getRMAs: async (): Promise<RMA[]> => {
@@ -375,7 +380,7 @@ export const MockDb = {
   },
 
   // Paginated version — returns { rmas, lastDoc, hasMore }
-  getRMAsPaginated: async (pageSize: number = 50, lastDocSnapshot?: any): Promise<{ rmas: RMA[], lastDoc: any, hasMore: boolean }> => {
+   getRMAsPaginated: async (pageSize: number = 50, lastDocSnapshot?: any): Promise<{ rmas: RMA[], lastDoc: any, hasMore: boolean }> => {
     if (!isConfigured || !db) throw new Error('Firebase Not Configured');
     try {
       let q;
@@ -390,6 +395,31 @@ export const MockDb = {
       return { rmas, lastDoc, hasMore: snap.docs.length === pageSize };
     } catch (e) {
       console.error('getRMAsPaginated failed:', e);
+      throw e;
+    }
+  },
+
+  // Get RMAs by Job ID — queries Firestore directly instead of fetching all
+  getRMAsByJobId: async (jobId: string): Promise<RMA[]> => {
+    if (!isConfigured || !db) throw new Error('Firebase Not Configured');
+    try {
+      // Try groupRequestId first
+      let q = query(collection(db, 'rmas'), where('groupRequestId', '==', jobId));
+      let snap = await getDocs(q);
+      if (snap.docs.length > 0) return snap.docs.map(mapDocToRMA);
+
+      // Try quotationNumber
+      q = query(collection(db, 'rmas'), where('quotationNumber', '==', jobId));
+      snap = await getDocs(q);
+      if (snap.docs.length > 0) return snap.docs.map(mapDocToRMA);
+
+      // Fallback: single RMA by document ID
+      const docSnap = await getDoc(doc(db, 'rmas', jobId));
+      if (docSnap.exists()) return [mapDocToRMA(docSnap as any)];
+
+      return [];
+    } catch (e) {
+      console.error('getRMAsByJobId failed:', e);
       throw e;
     }
   },
@@ -692,6 +722,61 @@ export const MockDb = {
       console.error("deleteRMA failed", e);
       throw e;
     }
+  },
+
+  scanOldRMAs: async (yearsOld: number = 5): Promise<{ id: string; brand: string; model: string; serial: string; customer: string; createdAt: string; jobId: string }[]> => {
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
+
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - yearsOld);
+
+    const snap = await getDocs(collection(db, 'rmas'));
+    const oldDocs = snap.docs.filter(d => {
+      const data = d.data();
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      return createdAt < cutoffDate;
+    });
+
+    return oldDocs.map(d => {
+      const data = d.data();
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      return {
+        id: d.id,
+        brand: data.brand || '-',
+        model: data.productModel || '-',
+        serial: data.serialNumber || '-',
+        customer: data.customerName || '-',
+        createdAt: createdAt.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
+        jobId: data.groupRequestId || data.quotationNumber || d.id
+      };
+    });
+  },
+
+  deleteOldRMAs: async (yearsOld: number = 5): Promise<number> => {
+    if (!isConfigured || !db) throw new Error("Firebase Not Configured");
+    if (currentUser?.role !== 'admin') throw new Error('Unauthorized: admin access required');
+
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - yearsOld);
+
+    const snap = await getDocs(collection(db, 'rmas'));
+    const oldDocs = snap.docs.filter(d => {
+      const data = d.data();
+      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+      return createdAt < cutoffDate;
+    });
+
+    if (oldDocs.length === 0) return 0;
+
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < oldDocs.length; i += BATCH_SIZE) {
+      const batch = oldDocs.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(d => deleteDoc(d.ref)));
+    }
+
+    console.log(`Deleted ${oldDocs.length} RMAs older than ${yearsOld} years`);
+    return oldDocs.length;
   },
 
   clearDatabase: async () => {

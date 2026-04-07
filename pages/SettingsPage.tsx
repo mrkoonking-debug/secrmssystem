@@ -2,14 +2,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockDb } from '../services/mockDb';
-import { Settings, Save, Check, Loader2, Globe, Building, Zap } from 'lucide-react';
+import { Settings, Save, Check, Loader2, Globe, Building, Zap, Trash2, AlertTriangle, Archive, X, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { showToast } from '../services/toast';
+
+interface OldRmaItem {
+  id: string; brand: string; model: string; serial: string;
+  customer: string; createdAt: string; jobId: string;
+}
 
 export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [isDeletingOld, setIsDeletingOld] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [oldRmaList, setOldRmaList] = useState<OldRmaItem[]>([]);
+  const [showOldRmaModal, setShowOldRmaModal] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -46,7 +56,6 @@ export const SettingsPage: React.FC = () => {
     setSuccess('Settings Saved!');
     setIsSaving(false);
 
-    // Apply layout change immediately for this browser
     if (settings.performanceMode) {
       document.documentElement.classList.add('performance-mode');
     } else {
@@ -54,6 +63,39 @@ export const SettingsPage: React.FC = () => {
     }
 
     setTimeout(() => setSuccess(''), 3000);
+  };
+
+  // Step 1: Scan old RMAs and show list
+  const handleScanOldRMAs = async () => {
+    setIsScanning(true);
+    try {
+      const items = await MockDb.scanOldRMAs(5);
+      if (items.length === 0) {
+        showToast('ไม่พบรายการเคลมที่เก่าเกิน 5 ปี ✨', 'success');
+      } else {
+        setOldRmaList(items);
+        setShowOldRmaModal(true);
+      }
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด', 'error');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Step 2: Confirm and delete
+  const handleConfirmDelete = async () => {
+    setIsDeletingOld(true);
+    try {
+      const count = await MockDb.deleteOldRMAs(5);
+      showToast(`ลบรายการเคลมเก่าสำเร็จ ${count} รายการ`, 'success');
+      setShowOldRmaModal(false);
+      setOldRmaList([]);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด', 'error');
+    } finally {
+      setIsDeletingOld(false);
+    }
   };
 
   if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
@@ -140,6 +182,38 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Data Management Section */}
+        <div className="glass-panel p-8 rounded-[2rem] space-y-6 mt-6">
+          <h3 className="text-lg font-bold flex items-center gap-2"><Archive className="w-5 h-5 text-orange-500" /> การจัดการข้อมูล (Data Management)</h3>
+
+          <div className="p-4 bg-gray-50 dark:bg-[#2c2c2e] border border-gray-200 dark:border-[#424245] rounded-xl">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex-1">
+                <h4 className="font-bold text-sm text-[#1d1d1f] dark:text-white mb-1 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4 text-red-500" /> ลบรายการเคลมเก่า (เกิน 5 ปี)
+                </h4>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  ลบรายการเคลมที่สร้างก่อนปี <strong>{new Date().getFullYear() - 5}</strong> ออกจากระบบ 
+                  เพื่อประหยัดพื้นที่จัดเก็บข้อมูลบน Firestore ระบบจะยืนยันก่อนลบทุกครั้ง
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleScanOldRMAs}
+                disabled={isScanning || isDeletingOld}
+                className="px-5 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-xl font-bold text-sm flex items-center gap-2 transition-all active:scale-95 shadow-sm"
+              >
+                {isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                {isScanning ? 'กำลังสแกน...' : 'สแกนรายการเก่า'}
+              </button>
+            </div>
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">การลบข้อมูลจะไม่สามารถกู้คืนได้ กรุณาตรวจสอบให้แน่ใจก่อนดำเนินการ</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-[#1c1c1e] p-6 rounded-[2rem] border border-gray-100 dark:border-[#333]">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Globe className="w-4 h-4" /> Changes will reflect on all PDF documents.
@@ -152,6 +226,84 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </form>
+
+      {/* Old RMA List Modal */}
+      {showOldRmaModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onClick={() => setShowOldRmaModal(false)}>
+          <div className="bg-white dark:bg-[#1c1c1e] rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-[#333] flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  รายการเคลมที่จะถูกลบ ({oldRmaList.length} รายการ)
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">รายการด้านล่างถูกสร้างก่อนปี {new Date().getFullYear() - 5} (เก่ากว่า 5 ปี)</p>
+              </div>
+              <button onClick={() => setShowOldRmaModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Table */}
+            <div className="flex-1 overflow-auto p-4">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-gray-50 dark:bg-[#2c2c2e]">
+                  <tr className="text-left text-[10px] uppercase text-gray-400 font-bold">
+                    <th className="p-2 rounded-l-lg">#</th>
+                    <th className="p-2">Job ID</th>
+                    <th className="p-2">Brand / Model</th>
+                    <th className="p-2">Serial</th>
+                    <th className="p-2">ลูกค้า</th>
+                    <th className="p-2 rounded-r-lg">วันที่สร้าง</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-[#333]">
+                  {oldRmaList.map((item, idx) => (
+                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2 text-gray-400">{idx + 1}</td>
+                      <td className="p-2 font-mono text-xs text-blue-600 dark:text-blue-400">{item.jobId}</td>
+                      <td className="p-2">
+                        <div className="font-medium dark:text-white">{item.brand}</div>
+                        <div className="text-[11px] text-gray-400">{item.model}</div>
+                      </td>
+                      <td className="p-2 font-mono text-xs text-gray-600 dark:text-gray-400">{item.serial}</td>
+                      <td className="p-2 text-gray-600 dark:text-gray-300">{item.customer}</td>
+                      <td className="p-2 text-gray-400 text-xs">{item.createdAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-gray-100 dark:border-[#333] flex items-center justify-between flex-shrink-0">
+              <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 rounded-lg flex items-start gap-2 flex-1 mr-4">
+                <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-red-600 dark:text-red-400">การลบจะไม่สามารถกู้คืนได้ กรุณาตรวจสอบรายการให้แน่ใจก่อนดำเนินการ</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowOldRmaModal(false)}
+                  className="px-5 py-2.5 bg-gray-200 dark:bg-[#3a3a3c] text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm hover:bg-gray-300 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeletingOld}
+                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-xl font-bold text-sm flex items-center gap-2 transition-all"
+                >
+                  {isDeletingOld ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {isDeletingOld ? 'กำลังลบ...' : `ยืนยันลบ ${oldRmaList.length} รายการ`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

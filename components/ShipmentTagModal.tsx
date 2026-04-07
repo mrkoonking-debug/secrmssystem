@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { renderHtmlToBlob } from '../services/renderToImage';
 import { X, Package, Trash2, Expand, RefreshCw, Copy, Mail, Plus, Save, Truck } from 'lucide-react';
-import { RMA } from '../types';
+import { RMA, Distributor } from '../types';
 import { ShippingLabelPayload, getCustomerShippingLabelHTML } from '../services/printService';
+import { MockDb } from '../services/mockDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { showToast } from '../services/toast';
 
@@ -40,10 +41,30 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             if (targetType === 'DISTRIBUTOR') {
-                setReceiverName(rma.distributor || '');
-                setContactPerson((rma as any).distributorContactPerson || '');
-                setReceiverPhone((rma as any).distributorPhone || '');
-                setReceiverAddress((rma as any).distributorAddress || '');
+                // Start with RMA-saved data (from previous saves)
+                const savedContact = (rma as any).distributorContactPerson || '';
+                const savedPhone = (rma as any).distributorPhone || '';
+                const savedAddress = (rma as any).distributorAddress || '';
+                setContactPerson(savedContact);
+                setReceiverPhone(savedPhone);
+                setReceiverAddress(savedAddress);
+
+                // Always fetch distributor master data to get full Thai name (label)
+                if (rma.distributor) {
+                    setReceiverName(rma.distributor); // Temporary: show short name while loading
+                    MockDb.getDistributors().then((distributors: Distributor[]) => {
+                        const match = distributors.find(d => d.value === rma.distributor);
+                        if (match) {
+                            // Use full Thai company name (label) instead of short English name (value)
+                            setReceiverName(match.label || rma.distributor || '');
+                            if (match.contactPerson && !savedContact) setContactPerson(match.contactPerson);
+                            if (match.phone && !savedPhone) setReceiverPhone(match.phone);
+                            if (match.address && !savedAddress) setReceiverAddress(match.address);
+                        }
+                    }).catch(() => { /* silently fail - user can still type manually */ });
+                } else {
+                    setReceiverName('');
+                }
             } else {
                 setReceiverName(rma.customerName || '');
                 setContactPerson(rma.contactPerson || '');
@@ -194,27 +215,27 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
             <div className="bg-white dark:bg-[#1c1c1e] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-200 dark:border-[#333]">
 
                 {/* Sticky Header */}
-                <div className="flex-shrink-0 flex items-center justify-between p-4 px-6 border-b border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#2c2c2e]">
+                <div className="flex-shrink-0 flex items-start sm:items-center justify-between p-4 px-4 md:px-6 border-b border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#2c2c2e]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
                             <Truck className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-[#1d1d1f] dark:text-white">
+                            <h2 className="text-lg md:text-xl font-bold text-[#1d1d1f] dark:text-white leading-tight">
                                 {targetType === 'CUSTOMER' ? 'สร้างใบปะหน้า - ส่งคืนลูกค้า' : 'สร้างใบปะหน้า - ส่งเคลมศูนย์'}
                             </h2>
-                            <p className="text-sm text-gray-500 font-mono">ID: {displayId}</p>
+                            <p className="text-xs md:text-sm text-gray-500 font-mono mt-0.5">ID: {displayId}</p>
                         </div>
                     </div>        <button
                         onClick={onClose}
-                        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                        className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors ml-2"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto flex-1 space-y-8">
+                <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-6 md:space-y-8">
 
                     {/* Order Info (Read-only) */}
                     <div>
@@ -355,15 +376,15 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
         {previewHtml && (
             <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex flex-col animate-in fade-in duration-200">
                 {/* Toolbar */}
-                <div className="flex-shrink-0 flex items-center gap-3 px-6 py-2.5 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
-                    <h2 className="text-gray-800 dark:text-white font-semibold text-base flex-1">📋 Preview ใบปะหน้ากล่อง</h2>
+                <div className="flex-shrink-0 flex flex-wrap items-center gap-2 md:gap-3 px-4 md:px-6 py-3 bg-white/90 dark:bg-[#1c1c1e]/95 backdrop-blur border-b border-gray-200 dark:border-white/10 shadow-sm">
+                    <h2 className="text-gray-800 dark:text-white font-semibold text-base w-full sm:w-auto flex-1 mb-1 sm:mb-0">📋 Preview ใบปะหน้ากล่อง</h2>
                     {/* Copy Text Only (Facebook friendly) */}
                     <button
                         onClick={handleCopyData}
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-3 md:px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-xs md:text-sm flex items-center gap-1.5 md:gap-2 transition-colors"
                         title="คัดลอกเฉพาะข้อความ (ใช้กับ Facebook ได้)"
                     >
-                        <Copy className="w-4 h-4" /> ข้อความ
+                        <Copy className="w-3.5 h-3.5" /> ข้อความ
                     </button>
                     {/* Copy Image Only */}
                     <button
@@ -378,10 +399,10 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                                 showToast('ไม่สามารถคัดลอกรูปภาพได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
-                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-3 md:px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-xs md:text-sm flex items-center gap-1.5 md:gap-2 transition-colors"
                         title="คัดลอกเฉพาะรูปภาพ"
                     >
-                        <Copy className="w-4 h-4" /> รูปภาพ
+                        <Copy className="w-3.5 h-3.5" /> รูปภาพ
                     </button>
                     {/* Copy Both (LINE friendly) */}
                     <button
@@ -423,32 +444,34 @@ export const ShipmentTagModal: React.FC<ShipmentTagModalProps> = ({
                                 showToast('ไม่สามารถคัดลอกได้ ลองใหม่อีกครั้ง', 'error');
                             }
                         }}
-                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-3 md:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium text-xs md:text-sm flex items-center gap-1.5 md:gap-2 transition-colors"
                         title="คัดลอกทั้งรูปภาพและข้อความ (สำหรับ LINE)"
                     >
-                        <Copy className="w-4 h-4" /> ทั้งหมด (LINE)
+                        <Copy className="w-3.5 h-3.5" /> ทั้งหมด
                     </button>
                     <button
                         onClick={handlePrintFromPreview}
-                        className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-xs md:text-sm flex items-center gap-1.5 md:gap-2 transition-colors"
                     >
                         🖨️ พิมพ์เอกสาร
                     </button>
                     <button
                         onClick={() => setPreviewHtml(null)}
-                        className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                        className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium text-xs md:text-sm flex items-center gap-1.5 md:gap-2 transition-colors"
                     >
                         <X className="w-4 h-4" /> ปิด
                     </button>
                 </div>
                 {/* Preview Content - A4 size */}
-                <div className="flex-1 overflow-auto flex justify-center py-4 px-4 bg-gray-100/50 dark:bg-black/50">
-                    <iframe
-                        id="preview-iframe"
-                        srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${previewHtml}</body></html>`}
-                        className="border-0 shadow-2xl bg-white"
-                        style={{ width: '794px', height: '1123px', minWidth: '794px' }}
-                    />
+                <div className="flex-1 overflow-auto flex justify-start lg:justify-center py-8 px-4 md:px-12 bg-gray-100/50 dark:bg-black/50">
+                    <div className="origin-top flex justify-center" style={{ zoom: 'min(0.8, calc(100vw / 850))' }}>
+                        <iframe
+                            id="preview-iframe"
+                            srcDoc={`<html><head><title>Preview</title></head><body style="margin:0;padding:0;background:#fff;">${previewHtml}</body></html>`}
+                            className="border-0 shadow-2xl bg-white"
+                            style={{ width: '794px', height: '1123px', minWidth: '794px' }}
+                        />
+                    </div>
                 </div>
             </div>
         )}
